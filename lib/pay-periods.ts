@@ -35,3 +35,13 @@ export function formatPeriod(run: Pick<PayrollRun, "start" | "end">): string {
   const formatter = new Intl.DateTimeFormat("en-US", { timeZone: "UTC", month: "short", day: "numeric", year: "numeric" });
   return `${formatter.format(new Date(`${run.start}T00:00:00Z`))} – ${formatter.format(new Date(`${run.end}T00:00:00Z`))}`;
 }
+
+// The working period is a deliberate selection, independent of today's cycle.
+export function workingPeriod(schedule: PaySchedule, start = schedule.start): PayrollRun {
+  const run = periodForDate(schedule, start);
+  if (run.start !== start) throw new Error("Choose a period from your pay schedule.");
+  return run;
+}
+export function nextPayPeriod(schedule: PaySchedule, run: PayrollRun): PayrollRun {
+  return periodForDate(schedule, date(day(run.end) + 1));
+}

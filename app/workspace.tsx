@@ -6,7 +6,7 @@ import ActivityEntry from "./activity-entry";
 import PayrollGrid from "./payroll-grid";
 import type { CalculationInput, PayrollRun } from "../lib/settlements";
 import PayPeriodSetup from "./pay-period-setup";
-import { dateInZone, formatPeriod, periodForDate, validateSchedule } from "../lib/pay-periods";
+import { dateInZone, formatPeriod, periodForDate, validateSchedule, workingPeriod, nextPayPeriod } from "../lib/pay-periods";
 import type { PaySchedule } from "../lib/pay-periods";
 import type { GridRow } from "../lib/payroll-grid";
 import { sampleContractor } from "../lib/sample-payroll";
@@ -30,7 +30,7 @@ function Icon({ name, size = 20 }: {
 const currency = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
 const money = (amount: number) => currency.format(amount);
 const preparation = [
-    { title: "Your pay period is selected.", label: "Pay period", next: "Check earnings", confirm: "The pay period is correct.", help: "Your saved schedule determines the period. PayCore keeps work and deductions within the selected dates." },
+    { title: "Your pay period is selected.", label: "Pay period", next: "Check earnings", confirm: "The pay period is correct.", help: "Your chosen period stays selected. PayCore calculates the next dates from your saved schedule." },
     { title: "Do the earnings and rates look right?", label: "Earnings", next: "Check deductions", confirm: "I have checked the sample earnings and rates.", help: "Compare each contractor’s earnings and agreed rate with your source records. Check every contractor before moving on." },
     { title: "Are the deductions accounted for?", label: "Deductions", next: "Review payroll", confirm: "I have checked the sample deductions and reimbursements.", help: "Review charges, advances, and reimbursements together. You’ll see their effect on each statement in the next step." },
 ];
@@ -40,11 +40,19 @@ export default function Workspace({ displayName, companyName }: { displayName: s
     const [schedule, setSchedule] = useState<PaySchedule | null>(null);
     const [loaded, setLoaded] = useState(false);
     const [now, setNow] = useState<Date | null>(null);
-    const [selectedPeriod, setSelectedPeriod] = useState<string | null>(null);
+    const [selectedPeriod, setSelectedPeriod] = useState<PayrollRun | null>(null);
     const [storageNotice, setStorageNotice] = useState("");
     const drafts = useRef(new Map<string, { run: PayrollRun; draft: PeriodDraft }>());
     useEffect(() => {
-        try { const saved = localStorage.getItem(scheduleKey); if (saved) setSchedule(validateSchedule(JSON.parse(saved))); }
+        try {
+            const saved = localStorage.getItem(scheduleKey);
+            if (saved) {
+                const raw = JSON.parse(saved), restored = validateSchedule(raw);
+                setSchedule(restored);
+                try { setSelectedPeriod(workingPeriod(restored, raw.workingStart ?? restored.start)); }
+                catch { setSelectedPeriod(workingPeriod(restored)); }
+            }
+        }
         catch { setStorageNotice("Set the schedule again; the saved schedule could not be read."); }
         setLoaded(true); setNow(new Date());
         const refresh = () => setNow(new Date());
@@ -53,19 +61,26 @@ export default function Workspace({ displayName, companyName }: { displayName: s
         return () => { clearInterval(timer); document.removeEventListener("visibilitychange", refresh); };
     }, []);
     const current = schedule && now ? periodForDate(schedule, dateInZone(now, schedule.timeZone)) : null;
-    useEffect(() => { setSelectedPeriod(null); }, [current?.payPeriodId]);
     if (!loaded) return <p role="status">Loading your pay schedule…</p>;
     if (!schedule || !current) return <div className="period-setup-shell">{storageNotice && <p role="status">{storageNotice}</p>}<PayPeriodSetup onSave={next => {
-        try { localStorage.setItem(scheduleKey, JSON.stringify(next)); setStorageNotice(""); }
+        try { localStorage.setItem(scheduleKey, JSON.stringify({ ...next, workingStart: next.start })); setStorageNotice(""); }
         catch { setStorageNotice("Browser storage is unavailable. This schedule will reset on refresh."); }
-        setSchedule(next); setNow(new Date());
+        setSchedule(next); setSelectedPeriod(workingPeriod(next)); setNow(new Date());
     }} /></div>;
-    const stored = selectedPeriod ? drafts.current.get(selectedPeriod) : undefined;
-    const run = stored?.run ?? current;
+    const run = selectedPeriod ?? workingPeriod(schedule);
+    const next = nextPayPeriod(schedule, run);
     const initial = drafts.current.get(run.payPeriodId)?.draft ?? { inputs: [], rows: [], valid: false };
-    return <><section className="period-banner" aria-label="Automatic pay schedule"><strong>{dateInZone(now!, schedule.timeZone) < current.start ? "Upcoming period" : "Current period"}: {formatPeriod(current)}</strong><span>Selected by date · {schedule.timeZone} · Repeats every {Math.round((Date.parse(schedule.end) - Date.parse(schedule.start)) / 86400000) + 1} days</span>{storageNotice && <p role="status">{storageNotice}</p>}
-      <label>Payroll period<select value={run.payPeriodId} onChange={event => setSelectedPeriod(event.target.value === current.payPeriodId ? null : event.target.value)}><option value={current.payPeriodId}>{formatPeriod(current)} · current</option>{Array.from(drafts.current.values()).filter(item => item.run.payPeriodId !== current.payPeriodId).map(item => <option key={item.run.payPeriodId} value={item.run.payPeriodId}>{formatPeriod(item.run)} · earlier draft</option>)}</select></label>
-      {run.payPeriodId !== current.payPeriodId && <p role="status">You’re viewing an earlier draft. Its entries stay in their original period.</p>}
+    const options = new Map([workingPeriod(schedule), current, next, ...Array.from(drafts.current.values()).map(item => item.run), run].map(period => [period.payPeriodId, period]));
+    function selectPeriod(period: PayrollRun) {
+        setSelectedPeriod(period);
+        try { localStorage.setItem(scheduleKey, JSON.stringify({ ...schedule, workingStart: period.start })); setStorageNotice(""); }
+        catch { setStorageNotice("Browser storage is unavailable. Your selected period will reset on refresh."); }
+    }
+    return <><section className="period-banner" aria-label="Pay schedule"><strong>Working period: {formatPeriod(run)}</strong><span>{schedule.timeZone} · Repeats every {Math.round((Date.parse(schedule.end) - Date.parse(schedule.start)) / 86400000) + 1} days</span>{storageNotice && <p role="status">{storageNotice}</p>}
+      <label>Payroll period<select value={run.payPeriodId} onChange={event => { const chosen = options.get(event.target.value); if (chosen) selectPeriod(chosen); }}>{Array.from(options.values()).sort((a, b) => a.start.localeCompare(b.start)).map(period => <option key={period.payPeriodId} value={period.payPeriodId}>{formatPeriod(period)}{period.payPeriodId === run.payPeriodId ? " · working" : period.payPeriodId === current.payPeriodId ? " · current by date" : ""}</option>)}</select></label>
+      <p>Next period: {formatPeriod(next)}. Your working period stays selected until you change it.</p>
+      <button type="button" className="button button-secondary" onClick={() => selectPeriod(next)}>Open next period</button>
+      {run.payPeriodId !== current.payPeriodId && <p>Current period by date: {formatPeriod(current)}. Your entries remain in the working period above.</p>}
     </section><PeriodWorkspace key={run.payPeriodId} displayName={displayName} companyName={companyName} run={run} initial={initial} onSnapshot={draft => drafts.current.set(run.payPeriodId, { run, draft })} /></>;
 }
 function PeriodWorkspace({ displayName, companyName, run, initial, onSnapshot }: { displayName: string; companyName: string; run: PayrollRun; initial: PeriodDraft; onSnapshot: (draft: PeriodDraft) => void }) {
@@ -147,7 +162,7 @@ function PeriodWorkspace({ displayName, companyName, run, initial, onSnapshot }:
         else
             begin(index); }}/>
           <div className="guided-layout"><section className="panel question-card"><div className="question-heading"><span className="question-number">0{step + 1}</span><div><p className="eyebrow">{preparation[step].label.toUpperCase()}</p><h2>{["Automatically selected dates", "Check the people and amounts", "Check what comes out and goes back in"][step]}</h2></div><span className="subtle-chip">Sample data</span></div>
-            {step === 0 ? <><div className="period-choice"><Icon name="clock" size={24}/><div><span>Selected pay period</span><strong>{period}</strong><small>{contractors.length} contractors · USD</small></div><span className="selected-label"><Icon name="check" size={14}/>Selected</span></div><div className="inline-tip"><Icon name="help" size={19}/><p>PayCore selected these dates from your saved schedule. Activity must fall within this period.</p></div></> : null}
+            {step === 0 ? <><div className="period-choice"><Icon name="clock" size={24}/><div><span>Selected pay period</span><strong>{period}</strong><small>{contractors.length} contractors · USD</small></div><span className="selected-label"><Icon name="check" size={14}/>Selected</span></div><div className="inline-tip"><Icon name="help" size={19}/><p>These are your selected working dates. PayCore will not move unfinished payroll to another period. Activity must fall within these dates.</p></div></> : null}
             {step === 1 ? <><p className="question-intro">These earnings use the pay terms and activity you entered. Every contractor listed below is included.</p><ContractorTable contractors={contractors}/><div className="inline-tip"><Icon name="help" size={19}/><p>Each contractor uses their own effective pay agreement: a percentage, per-mile amount, or fixed period amount.</p></div></> : null}
             {step === 2 ? <><p className="question-intro">Check each contractor’s agreed recurring deductions, entered charges, and reimbursements. PayCore calculates the totals for you.</p><div className="table-scroll"><table><caption className="sr-only">Sample deductions and reimbursements in US dollars</caption><thead><tr><th scope="col">Contractor</th><th scope="col">Deductions</th><th scope="col">Reimbursements</th></tr></thead><tbody>{contractors.map((person) => <tr key={person.reference}><th scope="row">{person.name}</th><td>−{money(person.settlement.totalDeductions)}</td><td>+{money(person.settlement.totalReimbursements)}</td></tr>)}</tbody></table></div><div className="deduction-totals"><div><span>Total deductions</span><strong>−{money(total("totalDeductions"))}</strong></div><div><span>Total reimbursements</span><strong>+{money(total("totalReimbursements"))}</strong></div></div></> : null}
             {step !== 0 && <label className={`step-confirm ${checked[step] ? "checked" : ""}`}><input type="checkbox" disabled={!hasContractors} checked={checked[step]} onChange={(event) => updateCheck(event.target.checked)}/><span>{preparation[step].confirm}</span></label>}
