@@ -12,9 +12,12 @@ import type { CalculationInput, PayrollRun } from "../lib/settlements";
 import PayPeriodSetup from "./pay-period-setup";
 import { dateInZone, formatPeriod, periodForDate, validateSchedule, workingPeriod, nextPayPeriod } from "../lib/pay-periods";
 import type { PaySchedule } from "../lib/pay-periods";
+import { emptyGridRow } from "../lib/payroll-grid";
+import OperationsCenter from "./operations-center";
+import type { OperationsView } from "./operations-center";
 import type { GridRow } from "../lib/payroll-grid";
 import { sampleContractor } from "../lib/sample-payroll";
-type View = "overview" | "prepare" | "review";
+type View = OperationsView | "prepare" | "review";
 type Contractor = ReturnType<typeof sampleContractor>;
 type IconName = "grid" | "layers" | "check" | "arrow" | "shield" | "clock" | "chevron" | "help";
 const paths: Record<IconName, string> = {
@@ -82,9 +85,8 @@ export default function Workspace({ displayName, companyName }: { displayName: s
     }
     return <><section className="period-banner" aria-label="Pay schedule"><strong>Working period: {formatPeriod(run)}</strong><span>{schedule.timeZone} · Repeats every {Math.round((Date.parse(schedule.end) - Date.parse(schedule.start)) / 86400000) + 1} days</span>{storageNotice && <p role="status">{storageNotice}</p>}
       <label>Payroll period<select aria-label="Payroll period" value={run.payPeriodId} onChange={event => { const chosen = options.get(event.target.value); if (chosen) selectPeriod(chosen); }}>{Array.from(options.values()).sort((a, b) => a.start.localeCompare(b.start)).map(period => <option key={period.payPeriodId} value={period.payPeriodId}>{formatPeriod(period)}{period.payPeriodId === run.payPeriodId ? " · working" : period.payPeriodId === current.payPeriodId ? " · current by date" : ""}</option>)}</select></label>
-      <p>Next period: {formatPeriod(next)}. Your working period stays selected until you change it.</p>
       <button type="button" className="button button-secondary" onClick={() => selectPeriod(next)}>Open next period</button>
-      {run.payPeriodId !== current.payPeriodId && <p>Current period by date: {formatPeriod(current)}. Your entries remain in the working period above.</p>}
+      <details className="period-schedule-details"><summary>Schedule details</summary><p>Next period: {formatPeriod(next)}. Your working period stays selected until you change it.</p>{run.payPeriodId !== current.payPeriodId && <p>Current period by date: {formatPeriod(current)}. Your entries remain in the working period above.</p>}</details>
     </section><PeriodWorkspace key={run.payPeriodId} displayName={displayName} companyName={companyName} run={run} initial={initial} onSnapshot={draft => drafts.current.set(run.payPeriodId, { run, draft })} /></>;
 }
 function PeriodWorkspace({ displayName, companyName, run, initial, onSnapshot }: { displayName: string; companyName: string; run: PayrollRun; initial: PeriodDraft; onSnapshot: (draft: PeriodDraft) => void }) {
@@ -101,7 +103,8 @@ function PeriodWorkspace({ displayName, companyName, run, initial, onSnapshot }:
     const [step, setStep] = useState(0);
     const [checked, setChecked] = useState(initial.demo ? [true, true, true] : [true, false, false]);
     const [acknowledged, setAcknowledged] = useState(Boolean(initial.demo));
-    const [showHelp, setShowHelp] = useState(false);
+    const [activityRequest, setActivityRequest] = useState<{ action: "Load" | "Deduction"; serial: number } | null>(null);
+    const activityDetails = useRef<HTMLDetailsElement>(null);
     const heading = useRef<HTMLHeadingElement>(null);
     const [gridValid, setGridValid] = useState(initial.valid);
     useEffect(() => { onSnapshot({ inputs, rows, valid: gridValid, demo }); }, [inputs, rows, gridValid, demo, onSnapshot]);
@@ -115,6 +118,21 @@ function PeriodWorkspace({ displayName, companyName, run, initial, onSnapshot }:
     function focusHeading() { requestAnimationFrame(() => heading.current?.focus()); }
     function navigate(next: View) { setView(next); focusHeading(); }
     function begin(at = nextStep) { setStep(at); navigate("prepare"); }
+    function editContractor(id: string) {
+        setStep(1); navigate("prepare");
+        requestAnimationFrame(() => { const index = rows.findIndex(row => row.id === id); const cell = document.querySelector<HTMLElement>(`[data-cell="${Math.max(0, index)}-0"]`); cell?.scrollIntoView({ block: "center", behavior: "smooth" }); cell?.focus(); });
+    }
+    function addContractor() {
+        if (demo) return;
+        const id = crypto.randomUUID(); setRows(previous => [...previous, emptyGridRow(id)]); setGridValid(false); setChecked([true, false, false]); setAcknowledged(false);
+        setStep(1); navigate("prepare");
+        requestAnimationFrame(() => { const cell = document.querySelector<HTMLElement>(`[data-cell="${rows.length}-0"]`); cell?.scrollIntoView({ block: "center" }); cell?.focus(); });
+    }
+    function openActivity(action: "Load" | "Deduction") {
+        if (demo || !hasContractors) return;
+        setStep(1); navigate("prepare"); setActivityRequest({ action, serial: Date.now() });
+        requestAnimationFrame(() => { if (activityDetails.current) { activityDetails.current.open = true; activityDetails.current.scrollIntoView({ block: "start", behavior: "smooth" }); } });
+    }
     function updateCheck(value: boolean) {
         if (demo) return;
         setChecked((previous) => previous.map((old, index) => index < step ? old : index === step ? value : false));
@@ -143,29 +161,21 @@ function PeriodWorkspace({ displayName, companyName, run, initial, onSnapshot }:
         <button className={`nav-item ${view === "prepare" ? "active" : ""}`} aria-current={view === "prepare" ? "page" : undefined} onClick={() => begin()}><Icon name="layers"/>Run payroll</button>
         <button className={`nav-item ${view === "review" ? "active" : ""}`} aria-current={view === "review" ? "page" : undefined} onClick={() => navigate("review")}><Icon name="shield"/>Statements</button>
       </nav>
+      <nav aria-label="Payroll records">
+        {(["contractors", "activity", "exceptions"] as const).map(item => <button key={item} className={`nav-item ${view === item ? "active" : ""}`} aria-current={view === item ? "page" : undefined} onClick={() => navigate(item)}><Icon name={item === "contractors" ? "grid" : item === "activity" ? "layers" : "help"}/>{item === "contractors" ? "Contractors" : item === "activity" ? "Activity register" : "Exceptions"}</button>)}
+      </nav>
       <div className="sidebar-bottom"><div className="guide-card"><span className="guide-symbol"><Icon name="help"/></span><strong>One question.<br />One clear next step.</strong><p>Follow the guide from pay period to final review.</p><button className="guide-link" onClick={() => begin()}>Open payroll guide <Icon name="arrow" size={16}/></button></div><div className="profile"><span className="profile-avatar" aria-hidden="true">{profileInitials(displayName)}</span><div>{displayName}<small>Demo profile</small></div></div></div>
     </aside>
     <div className="workspace-main">
-      <header className="topbar"><div className="breadcrumb">Workspace <span>/</span><strong>{view === "overview" ? "Home" : view === "prepare" ? "Run payroll" : "Statements & review"}</strong></div><span className="demo-tag"><span />Interactive demo</span></header>
+      <header className="topbar"><div className="breadcrumb">Workspace <span>/</span><strong>{view === "overview" ? "Home" : view === "prepare" ? "Run payroll" : view === "review" ? "Statements & review" : view === "contractors" ? "Contractors" : view === "activity" ? "Activity register" : "Exceptions"}</strong></div><span className="demo-tag"><span />Interactive demo</span></header>
       <main id="main-content" className="content">
-        <div className="page-heading"><div><p className="eyebrow">PAYROLL OPERATIONS</p><h1 ref={heading} tabIndex={-1}>{view === "overview" ? "Your payroll. A clear next step." : view === "prepare" ? preparation[step].title : "Review your payroll."}</h1><p className="page-description">{view === "overview" ? "Choose a task. We’ll guide you through the rest." : view === "prepare" ? `Step ${step + 1} of 4 · Check the sample information, then continue.` : "Check each statement before acknowledging the sample review."}</p></div><span className="period-label"><Icon name="clock" size={16}/>{period}</span></div>
+        <div className="page-heading"><div><p className="eyebrow">PAYROLL OPERATIONS</p><h1 ref={heading} tabIndex={-1}>{view === "overview" ? "Payroll command center." : view === "prepare" ? preparation[step].title : view === "review" ? "Review your payroll." : view === "contractors" ? "Contractor 360." : view === "activity" ? "Activity register." : "Exception center."}</h1><p className="page-description">{view === "overview" ? "See what is ready, what needs attention, and what to do next." : view === "prepare" ? `Step ${step + 1} of 4 · Check the sample information, then continue.` : view === "review" ? "Check each statement before acknowledging the sample review." : "Your people, source records, and calculations in one workspace."}</p></div><span className="period-label"><Icon name="clock" size={16}/>{period}</span></div>
 
         {demo && <p className="review-ready" role="status">Demo {demo.status} · Figures are frozen for this exhibit. Open another period to enter new activity.</p>}
-        <fieldset className="demo-entry-fields" disabled={Boolean(demo)}><legend className="sr-only">Demo payroll entry</legend><PayrollGrid run={run} rows={rows} onRowsChange={next => { if (!demo) setRows(next); }} inputs={inputs} onChange={updateInputs} onValidityChange={(valid) => { if (demo) return; setGridValid(valid); setChecked([true, false, false]); setAcknowledged(false); }} />
-        {hasContractors && <details className="detailed-activity"><summary>Add detailed loads, charges, or adjustments</summary><ActivityEntry inputs={inputs} onChange={updateInputs} /><DemoAdvance inputs={inputs} onChange={updateInputs} /></details>}</fieldset>
-        <div aria-live="polite">{contractors.map(person => <div key={person.reference}>{person.detail.blockers.map((issue, i) => <p className="review-warning" key={`block-${i}`}>{person.name} · Blocking issue: {issue.message}</p>)}{person.detail.warnings.map((issue, i) => <p className="review-warning" key={`warn-${i}`}>{person.name} · {demo ? "Reviewed in demo" : "Review required"}: {issue.message}</p>)}</div>)}</div>
-        {view === "overview" ? <>
-          <section className="task-section" aria-labelledby="task-title"><div className="section-heading"><h2 id="task-title">What would you like to do?</h2><span className="task-hint">Start here</span></div><div className="task-grid">
-            <button className="task-tile task-payroll" onClick={() => completed === 3 ? navigate("review") : begin()}><span className="task-icon"><Icon name="layers" size={24}/></span><strong>Run payroll</strong><span>Prepare this period, one step at a time.</span><span className="tile-action">{completed === 0 ? "Get started" : "Continue payroll"}<Icon name="arrow" size={18}/></span></button>
-            <button className="task-tile task-statements" onClick={() => navigate("review")}><span className="task-icon"><Icon name="shield" size={24}/></span><strong>View statements</strong><span>See the earnings and charges behind each total.</span><span className="tile-action">Open statements<Icon name="arrow" size={18}/></span></button>
-            <button className="task-tile task-help" aria-expanded={showHelp} aria-controls="payroll-help" onClick={() => setShowHelp((value) => !value)}><span className="task-icon"><Icon name="help" size={24}/></span><strong>How does this work?</strong><span>Get plain-language help before you begin.</span><span className="tile-action">{showHelp ? "Close guide" : "Read the guide"}<Icon name="arrow" size={18}/></span></button>
-          </div></section>
-          {showHelp ? <section className="panel help-panel" id="payroll-help"><h2>Your payroll, in four steps.</h2><div className="help-grid"><p><strong>1. Pay period</strong>PayCore selects the dates from your saved schedule.</p><p><strong>2. Earnings</strong>Check each contractor’s gross earnings and rate.</p><p><strong>3. Deductions</strong>Check charges and amounts being reimbursed.</p><p><strong>4. Review</strong>Open the statements and check the final totals.</p></div><p className="help-demo">This demo uses sample records. It cannot approve payroll or send payments.</p></section> : null}
-          <section className="portal-welcome" aria-labelledby="welcome-title"><div><span className="welcome-label">YOUR PAYROLL DESK</span><h2 id="welcome-title">Let’s get payroll moving.</h2><p>A short guided path, with the right details at each step. You always know where you are and what comes next.</p><span className="welcome-caption"><Icon name="shield" size={16}/>Every payroll ends with a human review.</span></div><div className="welcome-art" aria-hidden="true"><div className="art-path"/><span className="art-stop stop-one"><Icon name="clock"/>Period</span><span className="art-stop stop-two"><Icon name="layers"/>Earnings</span><span className="art-stop stop-three"><Icon name="check"/>Review</span><span className="art-dot dot-one"/><span className="art-dot dot-two"/></div></section>
-          <div className="home-work-grid"><section className="panel run-record"><div className="record-header"><div><p className="eyebrow">CURRENT PAYROLL</p><h2>{period}</h2><span className="record-reference">Draft · {run.start}</span></div><span className="draft-chip">{demo ? `Demo ${demo.status}` : "Draft"}</span></div><div className="record-figures"><div><span>Estimated contractor pay</span><strong>{money(total("netPay"))}</strong></div><div><span>Contractors</span><strong>{contractors.length}</strong></div><div><span>Gross revenue</span><strong>{money(gross)}</strong></div></div><div className="record-status"><span><strong>{completed} of 3</strong> preparation steps complete</span><span>{completed === 3 ? "Ready for sample review" : `${3 - completed} checks remaining`}</span></div><div className="progress-track"><span style={{ width: `${completed / 3 * 100}%` }}/></div><ol className="record-steps">{["Pay period", "Earnings", "Deductions", "Review"].map((label, index) => <li key={label} className={index < 3 && checked[index] ? "complete" : ""}><span>{index < 3 && checked[index] ? <Icon name="check" size={13}/> : index + 1}</span>{label}</li>)}</ol><button className="button button-primary" onClick={() => completed === 3 ? navigate("review") : begin()}>{completed === 0 ? "Start this payroll" : completed === 3 ? "Review this payroll" : "Continue this payroll"}<Icon name="arrow" size={18}/></button></section>
-          <aside className="next-action"><span className="next-kicker">UP NEXT</span><span className="next-number">{completed === 3 ? "04" : `0${nextStep + 1}`}</span><h2>{nextAction}</h2><p>{completed === 3 ? "Your preparation checks are complete. Open the statements and make sure the totals are right." : preparation[nextStep].help}</p><button className="text-link" onClick={() => completed === 3 ? navigate("review") : begin()}>Take me there<Icon name="arrow" size={17}/></button><div className="next-bottom"><Icon name="shield" size={17}/>Nothing is approved automatically.</div></aside></div>
-        </> : null}
-
+        {(["overview", "contractors", "activity", "exceptions"] as View[]).includes(view) && <OperationsCenter key={view} view={view as OperationsView} inputs={inputs} rows={rows} run={run} demo={demo} onAdd={addContractor} onEntry={openActivity} onReview={() => completed === 3 || demo ? navigate("review") : begin()} onEdit={editContractor} onView={navigate} />}
+        {view === "prepare" && <fieldset className="demo-entry-fields" disabled={Boolean(demo)}><legend className="sr-only">Demo payroll entry</legend><PayrollGrid run={run} rows={rows} onRowsChange={next => { if (!demo) setRows(next); }} inputs={inputs} onChange={updateInputs} onValidityChange={(valid) => { if (demo) return; setGridValid(valid); setChecked([true, false, false]); setAcknowledged(false); }} />
+        {hasContractors && <details ref={activityDetails} className="detailed-activity"><summary>Add detailed loads, charges, or adjustments</summary><ActivityEntry requestedAction={activityRequest} inputs={inputs} onChange={updateInputs} /><DemoAdvance inputs={inputs} onChange={updateInputs} /></details>}</fieldset>}
+        {(view === "prepare" || view === "review") && <div aria-live="polite">{contractors.map(person => <div key={person.reference}>{person.detail.blockers.map((issue, i) => <p className="review-warning" key={`block-${i}`}>{person.name} · Blocking issue: {issue.message}</p>)}{person.detail.warnings.map((issue, i) => <p className="review-warning" key={`warn-${i}`}>{person.name} · {demo ? "Reviewed in demo" : "Review required"}: {issue.message}</p>)}</div>)}</div>}
         {view === "prepare" ? <>
           <WorkflowProgress current={step} checked={checked} onSelect={(index) => { if (index === 3)
             navigate("review");

@@ -1,14 +1,15 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { CalculationInput, PayrollTransaction } from "../lib/settlements";
 import Decimal from "decimal.js";
 
 type Action = "Load" | "Deduction" | "Reimbursement" | "Adjustment";
 const categories = ["FUEL_DEDUCTION", "INSURANCE_DEDUCTION", "CASH_ADVANCE", "ESCROW_DEDUCTION", "REGISTRATION_DEDUCTION", "IFTA_DEDUCTION", "MAINTENANCE_DEDUCTION", "FACTORING_DEDUCTION", "OTHER_DEDUCTION"] as const;
-export default function ActivityEntry({ inputs, onChange }: { inputs: CalculationInput[]; onChange: (inputs: CalculationInput[]) => void }) {
+export default function ActivityEntry({ inputs, onChange, requestedAction }: { requestedAction?: { action: "Load" | "Deduction"; serial: number } | null; inputs: CalculationInput[]; onChange: (inputs: CalculationInput[]) => void }) {
   const [person, setPerson] = useState(0), [action, setAction] = useState<Action>("Load"), [open, setOpen] = useState(false);
   const [error, setError] = useState("");
   const selected = inputs[person];
+  useEffect(() => { if (requestedAction) { setAction(requestedAction.action); setOpen(true); setError(""); } }, [requestedAction]);
   function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault(); setError("");
     const form = event.currentTarget, values = new FormData(form);
