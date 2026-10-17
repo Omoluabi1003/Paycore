@@ -28,6 +28,7 @@ export function calculateGridRow(row: GridRow, existing: CalculationInput[], now
   }
   draft.deductionRules = [...draft.deductionRules, ...(prior?.deductionRules.filter(rule => rule.id !== `${row.id}-deduction`) ?? [])];
   draft.history = prior?.history ?? [];
+  if (prior?.fuelReconciliation) draft.fuelReconciliation = { ...prior.fuelReconciliation };
   draft.contractor.createdAt = prior?.contractor.createdAt ?? now;
   const result = calculateContractorSettlement(draft);
   if (result.blockers.length) throw new Error(result.blockers[0].message);

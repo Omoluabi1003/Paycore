@@ -33,3 +33,5 @@ See [transactional approval](TRANSACTIONAL-APPROVAL.md) for the application-serv
 The [client exhibit](CLIENT-EXHIBIT.md) now provides clearly labeled local simulated approval/paid/locked transitions and entered-data exports. These do not satisfy production authorization, persistence, ledger or payment launch gates.
 
 The [operations center](OPERATIONS-CENTER.md) adds visible frontend workflows; production persistence, broader Contractor 360 modules and operational readiness remain launch work.
+
+The [client workbook acceptance map](../workbook/RULE-MAP.md) inventories locally inspected formula structures without private data. Synthetic regressions now cover selected-load factoring (owner-confirmed scope), fuel reconciliation and separate truck/trailer registration. Exact private workbook parity remains unclaimed until agreement rates, section semantics and rounding are verified. The review screen offers a workbook-familiar grouped settlement view.
