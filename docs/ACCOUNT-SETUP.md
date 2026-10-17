@@ -1,17 +1,11 @@
-# Account and records integration status
+# Preview account and Supabase integration status
 
-The public entry now shows account setup status instead of fictional payroll totals. It does not collect credentials. The logo, splash, richer color palette, and ETL GIS Consulting LLC attribution are retained.
+The owner authorized temporary simulated sign-in while Supabase integration is deferred. This is a presentation preview, not authentication or a security boundary.
 
-Implemented and locally testable: contractor input validation, explicit role allowlist, actor/workspace attribution, and a minimal audit command. Proposed but not yet executed: PostgreSQL migration with organization isolation, reference uniqueness, and append-only audit storage.
+Available now: a fixed fictional account (preview@paycore.example), sign-in, an empty workspace, and sign-out. State lives in client memory; refresh returns to sign-in. No cookies, browser storage, password collection, database calls, or Supabase requests are used. Contractor and payroll sections are informational, with no fictional payroll amounts or record-entry controls.
 
-Not implemented or live: sign-in, session verification, database connection, contractor endpoints/forms, persistence, payroll imports, approvals, or payments. Do not represent this branch as production-ready payroll.
+Use Supabase Free for authentication and PostgreSQL later, subject to quotas. Do not enable paid plans or add-ons without owner approval. Replace preview state with verified server sessions, organization membership, explicit permissions, invitation-only enrollment, account recovery, and MFA before exposing private records. Never use preview state to authorize a read or write. Keep elevated keys server-side.
 
-Next integration steps:
-1. Restore Vercel connector access to the `omoluabis-projects` scope.
-2. Connect organization-owned Clerk and Neon resources; keep provider secrets server-side and separate preview/production data.
-3. Install and lock provider packages in a network-enabled environment. This session could not download packages; no unverified dependency or fake login has been added.
-4. Add managed sign-in and server session verification; configure invitation-only access, MFA, role mappings, and organization selection.
-5. Apply and verify the proposed migration in a disposable database with a restricted runtime identity before applying to production.
-6. Implement contractor create/list as protected server operations with atomic audits, then verify isolation and persistence end to end.
+Adapt the proposed PostgreSQL migration to Supabase verified identity and membership policies. Its transaction-context design is not a ready-to-use browser access policy. Test organization isolation, atomic audits, and persistence against a disposable database. The existing migration has not been executed or integration tested.
 
-See ADR-001-IDENTITY-AND-RECORDS.md for decisions and release gates. Never upload the source payroll workbook or real contractor details to the public repository.
+Configure email delivery for invitations/recovery, backups and restore checks, and session expiry before production. Account for free-tier quotas and inactivity behavior. Real sign-in, saved records, payroll approvals, and payments are not live. No real payroll workbook or personal information is used.
