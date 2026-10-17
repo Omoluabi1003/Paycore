@@ -4,7 +4,7 @@ import { validateSchedule } from "../lib/pay-periods";
 import type { PaySchedule } from "../lib/pay-periods";
 export default function PayPeriodSetup({ onSave }: { onSave: (schedule: PaySchedule) => void }) {
   const [error, setError] = useState("");
-  return <section className="panel activity-entry period-setup"><h1>Set your pay period once.</h1><p>Enter the first period, including its start and end dates. PayCore will repeat that number of days and select the current period automatically.</p><form className="activity-form" onSubmit={event => {
+  return <section className="panel activity-entry period-setup"><h1>Set your pay period once.</h1><p>Enter the first period, including its start and end dates. PayCore will open exactly these dates and calculate following periods automatically. You choose when to open the next period.</p><form className="activity-form" onSubmit={event => {
     event.preventDefault(); const values = new FormData(event.currentTarget);
     try { onSave(validateSchedule({ version: 1, start: values.get("start"), end: values.get("end"), timeZone: values.get("timeZone") })); }
     catch (error) { setError(error instanceof Error ? error.message : "Check the pay period."); }

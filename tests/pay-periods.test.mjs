@@ -38,3 +38,17 @@ test('selected period propagates to work, transactions and agreements without mo
  assert.equal(next.compensationRules[0].effectiveFrom,'2026-10-19');
  assert.equal(prior.loads[0].date,'2026-10-05');
 });
+
+test('Oct 5–16 stays the working period on Oct 17; the next 12 days are only a suggestion', async () => {
+ const { workingPeriod, nextPayPeriod } = await import('../lib/pay-periods.ts');
+ const chosen = { ...schedule, end:'2026-10-16' };
+ const run = workingPeriod(chosen);
+ assert.equal(run.start,'2026-10-05'); assert.equal(run.end,'2026-10-16');
+ assert.equal(periodForDate(chosen,'2026-10-17').start,'2026-10-17');
+ assert.deepEqual(workingPeriod(chosen),run);
+ const next = nextPayPeriod(chosen,run);
+ assert.equal(next.start,'2026-10-17'); assert.equal(next.end,'2026-10-28');
+ assert.deepEqual(workingPeriod(chosen,next.start),next);
+ assert.equal(nextPayPeriod(chosen,next).end,'2026-11-09');
+ assert.throws(()=>workingPeriod(chosen,'2026-10-18'),/pay schedule/);
+});
