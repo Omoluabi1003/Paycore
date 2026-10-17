@@ -2673,3 +2673,9 @@ body:has(.preview-workspace) .brand-splash-intro { display: none; }
 .guided-walkthrough{position:fixed;right:24px;bottom:20px;z-index:90;width:min(430px,calc(100vw - 32px));max-height:45dvh;overflow:auto;background:#fff;border:2px solid #246b68;border-radius:16px;padding:20px;box-shadow:0 12px 50px #102c4150;color:#16364a}
 .guided-walkthrough h2{font-size:1.2rem;margin:0 0 10px}.guided-walkthrough p{margin:0 0 12px}.guided-walkthrough small{display:block;margin-top:12px}.guided-walkthrough .eyebrow{font-size:.7rem}.guided-walkthrough .section-heading{gap:12px;margin-bottom:8px}.walkthrough-target{outline:3px solid #246b68!important;outline-offset:5px;scroll-margin-top:24px}.walkthrough-active{padding-bottom:55dvh!important}.walkthrough-hint{font-weight:600}
 @media(max-width:640px){.guided-walkthrough{right:12px;bottom:12px;width:calc(100vw - 24px);padding:14px;max-height:42dvh}.guided-walkthrough .button{padding:10px 14px}.walkthrough-target{outline-offset:2px}}
+
+.review-reference{margin:24px 0;border:1px solid #bacdd5;border-radius:12px;background:#f8fbfc}
+.review-reference>summary{padding:18px 22px;cursor:pointer;font-weight:700;color:#173b50}
+.review-reference>summary span{display:block;font-size:.8rem;font-weight:400;margin-top:6px}
+.review-reference>.workbook-payroll{margin:0;border:0;box-shadow:none}
+.review-reference>summary:focus-visible{outline:3px solid #246b68;outline-offset:3px;border-radius:10px}
