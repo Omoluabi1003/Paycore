@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { requirePermission, PermissionDenied } from "./access.ts";
+import { createHash } from "node:crypto";
+import type { ApprovedSettlement } from "../settlements.ts";
 import type { CompanyAccess } from "./access.ts";
 const id = z.string().trim().min(1).max(128);
 export const balanceTypes = ["CASH_ADVANCE", "ESCROW", "RECOVERABLE_EXPENSE", "COMPANY_CREDIT", "OTHER"] as const;
@@ -40,6 +42,9 @@ export function ledgerBalance(access: CompanyAccess, account: BalanceAccount, hi
 // unique (company,account,idempotency), source and reversal keys in the database.
 export function prepareLedgerPosting(access: CompanyAccess, rawAccount: BalanceAccount, posting: LedgerPosting, history: readonly LedgerEntry[], now: number) {
   requirePermission(access, "ledger.post", now);
+  return preparePosting(access, rawAccount, posting, history, now);
+}
+function preparePosting(access: CompanyAccess, rawAccount: BalanceAccount, posting: LedgerPosting, history: readonly LedgerEntry[], now: number) {
   const { account, entries } = scopedHistory(access, rawAccount, history);
   const entry = entrySchema.parse({ ...posting, companyId: account.companyId, contractorId: account.contractorId, accountId: account.id, actorId: access.userId, occurredAt: new Date(now).toISOString() });
   const retry = entries.find(prior => prior.idempotencyKey === entry.idempotencyKey);
@@ -62,4 +67,17 @@ export function prepareLedgerPosting(access: CompanyAccess, rawAccount: BalanceA
   const balanceCents = total([...entries, entry]);
   const frozen = Object.freeze(entry);
   return Object.freeze({ entry: frozen, balanceCents, replayed: false, audit: Object.freeze({ action: "balance.posted" as const, companyId: account.companyId, actorId: access.userId, accountId: account.id, entryId: entry.id, kind: entry.kind, sourceId: entry.sourceId, occurredAt: entry.occurredAt }) });
+}
+
+// Only the trusted approval service supplies this freshly calculated snapshot.
+// An approver may post its exact recovery, not arbitrary finance adjustments.
+export function prepareApprovedRecovery(access: CompanyAccess, account: BalanceAccount, settlement: ApprovedSettlement, ruleId: string, history: readonly LedgerEntry[], now: number) {
+  requirePermission(access, "payroll.approve", now);
+  if (settlement.status !== "APPROVED" || settlement.companyId !== access.companyId || account.companyId !== access.companyId || settlement.contractorId !== account.contractorId || settlement.approvedBy !== access.userId || settlement.approvedAt !== new Date(now).toISOString()) throw new PermissionDenied();
+  if (account.type === "ESCROW") throw new Error("Escrow posting needs a separate reviewed settlement mapping.");
+  const amount = settlement.lines.filter(line => line.kind === "DEDUCTION" && line.origin === "AUTOMATIC" && line.ruleId === ruleId).reduce((sum, line) => sum + BigInt(line.amountCents), BigInt(0));
+  if (amount === BigInt(0)) return null;
+  if (amount < BigInt(0) || amount > BigInt(Number.MAX_SAFE_INTEGER)) throw new RangeError("Invalid settlement balance recovery.");
+  const key = createHash("sha256").update(JSON.stringify([settlement.companyId, settlement.payrollRunId, settlement.contractorId, ruleId, account.id])).digest("hex");
+  return preparePosting(access, account, { id: `recovery-${key}`, kind: "RECOVERY", amountCents: -Number(amount), sourceId: `settlement-${key}`, idempotencyKey: `approval-${key}`, reason: "Approved settlement balance recovery" }, history, now);
 }
