@@ -182,14 +182,23 @@ function PeriodWorkspace({ displayName, companyName, run, initial, onSnapshot, p
     }
     const nextAction = completed === 3 ? "Review the contractor statements" : ["View the automatic pay period", "Check contractor earnings", "Check deductions & reimbursements"][nextStep];
     const summary = <PayrollSummary demoStatus={demo?.status} period={period} count={contractors.length} gross={gross} earnings={total("contractorEarnings")} deductions={total("totalDeductions")} reimbursements={total("totalReimbursements")} net={total("netPay")}/>;
+    function revealPresentation(selector: string) {
+        requestAnimationFrame(() => {
+            const section = document.querySelector<HTMLElement>(selector);
+            const target = section?.querySelector<HTMLElement>("h2") ?? section;
+            if (target) { target.tabIndex = -1; target.scrollIntoView({ block: "center", behavior: "instant" }); target.focus({ preventScroll: true }); }
+        });
+    }
     function presentStage(stage: number) {
         if (stage === 0) { if (!demo) setShowSetup(true); }
         else if (stage === 1) begin(1);
         else if (stage === 2) navigate("exceptions");
         else if (stage === 3) navigate("review");
-        else if (stage === 4) { navigate("review"); requestAnimationFrame(() => document.querySelector<HTMLElement>(".demo-completion")?.scrollIntoView({ block: "center" })); }
+        else if (stage === 4) navigate("review");
         else if (stage === 5) { navigate("review"); setPortalRequest(value => value + 1); }
         else if (stage === 6 && demo) onNextExhibit();
+        const targets = [".exhibit-onboarding", ".payroll-sheet", ".exception-workbench", ".exhibit-statement", ".demo-completion", ".exhibit-statement", ".presentation-guide"];
+        revealPresentation(targets[stage]);
     }
     return <div className={`app-shell ${presenting ? "presentation-mode" : ""}`}>
     <a href="#main-content" className="skip-link">Skip to content</a>
@@ -212,8 +221,9 @@ function PeriodWorkspace({ displayName, companyName, run, initial, onSnapshot, p
       <main id="main-content" className="content">
         <div className="page-heading"><div><p className="eyebrow">PAYROLL OPERATIONS</p><h1 ref={heading} tabIndex={-1}>{view === "overview" ? "Payroll command center." : view === "prepare" ? preparation[step].title : view === "review" ? "Review your payroll." : view === "contractors" ? "Contractor 360." : view === "activity" ? "Activity register." : "Exception center."}</h1><p className="page-description">{view === "overview" ? "See what is ready, what needs attention, and what to do next." : view === "prepare" ? `Step ${step + 1} of 4 · Check the sample information, then continue.` : view === "review" ? "Check each statement before acknowledging the sample review." : "Your people, source records, and calculations in one workspace."}</p></div><span className="period-label"><Icon name="clock" size={16}/>{period}</span></div>
 
+        {presenting && <button className="button button-secondary presentation-return" onClick={() => revealPresentation(".presentation-guide")}>Return to walkthrough</button>}
         {presenting && <PresentationGuide stage={tourStage} approved={Boolean(demo)} onStage={onTourStage} onAction={presentStage} onExit={() => onPresent(false)} />}
-        <section className="panel exhibit-journey" aria-label="Client exhibit journey"><div><p className="eyebrow">FROM AGREEMENT TO NEXT PAYDAY</p><h2>Enter it once. See PayCore remember.</h2><p>Set up a fictional contractor, enter their work, explain the settlement, and simulate approval. Then open the next period above.</p></div><div className="activity-actions">{!presenting && <button className="button button-secondary" onClick={() => { onTourStage(0); onPresent(true); }}>Start presentation</button>}<button className="button button-primary" disabled={Boolean(demo)} onClick={() => setShowSetup(true)}>Set up contractor</button><button className="button button-secondary" onClick={() => begin(1)}>Enter payroll activity</button><button className="button button-secondary" onClick={() => navigate("review")}>Explain settlement</button></div></section>
+        <section className="panel exhibit-journey" aria-label="Client exhibit journey"><div><p className="eyebrow">FROM AGREEMENT TO NEXT PAYDAY</p><h2>Enter it once. See PayCore remember.</h2><p>Set up a fictional contractor, enter their work, explain the settlement, and simulate approval. Then open the next period above.</p></div><div className="activity-actions">{!presenting && <button className="button button-secondary" onClick={() => { onTourStage(0); onPresent(true); revealPresentation(".presentation-guide"); }}>Start presentation</button>}<button className="button button-primary" disabled={Boolean(demo)} onClick={() => setShowSetup(true)}>Set up contractor</button><button className="button button-secondary" onClick={() => begin(1)}>Enter payroll activity</button><button className="button button-secondary" onClick={() => navigate("review")}>Explain settlement</button></div></section>
         {showSetup && !demo && <ExhibitOnboarding inputs={inputs} run={run} onCancel={() => setShowSetup(false)} onActivate={(row, input) => { const nextRows = [...rows, row], nextInputs = [...inputs, input]; setRows(nextRows); updateInputs(nextInputs); setGridValid(nextRows.every(item => { try { calculateGridRow(item, nextInputs, new Date().toISOString(), run); return true; } catch { return false; } })); setShowSetup(false); begin(1); }} />}
         <DraftRecovery scope={JSON.stringify([displayName, companyName])} run={run} draft={{inputs, rows, corrections}} frozen={Boolean(demo)} onRestore={draft => { if (demo) return; setRows(draft.rows); setInputs(draft.inputs); setCorrections(draft.corrections ?? []); setGridValid(draft.rows.length > 0 && draft.rows.every(row => { try { calculateGridRow(row, draft.inputs, new Date().toISOString(), run); return true; } catch { return false; } })); setChecked([true, false, false]); setAcknowledged(false); navigate("overview"); }} />
         {demo && <p className="review-ready" role="status">Demo {demo.status} · Figures are frozen for this exhibit. Open another period to enter new activity.</p>}
