@@ -2627,3 +2627,10 @@ body:has(.preview-workspace) .brand-splash-intro { display: none; }
 
 .deduction-detail { display: grid; gap: 5px; padding: 10px 0; overflow-wrap: anywhere; }
 .workbook-totals dt { min-width: 0; }
+
+.draft-recovery { padding: 20px; margin-bottom: 24px; }
+.draft-recovery p { font-size: 12px; line-height: 1.7; max-width: 720px; }
+.draft-recovery small { display: block; margin: 8px 0; color: #496371; }
+.activity-pagination { display: flex; align-items: center; flex-wrap: wrap; gap: 16px; margin: 20px 0; font-size: 12px; }
+.correction-form { border: 1px solid #bfd5cb; border-radius: 12px; padding: 20px; margin-top: 20px; }
+.activity-register .text-link { display: block; margin-top: 8px; }
