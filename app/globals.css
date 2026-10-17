@@ -2605,3 +2605,22 @@ body:has(.preview-workspace) .brand-splash-intro { display: none; }
 .period-schedule-details { font-size: 12px; line-height: 1.6; }
 .period-schedule-details summary { cursor: pointer; font-weight: 600; }
 .period-schedule-details p { max-width: 560px; }
+
+.workbook-payroll { padding: 24px; margin-bottom: 24px; }
+.workbook-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-top: 24px; }
+.workbook-columns > div { min-width: 0; }
+.workbook-totals { margin: 16px 0; }
+.workbook-totals > div { display: flex; justify-content: space-between; gap: 20px; padding: 11px 0; border-bottom: 1px solid #dae6e1; font-size: 13px; }
+.workbook-totals dd { margin: 0; font-weight: 700; white-space: nowrap; }
+.workbook-totals .workbook-net { background: #e7f3ed; padding: 16px; color: #205d50; font-size: 18px; }
+.workbook-ytd { display: flex; flex-wrap: wrap; gap: 18px; padding: 18px; background: #f1f6f4; font-size: 12px; line-height: 1.6; margin-top: 20px; }
+.workbook-person { display: grid; gap: 8px; max-width: 360px; margin: 20px 0; font-size: 12px; }
+.workbook-person select { min-width: 0; max-width: 100%; width: 100%; padding: 12px; min-height: 44px; border: 1px solid #b8ccc5; border-radius: 6px; font: inherit; background: white; }
+.workbook-payroll small { display: block; font-size: 10px; font-weight: 400; margin-top: 6px; }
+.workbook-payroll details { padding: 16px 0; font-size: 13px; line-height: 1.7; }
+.workbook-payroll summary { font-weight: 600; cursor: pointer; }
+.workbook-payroll table { min-width: 360px; }
+@media(max-width:800px) { .workbook-columns { grid-template-columns: 1fr; }.workbook-payroll { padding: 18px; } }
+.activity-form .factoring-load { display: flex; flex-direction: row; align-items: center; padding: 10px 0; font-weight: 400; }
+.activity-form .factoring-load input { width: 20px; flex: 0 0 20px; }
+.activity-form fieldset { border: 1px solid #c4d6ce; border-radius: 8px; padding: 12px; min-width: 0; }
