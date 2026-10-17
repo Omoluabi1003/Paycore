@@ -2476,3 +2476,19 @@ body:has(:focus-visible) .brand-splash-intro {
 @media (max-width: 600px) { .activity-form { grid-template-columns: minmax(0, 1fr); } .activity-actions .button { flex: 1 1 140px; } .statement-breakdown > div { gap: 12px; } }
 .statement-breakdown dt { flex: 1 1 0; }
 .statement-breakdown dd { flex: 0 0 42%; }
+
+.payroll-sheet { margin-bottom: 24px; padding: 24px; min-width: 0; }
+.payroll-sheet p { line-height: 1.6; }
+.payroll-sheet table { min-width: 1700px; border-collapse: collapse; }
+.payroll-sheet th { white-space: nowrap; }
+.payroll-sheet td { padding: 4px; vertical-align: top; }
+.payroll-sheet input, .payroll-sheet select { box-sizing: border-box; width: 140px; min-height: 44px; padding: 10px; border: 1px solid #bdcccf; border-radius: 4px; color: #243e4c; background: white; font: inherit; }
+.payroll-sheet td:first-of-type input { width: 190px; }
+.payroll-sheet input[aria-invalid=true], .payroll-sheet select[aria-invalid=true] { border-color: #a84620; background: #fffaf5; }
+.payroll-sheet input:focus-visible, .payroll-sheet select:focus-visible { outline: 3px solid #237e72; outline-offset: 1px; }
+.payroll-sheet .calculated-cell { padding: 14px 10px; background: #eef7f3; white-space: nowrap; font-weight: 700; }
+.payroll-sheet .sheet-status { min-width: 220px; max-width: 280px; padding: 12px; font-size: 13px; white-space: normal; }
+.sheet-empty { padding: 24px; background: #f4f8f7; }
+.detailed-activity { margin-bottom: 24px; }
+.detailed-activity > summary { cursor: pointer; padding: 16px; font-weight: 600; }
+@media(max-width: 700px) { .payroll-sheet { padding: 16px; } .payroll-sheet .section-heading { align-items: flex-start; flex-direction: column; gap: 12px; } }
