@@ -10,6 +10,7 @@ out/
 .DS_Store
 .vercel/
 coverage/
+*.tsbuildinfo
 # Never commit payroll exports or live financial data
 exports/
 private-data/

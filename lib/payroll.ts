@@ -1,4 +1,8 @@
 import { z } from "zod";
+import Decimal from "decimal.js";
+
+// Isolate financial precision and rounding from application-wide Decimal settings.
+const Money = Decimal.clone({ precision: 40, rounding: Decimal.ROUND_HALF_UP });
 
 export const MoneySchema = z.number().finite().nonnegative();
 
@@ -12,17 +16,22 @@ export const PayrollInputSchema = z.object({
 
 export type PayrollInput = z.input<typeof PayrollInputSchema>;
 
-const cents = (value: number) => Math.round((value + Number.EPSILON) * 100);
-const dollars = (value: number) => value / 100;
+const cents = (value: number) => new Money(value).times(100).toDecimalPlaces(0);
+const dollars = (value: Decimal) => {
+  if (value.abs().greaterThan(Number.MAX_SAFE_INTEGER)) {
+    throw new RangeError("Payroll amount exceeds the safe currency range.");
+  }
+  return value.dividedBy(100).toNumber();
+};
 
 export function calculateSettlement(input: PayrollInput) {
   const data = PayrollInputSchema.parse(input);
   const gross = cents(data.grossRevenue);
-  const contractorEarnings = Math.round(gross * (data.contractorRatePercent / 100));
-  const factoring = Math.round(gross * (data.factoringRatePercent / 100));
-  const deductions = data.deductions.reduce((sum, item) => sum + cents(item.amount), 0) + factoring;
-  const reimbursements = data.reimbursements.reduce((sum, item) => sum + cents(item.amount), 0);
-  const net = contractorEarnings - deductions + reimbursements;
+  const contractorEarnings = gross.times(data.contractorRatePercent).dividedBy(100).toDecimalPlaces(0);
+  const factoring = gross.times(data.factoringRatePercent).dividedBy(100).toDecimalPlaces(0);
+  const deductions = data.deductions.reduce((sum, item) => sum.plus(cents(item.amount)), factoring);
+  const reimbursements = data.reimbursements.reduce((sum, item) => sum.plus(cents(item.amount)), new Money(0));
+  const net = contractorEarnings.minus(deductions).plus(reimbursements);
 
   return {
     grossRevenue: dollars(gross),
@@ -31,6 +40,6 @@ export function calculateSettlement(input: PayrollInput) {
     totalDeductions: dollars(deductions),
     totalReimbursements: dollars(reimbursements),
     netPay: dollars(net),
-    warnings: net < 0 ? ["Net pay is negative. Review deductions before approval."] : [],
+    warnings: net.isNegative() ? ["Net pay is negative. Review deductions before approval."] : [],
   } as const;
 }
