@@ -4,7 +4,7 @@ PayCore is a safety-first payroll and contractor settlement platform designed fo
 
 ## Development and build verification
 
-Use Node.js 24 and pnpm 11.25.0 (the version pinned in `package.json`).
+Use Node.js 24 and pnpm 10.34.7 (the version pinned in `package.json`).
 
 ```sh
 pnpm install --frozen-lockfile
