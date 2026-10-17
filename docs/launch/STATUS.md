@@ -11,7 +11,7 @@
 | Capture | In-tab period grid and detailed activity | Persistent eligible activity, imports/source IDs, audit and authorized CRUD |
 | Compensation/deductions | Settlement unit engine, basis-point rounding, per-contractor rules, occurrence/balance caps | Combination rules, server execution over locked persistent sources, verified workbook coverage |
 | Balance ledger | New immutable preparation/replay/reversal domain with integer arithmetic | Durable append-only schema, account locks, unique source/idempotency/reversal keys, atomic payroll and audit writes |
-| Approval/history/YTD | Domain snapshot/reversal/YTD functions, no public live approval | Transactional approval, separation of duties, immutable DB snapshots, exactly-once posting, approved-history integration cases |
+| Approval/history/YTD | Domain snapshot/reversal/YTD functions plus transactional approval coordinator/port; no public live approval | Transactional approval, separation of duties, immutable DB snapshots, exactly-once posting, approved-history integration cases |
 | Readiness/exceptions | Calculation blockers/warnings and explanations in preview | Command Center, persistent resolutions/inbox, source completeness, statistical variance and end-to-end review |
 | Statements/exports | Public fixed fictional samples only, shown after review | Authorized exports from immutable real snapshots, unique IDs, reproducible PDFs, payment/YTD metadata |
 | Contractor portal | Own-record permission guard only; no live portal | Independent server-scoped portal routes, access/dispute/document/statement integration tests |
@@ -26,4 +26,6 @@ Existing settlement tests cover contractor-specific rates, rule conflicts/effect
 
 New ledger tests cover prepared activity leaving history untouched, exact zero payoff, over-recovery rejection, safe-integer limits, duplicate request replay and payload conflict, duplicate source rejection, immutable entries, exact compensating reversal and company/contractor/account mismatch denial. New access tests cover missing/revoked/expired sessions, membership mismatch, role separation, explicit multi-role approval, recent MFA and own-contractor boundaries.
 
-Still missing: approved payroll atomically posts ledger once, retries cannot double-post under concurrency, whole-run approval rollback, policy-enforced tenant isolation, real provider/session expiry, authorized exports, secure contractor portal, reproducible historical PDFs, tested backup restoration, production telemetry and browser end-to-end launch acceptance. Do not mark these passed based on mocks.
+Coordinator tests now stage snapshot/source/occurrence/ledger/audit writes atomically and cover concurrent retries and rollback using an in-memory transactional adapter. Real-database proof is still missing: approved payroll atomically posts ledger once, retries cannot double-post under database concurrency, whole-run crash rollback, policy-enforced tenant isolation, real provider/session expiry, authorized exports, secure contractor portal, reproducible historical PDFs, tested backup restoration, production telemetry and browser end-to-end launch acceptance. Do not mark these passed based on mocks.
+
+See [transactional approval](TRANSACTIONAL-APPROVAL.md) for the application-service increment and mandatory persistence adapter constraints.
