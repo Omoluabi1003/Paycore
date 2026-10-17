@@ -2394,3 +2394,32 @@ body:has(:focus-visible) .brand-splash-intro {
 /* Allow wide statement tables to scroll inside narrow grid columns. */
 .guided-layout>*,.home-work-grid>*,.task-grid>*,.guide-rail>*{min-width:0}
 .table-scroll{max-width:100%;min-width:0}
+
+/* Account entry: usable without loading or collecting private payroll records. */
+.access-page { min-height: 100svh; display: grid; grid-template-columns: 1.05fr 1fr; background: #edf2f7; }
+.access-story { padding: clamp(28px, 5vw, 76px); background: radial-gradient(ellipse at 15% 85%, #216268 0%, transparent 60%), #102c3e; color: #f6fafb; display: flex; flex-direction: column; justify-content: space-between; min-height: 100svh; }
+.access-story .paycore-logo { font-size: 30px; color: #f6fafb; }
+.access-story-copy { padding: 64px 0; }
+.access-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .15em; color: #49727b; }
+.access-story .access-eyebrow { color: #a7d5cb; }
+.access-story h1 { font-size: clamp(40px, 4.4vw, 67px); line-height: 1.08; letter-spacing: -.045em; font-weight: 600; margin: 24px 0; }
+.access-story-copy > p:last-child { color: #d1e1e8; font-size: 18px; line-height: 1.7; }
+.access-attribution { font-size: 12px; line-height: 1.8; color: #b9d0da; }
+.access-attribution strong { display: block; font-weight: 500; color: #f3f7f9; }
+.access-panel { display: flex; align-items: center; justify-content: center; padding: 44px 28px; }
+.access-card { width: 100%; max-width: 420px; }
+.access-emblem { display: grid; place-items: center; width: 56px; height: 56px; background: #d9ebe6; color: #195e60; border-radius: 17px; font-size: 27px; font-weight: 700; margin-bottom: 32px; }
+.access-card h2 { font-size: clamp(27px, 3vw, 36px); color: #173449; line-height: 1.2; letter-spacing: -.035em; margin: 15px 0; }
+.access-card > p { line-height: 1.7; color: #526575; }
+.access-status { display: flex; align-items: center; gap: 10px; background: #f9fbfd; border: 1px solid #d6e0e8; color: #244254; padding: 17px 18px; border-radius: 12px; margin-top: 30px; font-size: 14px; font-weight: 600; }
+.access-status span { width: 8px; height: 8px; background: #b77d30; border-radius: 50%; flex-shrink: 0; }
+.access-card .access-note { font-size: 12px; margin-top: 18px; }
+@media (max-width: 720px) {
+  .access-page { grid-template-columns: 1fr; }
+  .access-story { min-height: auto; padding: 28px; }
+  .access-story-copy { padding: 28px 0 12px; }
+  .access-story h1 { font-size: 38px; }
+  .access-story-copy > p:last-child { font-size: 16px; }
+  .access-attribution { margin-top: 22px; }
+  .access-panel { padding: 40px 28px 56px; }
+}
