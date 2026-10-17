@@ -14,7 +14,9 @@ pnpm build
 pnpm start
 ```
 
-Vercel should use the repository root, the Next.js framework preset, Node.js 24,
+`vercel.json` selects the Next.js framework preset, overriding a project's stale
+"Other" preset that otherwise looks for a `public` output directory after building.
+Vercel should use the repository root, Node.js 24,
 and the default Next.js output directory. The `build` script runs `next build`;
 no custom output directory, static export, or environment variables are required
 for this demo. Git pushes to the PR branch should create preview deployments.
