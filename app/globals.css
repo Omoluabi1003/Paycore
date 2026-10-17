@@ -2453,3 +2453,11 @@ body:has(:focus-visible) .brand-splash-intro {
 .preview-footer { padding: 24px; text-align: center; font-size: 12px; color: #526575; }
 .preview-footer strong { color: #244254; }
 @media(max-width:720px) { .preview-modules { grid-template-columns: 1fr; } .preview-next { flex-direction: column; align-items: flex-start; } .preview-main { padding: 32px 24px; } .preview-account { gap: 10px; } }
+
+.walkthrough-toolbar { padding: 18px 24px; background: #edf2f7; border-bottom: 1px solid #c5d5df; color: #244254; }
+.walkthrough-toolbar > span { display: block; font-size: 13px; font-weight: 600; margin-bottom: 12px; }
+.walkthrough-toolbar > div { display: flex; gap: 12px; flex-wrap: wrap; }
+.walkthrough-toolbar a { display: inline-block; color: #fff; background: #205e61; border-radius: 8px; padding: 11px 16px; text-decoration: none; font-size: 13px; font-weight: 600; }
+.walkthrough-toolbar a:hover { background: #17494c; }
+.walkthrough-toolbar a:focus-visible { outline: 3px solid #b77d30; outline-offset: 3px; }
+.walkthrough-toolbar small { display: block; margin-top: 12px; font-size: 12px; line-height: 1.6; }

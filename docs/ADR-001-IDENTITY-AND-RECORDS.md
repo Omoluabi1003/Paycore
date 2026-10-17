@@ -8,7 +8,7 @@ Use Supabase Free for managed identity and PostgreSQL, within its quotas. No pai
 
 The current preview accepts an email in client memory only; it is not verified or transmitted. It never collects passwords or personal data. Refresh returns to sign-in; sign-out clears the presentation state. Both screens disclose that Supabase is not connected. This state is not an access control and must not reach any private API or database.
 
-The first planned record contains contractor name and internal reference. Bank details, tax IDs, rates, balances, real imports, approvals, and payments remain unavailable until their controls are implemented. The workspace has informational sections, with no fictional payroll totals or working record-entry actions.
+The first planned record contains contractor name and internal reference. Bank details, tax IDs, rates, balances, real imports, approvals, and payments remain unavailable until their controls are implemented. The client walkthrough uses fixed fictional contractor records, guided preparation, calculated sample statements, and sample exports. No real record-entry, approval, or payment action is enabled.
 
 lib/contractors.ts validates the planned server boundary; it is not session verification. db/migrations/001_contractors.sql is proposed and unexecuted. Before using Supabase, adapt isolation policies to verified user identity and explicit organization membership. Do not expose the current transaction-context policy through browser APIs. Elevated credentials stay server-side; runtime database access must be non-owner, non-superuser, NOBYPASSRLS, and least privilege.
 
@@ -21,4 +21,5 @@ Configure email delivery for invitations/recovery and independent backups with r
 Payroll calculation remains deterministic. Approved snapshots must be immutable and require human approval. Future AI must not approve payroll, modify bank details, or execute payments; internet research stays separate from private records.
 
 Rollback: revert application deployment independently; do not drop populated tables. Schema rollback requires backup and restore verification.
+
 

@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { BrandLogo } from "./brand";
+import Workspace from "./workspace";
+import { sampleContractors } from "../lib/sample-payroll";
 
 // Presentation state only. Never use this value to authorize an API or data read.
 // Supabase sessions and server-side membership checks will replace this preview.
@@ -26,18 +28,9 @@ export default function PreviewAccess() {
       <BrandLogo />
       <div className="preview-account"><span>Preview account</span><button type="button" onClick={() => changePreview(false)}>Sign out</button></div>
     </header>
-    <div className="preview-notice" role="status">Preview only · Supabase is not connected. No records are saved.</div>
-    <main className="preview-main">
-      <p className="access-eyebrow">YOUR WORKSPACE</p>
-      <h1 ref={heading} tabIndex={-1}>Welcome to PayCore.</h1>
-      <p className="preview-intro">A clear place to manage your people and payroll.</p>
-      <div className="preview-modules">
-        <section className="preview-module"><span className="preview-module-symbol" aria-hidden="true">01</span><h2>Contractors</h2><p>Your contractor records will appear here once secure storage is connected.</p><span className="preview-module-status">Not connected</span></section>
-        <section className="preview-module"><span className="preview-module-symbol" aria-hidden="true">02</span><h2>Payroll</h2><p>Prepare and review payroll after your organization and contractor records are ready.</p><span className="preview-module-status">Not connected</span></section>
-      </div>
-      <section className="preview-next"><div><p className="access-eyebrow">WHAT COMES NEXT</p><h2>Your organization, securely connected.</h2><p>This account preview lets you try signing in and out. Real account access and saved records will follow.</p></div><span className="preview-connection">Supabase connection pending</span></section>
-    </main>
-    <footer className="preview-footer">Developed by <strong>ETL GIS Consulting LLC</strong></footer>
+    <div className="preview-notice" role="status">Sample workspace · No live payroll or payments · Changes reset on refresh.</div>
+    <div className="walkthrough-toolbar"><span>Client walkthrough · Fictional records only</span><div><a href="/sample-payroll.pdf">Download PDF statements</a><a href="/sample-payroll.csv">Download CSV</a><a href="mailto:?subject=PayCore%20sample%20payroll%20statements&body=Please%20find%20the%20PayCore%20sample%20payroll%20statements.%20These%20are%20fictional%20records%20for%20presentation%20only.%0A%0AAttach%20the%20downloaded%20PDF%20before%20sending.">Prepare email</a></div><small>Email opens your mail app. Attach the downloaded PDF before sending.</small></div>
+    <Workspace contractors={sampleContractors} />
   </div>;
 
   return <main className="access-page">
@@ -62,4 +55,5 @@ export default function PreviewAccess() {
     </section>
   </main>;
 }
+
 
