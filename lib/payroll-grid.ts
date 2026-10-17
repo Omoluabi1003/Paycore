@@ -13,7 +13,7 @@ function cents(value: string) {
   if (amount > BigInt(Number.MAX_SAFE_INTEGER)) throw new Error("This amount is too large.");
   return Number(amount);
 }
-export function calculateGridRow(row: GridRow, existing: CalculationInput[], now: string, run: PayrollRun = previewRun): CalculationInput {
+export function previewGridRow(row: GridRow, existing: CalculationInput[], now: string, run: PayrollRun = previewRun): CalculationInput {
   const prior = existing.find(input => input.contractor.id === row.id && input.run.payPeriodId === run.payPeriodId);
   let draft: CalculationInput;
   try { draft = createDraftContractor({ name: row.name, reference: row.reference, method: row.method, rate: row.rate, deduction: row.deduction }, existing.filter(input => input.contractor.id !== row.id), run, row.id, now); }
@@ -34,6 +34,10 @@ export function calculateGridRow(row: GridRow, existing: CalculationInput[], now
   if (prior?.fuelReconciliation) draft.fuelReconciliation = { ...prior.fuelReconciliation };
   draft.contractor.createdAt = prior?.contractor.createdAt ?? now;
   draft.contractor.effectiveStartDate = prior?.contractor.effectiveStartDate ?? run.start;
+  return draft;
+}
+export function calculateGridRow(row: GridRow, existing: CalculationInput[], now: string, run: PayrollRun = previewRun): CalculationInput {
+  const draft = previewGridRow(row, existing, now, run);
   const result = calculateContractorSettlement(draft);
   if (result.blockers.length) throw new Error(result.blockers[0].message);
   return draft;

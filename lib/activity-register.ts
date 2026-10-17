@@ -15,3 +15,12 @@ export function correctDraftTransaction(inputs: CalculationInput[], contractorId
   if (after.transactionDate < input.run.start || after.transactionDate > input.run.end) throw new Error("Choose a date within this pay period.");
   return { inputs: inputs.map(item => item === input ? { ...item, transactions: item.transactions.map(tx => tx.id === sourceId ? after : tx) } : item), correction: { sourceId, contractorId, reason, at, before: structuredClone(before), after: structuredClone(after) } satisfies DraftCorrection };
 }
+
+// Match the settlement engine's reference normalization when linking review evidence.
+export function duplicateReceiptIds(input: CalculationInput): Set<string> {
+  const normalize = (value: string) => value.trim().toUpperCase().replace(/\s+/g, "");
+  const entries = [...input.loads.filter(load => load.status === "ELIGIBLE" && load.date >= input.run.start && load.date <= input.run.end).map(load => ({ id: load.id, key: `load:${normalize(load.loadNumber)}` })), ...input.transactions.map(tx => ({ id: tx.id, key: `${tx.transactionType === "LOAD_REVENUE" ? "load" : tx.transactionType}:${normalize(tx.referenceNumber)}` }))];
+  const counts = new Map<string, number>();
+  for (const entry of entries) counts.set(entry.key, (counts.get(entry.key) ?? 0) + 1);
+  return new Set(entries.filter(entry => (counts.get(entry.key) ?? 0) > 1).map(entry => entry.id));
+}

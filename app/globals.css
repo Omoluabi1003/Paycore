@@ -2650,3 +2650,9 @@ body:has(.preview-workspace) .brand-splash-intro { display: none; }
 .explanation-lines { padding: 0; list-style: none; }.explanation-lines li { display: flex; justify-content: space-between; gap: 20px; padding: 14px 0; border-bottom: 1px solid #d4e3dd; font-size: 13px; }.explanation-lines li > div { min-width: 0; overflow-wrap: anywhere; }.explanation-lines li > span { white-space: nowrap; }.explanation-lines small { display: block; margin-top: 6px; color: #526d76; }
 .exhibit-statement details { padding: 16px 0; }.exhibit-statement summary { cursor: pointer; font-weight: 600; }.contractor-preview { border: 2px solid #80aa98; }
 @media(max-width:600px) { .exhibit-journey, .exhibit-onboarding, .exhibit-statement { padding: 18px; }.exhibit-statement .section-heading { flex-wrap: wrap; } }
+
+.period-comparison { border: 1px solid #bdd6c9; padding: 20px; border-radius: 10px; margin: 24px 0; background: #f4f9f6; min-width: 0; }
+.period-comparison table { min-width: 560px; width: 100%; }.period-comparison li { margin: 10px 0; font-size: 13px; line-height: 1.7; }
+.exception-workbench > .section-heading { flex-wrap: wrap; }.exception-workbench p { line-height: 1.7; font-size: 13px; }
+.exception-receipts { padding: 0; list-style: none; }.exception-receipts li { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 14px 0; border-bottom: 1px solid #d6e3dc; }.exception-receipts li > span { flex: 1 1 240px; overflow-wrap: anywhere; font-size: 13px; }
+@media(max-width:600px) { .period-comparison { padding: 14px; } }
