@@ -2624,3 +2624,6 @@ body:has(.preview-workspace) .brand-splash-intro { display: none; }
 .activity-form .factoring-load { display: flex; flex-direction: row; align-items: center; padding: 10px 0; font-weight: 400; }
 .activity-form .factoring-load input { width: 20px; flex: 0 0 20px; }
 .activity-form fieldset { border: 1px solid #c4d6ce; border-radius: 8px; padding: 12px; min-width: 0; }
+
+.deduction-detail { display: grid; gap: 5px; padding: 10px 0; overflow-wrap: anywhere; }
+.workbook-totals dt { min-width: 0; }
