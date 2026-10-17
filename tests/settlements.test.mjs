@@ -115,3 +115,37 @@ test('multiple due installments in one draft cannot overdraw the balance', () =>
   const data = input({ deductionRules: [d] });
   assert.equal(calculate(data).automaticDeductionsCents, 25000); assert.equal(approve(data).balanceUpdates[0].remainingBalanceCents, 0); assert.equal(d.remainingBalanceCents, 25000);
 });
+
+test('balance-limited percentage deductions cap at the outstanding balance and stop at zero', () => {
+  const d = { ...deduction, calculationMethod: 'PERCENTAGE', frequency: 'UNTIL_BALANCE_PAID', rateBasisPoints: 5000, percentageBase: 'ELIGIBLE_REVENUE', remainingBalanceCents: 1200 };
+  const data = input({ deductionRules: [d] });
+  assert.equal(calculate(data).automaticDeductionsCents, 1200);
+  assert.equal(approve(data).balanceUpdates[0].remainingBalanceCents, 0);
+  assert.equal(d.remainingBalanceCents, 1200);
+  assert.equal(calculate(input({ deductionRules: [{ ...d, remainingBalanceCents: 0 }] })).automaticDeductionsCents, 0);
+  assert.ok(calculate(input({ deductionRules: [{ ...d, remainingBalanceCents: undefined }] })).blockers.some(b => b.code === 'RULE_CONFIGURATION'));
+});
+test('balance limits apply after calculating per-load and per-mile deductions', () => {
+  const loads = [load, { ...load, id: 'second', loadNumber: 'L-2' }];
+  for (const [calculationMethod, expected] of [['PER_LOAD', 600], ['PER_MILE', 1000]]) {
+    const d = { ...deduction, calculationMethod, frequency: 'UNTIL_BALANCE_PAID', amountCents: 300, remainingBalanceCents: 1000 };
+    assert.equal(calculate(input({ loads, deductionRules: [d] })).automaticDeductionsCents, expected);
+    assert.equal(approve(input({ loads, deductionRules: [d] })).balanceUpdates[0].remainingBalanceCents, 1000 - expected);
+  }
+});
+test('combined loaded and empty mileage overflow is a blocker, not an uncaught exception', () => {
+  const data = input({ loads: [{ ...load, loadedMiles: Number.MAX_SAFE_INTEGER, emptyMiles: 1 }] });
+  const result = calculate(data);
+  assert.ok(result.blockers.some(b => b.code === 'SAFE_INTEGER'));
+  assert.throws(() => approve(data), /Resolve blocking issues/);
+});
+test('draft history neither consumes sources nor suppresses one-time deductions', () => {
+  const data = input({ deductionRules: [{ ...deduction, frequency: 'ONE_TIME' }] });
+  const history = [{ ...approve(data).settlement, status: 'DRAFT' }];
+  const result = calculate({ ...data, history });
+  assert.deepEqual(result.blockers, []); assert.equal(result.automaticDeductionsCents, 2000);
+});
+test('supplemental earnings do not appear as duplicate entered deductions', () => {
+  const result = calculate(input({ transactions: [tx('OTHER_EARNING', 100)], deductionRules: [{ ...deduction, category: 'OTHER' }] }));
+  assert.ok(!result.warnings.some(w => w.code === 'POSSIBLE_DUPLICATE_DEDUCTION'));
+});

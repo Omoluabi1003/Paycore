@@ -87,20 +87,21 @@ export function calculateCompensation(rule: CompensationRule, revenueCents: numb
   }
 }
 export function calculateDeduction(rule: DeductionRule, revenue: number, earnings: number, loads: number, miles: number): number {
-  if (rule.remainingBalanceCents !== undefined && rule.calculationMethod !== "INSTALLMENT" && rule.frequency !== "UNTIL_BALANCE_PAID") throw new Error("A remaining balance requires an installment or until-balance-paid rule.");
+  const balanceLimited = rule.calculationMethod === "INSTALLMENT" || rule.frequency === "UNTIL_BALANCE_PAID";
+  if (rule.remainingBalanceCents !== undefined && !balanceLimited) throw new Error("A remaining balance requires an installment or until-balance-paid rule.");
+  if (balanceLimited && rule.remainingBalanceCents === undefined) throw new Error("A balance-limited deduction needs its remaining balance.");
+  let amount: number;
   if (rule.calculationMethod === "PERCENTAGE") {
     if (rule.rateBasisPoints === undefined || !rule.percentageBase) throw new Error("A percentage deduction needs its rate and calculation base.");
-    return roundRatio(rule.percentageBase === "ELIGIBLE_REVENUE" ? revenue : earnings, rule.rateBasisPoints);
+    amount = roundRatio(rule.percentageBase === "ELIGIBLE_REVENUE" ? revenue : earnings, rule.rateBasisPoints);
+  } else {
+    if (rule.calculationMethod === "MANUAL_AMOUNT") throw new Error("Manual deductions must be entered as activity; set this rule to manual frequency.");
+    if (rule.amountCents === undefined) throw new Error("A deduction amount is missing.");
+    if (rule.calculationMethod === "INSTALLMENT" && rule.amountCents === 0) throw new Error("An installment needs a positive payment.");
+    amount = rule.calculationMethod === "PER_LOAD" ? safeCents(BigInt(rule.amountCents) * BigInt(loads))
+      : rule.calculationMethod === "PER_MILE" ? safeCents(BigInt(rule.amountCents) * BigInt(miles)) : rule.amountCents;
   }
-  if (rule.calculationMethod === "MANUAL_AMOUNT") throw new Error("Manual deductions must be entered as activity; set this rule to manual frequency.");
-  if (rule.amountCents === undefined) throw new Error("A deduction amount is missing.");
-  if (rule.calculationMethod === "INSTALLMENT" || rule.frequency === "UNTIL_BALANCE_PAID") {
-    if (rule.remainingBalanceCents === undefined || rule.amountCents === 0) throw new Error("An installment needs a positive payment and remaining balance.");
-    return Math.min(rule.amountCents, rule.remainingBalanceCents);
-  }
-  if (rule.calculationMethod === "PER_LOAD") return safeCents(BigInt(rule.amountCents) * BigInt(loads));
-  if (rule.calculationMethod === "PER_MILE") return safeCents(BigInt(rule.amountCents) * BigInt(miles));
-  return rule.amountCents;
+  return balanceLimited ? Math.min(amount, rule.remainingBalanceCents!) : amount;
 }
 
 export type CalculationInput = { contractor: Contractor; run: PayrollRun; compensationRules: CompensationRule[]; deductionRules: DeductionRule[]; transactions: PayrollTransaction[]; loads: Load[]; history?: History };
@@ -132,7 +133,7 @@ export function calculateContractorSettlement(input: CalculationInput): Settleme
   const loads = allLoads.filter(l => l.status === "ELIGIBLE");
   const sources = [...transactions.map(t => `transaction:${t.id}`), ...loads.map(l => `load:${l.id}`)];
   if (new Set(sources).size !== sources.length) block("DUPLICATE_SOURCE", "The same activity was included more than once.");
-  const historical = history.filter(h => h.companyId === run.companyId);
+  const historical = history.filter(h => h.status === "APPROVED" && h.companyId === run.companyId);
   if (sources.some(source => historical.some(h => h.sourceIds.includes(source)))) block("ALREADY_APPROVED", "An activity is already in approved payroll. Use a correction instead.");
   if (historical.some(h => h.contractorId === contractor.id && h.start <= run.end && h.end >= run.start)) block("PERIOD_ALREADY_APPROVED", "This contractor already has approved payroll overlapping this period.");
   const refs = new Set<string>();
@@ -145,10 +146,11 @@ export function calculateContractorSettlement(input: CalculationInput): Settleme
   for (let i = 0; i < activeRules.length; i++) for (let j = i + 1; j < activeRules.length; j++) if (overlaps(activeRules[i], activeRules[j], run)) block("CONFLICTING_RULES", "Multiple compensation rules overlap. Resolve the effective dates.");
   if (activeRules.length > 1) warn("RATE_CHANGED", "Pay terms changed during this period. Review each effective rule.");
   if (activeRules.some(r => r.method === "FLAT_PER_PERIOD") && activeRules.length !== 1) block("PERIOD_RATE_CHANGE", "Split the payroll period at a flat-period rate change.");
-  const revenue = [...loads.map(l => ({ id: `load:${l.id}`, date: l.date, amount: l.grossRevenueCents, miles: sum([l.loadedMiles, l.emptyMiles]), isLoad: true })), ...transactions.filter(t => t.transactionType === "LOAD_REVENUE").map(t => ({ id: `transaction:${t.id}`, date: t.transactionDate, amount: t.amountCents, miles: t.miles, isLoad: true }))];
+
   const add = (line: Omit<SettlementLine, "id">) => lines.push({ ...line, id: `line-${lines.length + 1}` });
   let eligible = 0;
   try {
+    const revenue = [...loads.map(l => ({ id: `load:${l.id}`, date: l.date, amount: l.grossRevenueCents, miles: sum([l.loadedMiles, l.emptyMiles]), isLoad: true })), ...transactions.filter(t => t.transactionType === "LOAD_REVENUE").map(t => ({ id: `transaction:${t.id}`, date: t.transactionDate, amount: t.amountCents, miles: t.miles, isLoad: true }))];
     eligible = sum(revenue.map(r => r.amount));
     for (const item of revenue) {
       const matching = activeRules.filter(r => within(item.date, r.effectiveFrom, r.effectiveTo));
@@ -186,7 +188,7 @@ export function calculateContractorSettlement(input: CalculationInput): Settleme
         if (balance !== undefined && (rule.calculationMethod === "INSTALLMENT" || rule.frequency === "UNTIL_BALANCE_PAID")) balance -= amount;
         if (amount === 0) continue;
         add({ kind: "DEDUCTION", category: rule.category, amountCents: amount, description: `${rule.description} · ${rule.frequency.replaceAll("_", " ").toLowerCase()} · ${rule.calculationMethod.replaceAll("_", " ").toLowerCase()}${rule.rateBasisPoints !== undefined ? ` · ${rule.rateBasisPoints / 100}% of ${rule.percentageBase === "ELIGIBLE_REVENUE" ? "eligible revenue" : "contractor earnings"}` : ""}`, ruleId: rule.id, occurrenceKey: key, origin: "AUTOMATIC" });
-        if (transactions.some(t => t.transactionType.includes(rule.category) || (rule.category === "CASH_ADVANCE" && t.transactionType === "CASH_ADVANCE"))) warn("POSSIBLE_DUPLICATE_DEDUCTION", "An entered deduction has the same category as an automatic deduction. Review both.");
+        if (transactions.some(t => (t.transactionType.endsWith("_DEDUCTION") || t.transactionType === "CASH_ADVANCE") && t.transactionType.includes(rule.category))) warn("POSSIBLE_DUPLICATE_DEDUCTION", "An entered deduction has the same category as an automatic deduction. Review both.");
       }
     }
   } catch (error) { block(error instanceof RangeError ? "SAFE_INTEGER" : "RULE_CONFIGURATION", error instanceof Error ? error.message : "Invalid payroll rule."); }
