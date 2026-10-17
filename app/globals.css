@@ -2394,3 +2394,85 @@ body:has(:focus-visible) .brand-splash-intro {
 /* Allow wide statement tables to scroll inside narrow grid columns. */
 .guided-layout>*,.home-work-grid>*,.task-grid>*,.guide-rail>*{min-width:0}
 .table-scroll{max-width:100%;min-width:0}
+
+/* Account entry: usable without loading or collecting private payroll records. */
+.access-page { min-height: 100svh; display: grid; grid-template-columns: 1.05fr 1fr; background: #edf2f7; }
+.access-story { padding: clamp(28px, 5vw, 76px); background: radial-gradient(ellipse at 15% 85%, #216268 0%, transparent 60%), #102c3e; color: #f6fafb; display: flex; flex-direction: column; justify-content: space-between; min-height: 100svh; }
+.access-story .paycore-logo { font-size: 30px; color: #f6fafb; }
+.access-story-copy { padding: 64px 0; }
+.access-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .15em; color: #49727b; }
+.access-story .access-eyebrow { color: #a7d5cb; }
+.access-story h1 { font-size: clamp(40px, 4.4vw, 67px); line-height: 1.08; letter-spacing: -.045em; font-weight: 600; margin: 24px 0; }
+.access-story-copy > p:last-child { color: #d1e1e8; font-size: 18px; line-height: 1.7; }
+.access-attribution { font-size: 12px; line-height: 1.8; color: #b9d0da; }
+.access-attribution strong { display: block; font-weight: 500; color: #f3f7f9; }
+.access-panel { display: flex; align-items: center; justify-content: center; padding: 44px 28px; }
+.access-card { width: 100%; max-width: 420px; }
+.access-emblem { display: grid; place-items: center; width: 56px; height: 56px; background: #d9ebe6; color: #195e60; border-radius: 17px; font-size: 27px; font-weight: 700; margin-bottom: 32px; }
+.access-card h2 { font-size: clamp(27px, 3vw, 36px); color: #173449; line-height: 1.2; letter-spacing: -.035em; margin: 15px 0; }
+.access-card > p { line-height: 1.7; color: #526575; }
+.access-status { display: flex; align-items: center; gap: 10px; background: #f9fbfd; border: 1px solid #d6e0e8; color: #244254; padding: 17px 18px; border-radius: 12px; margin-top: 30px; font-size: 14px; font-weight: 600; }
+.access-status span { width: 8px; height: 8px; background: #b77d30; border-radius: 50%; flex-shrink: 0; }
+.access-card .access-note { font-size: 12px; margin-top: 18px; }
+@media (max-width: 720px) {
+  .access-page { grid-template-columns: 1fr; }
+  .access-story { min-height: auto; padding: 28px; }
+  .access-story-copy { padding: 28px 0 12px; }
+  .access-story h1 { font-size: 38px; }
+  .access-story-copy > p:last-child { font-size: 16px; }
+  .access-attribution { margin-top: 22px; }
+  .access-panel { padding: 40px 28px 56px; }
+}
+
+.preview-signin { margin-top: 28px; display: grid; gap: 10px; }
+.preview-signin label { color: #244254; font-size: 13px; font-weight: 600; }
+.preview-signin input { width: 100%; box-sizing: border-box; padding: 15px 16px; border: 1px solid #bacbd5; background: #f9fbfd; color: #395466; font: inherit; font-size: 14px; border-radius: 10px; }
+.preview-signin button { margin-top: 10px; display: flex; justify-content: space-between; padding: 16px 18px; background: #205e61; color: #fff; border: 0; border-radius: 10px; cursor: pointer; font: inherit; font-weight: 600; }
+.preview-signin button:hover { background: #17494c; }
+.preview-signin button:focus-visible,.preview-account button:focus-visible { outline: 3px solid #b77d30; outline-offset: 4px; }
+.preview-workspace { min-height: 100svh; display: flex; flex-direction: column; background: #edf2f7; color: #173449; }
+.preview-header { background: #102c3e; color: #fff; padding: 22px clamp(24px, 5vw, 72px); display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap; }
+.preview-header .paycore-logo { color: #fff; font-size: 26px; }
+.preview-account { display: flex; gap: 16px; align-items: center; font-size: 13px; color: #d2e4e9; }
+.preview-account button { padding: 9px 14px; border: 1px solid #8ca6b1; border-radius: 8px; background: transparent; color: #fff; cursor: pointer; font: inherit; }
+.preview-account button:hover { background: #27485b; }
+.preview-notice { background: #e5edde; color: #304d34; padding: 13px 24px; text-align: center; font-size: 13px; line-height: 1.6; }
+.preview-main { width: min(100%, 1100px); box-sizing: border-box; margin: 0 auto; padding: 48px 28px; flex: 1; }
+.preview-main h1 { font-size: clamp(30px, 4vw, 42px); margin: 14px 0; letter-spacing: -.035em; line-height: 1.2; }
+.preview-intro { color: #526575; line-height: 1.7; }
+.preview-modules { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; margin: 32px 0; }
+.preview-module { padding: 28px; background: #dfece9; border: 1px solid #c8dcd5; border-radius: 18px; }
+.preview-module:nth-child(2) { background: #dfe8f3; border-color: #c8d6e5; }
+.preview-module-symbol { color: #496d75; font-size: 12px; letter-spacing: .1em; }
+.preview-module h2,.preview-next h2 { font-size: 23px; margin: 18px 0 12px; line-height: 1.3; }
+.preview-module p,.preview-next p { line-height: 1.7; font-size: 14px; color: #455e6d; }
+.preview-module-status { display: inline-block; font-size: 12px; margin-top: 12px; padding: 6px 10px; border: 1px solid #9bb2b7; border-radius: 20px; color: #354f5e; }
+.preview-next { border-radius: 18px; background: #f7eedc; border: 1px solid #e3d2b2; padding: 28px; display: flex; align-items: center; gap: 24px; justify-content: space-between; }
+.preview-next h2 { margin-top: 10px; }
+.preview-connection { background: #fff7e8; border-radius: 10px; border: 1px solid #d4bc91; color: #66502f; font-size: 12px; padding: 12px; flex-shrink: 0; }
+.preview-footer { padding: 24px; text-align: center; font-size: 12px; color: #526575; }
+.preview-footer strong { color: #244254; }
+@media(max-width:720px) { .preview-modules { grid-template-columns: 1fr; } .preview-next { flex-direction: column; align-items: flex-start; } .preview-main { padding: 32px 24px; } .preview-account { gap: 10px; } }
+
+.walkthrough-toolbar { padding: 18px 24px; background: #edf2f7; border-bottom: 1px solid #c5d5df; color: #244254; }
+.walkthrough-toolbar > span { display: block; font-size: 13px; font-weight: 600; margin-bottom: 12px; }
+.walkthrough-toolbar > div { display: flex; gap: 12px; flex-wrap: wrap; }
+.walkthrough-toolbar a { display: inline-block; color: #fff; background: #205e61; border-radius: 8px; padding: 11px 16px; text-decoration: none; font-size: 13px; font-weight: 600; }
+.walkthrough-toolbar a:hover { background: #17494c; }
+.walkthrough-toolbar a:focus-visible { outline: 3px solid #b77d30; outline-offset: 3px; }
+.walkthrough-toolbar small { display: block; margin-top: 12px; font-size: 12px; line-height: 1.6; }
+
+.activity-entry { margin-bottom: 24px; }
+.activity-entry p { line-height: 1.6; }
+.activity-actions { display: flex; flex-wrap: wrap; gap: 12px; margin: 16px 0; }
+.activity-entry label { display: flex; flex-direction: column; gap: 8px; font-size: 14px; font-weight: 600; }
+.activity-entry input, .activity-entry select { width: 100%; max-width: 100%; min-width: 0; padding: 12px; border: 1px solid #c3cdd0; border-radius: 8px; font: inherit; color: inherit; background: white; }
+.activity-entry > label { max-width: 360px; }
+.activity-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; border-top: 1px solid #e1e8e6; padding-top: 16px; }
+.activity-form h3, .activity-form > p, .activity-form .activity-actions { grid-column: 1 / -1; }
+.line-origin { display: block; font-size: 11px; color: #52666c; margin-top: 5px; overflow-wrap: anywhere; }
+.statement-breakdown dt, .statement-breakdown dd { min-width: 0; overflow-wrap: anywhere; }
+.statement-breakdown dd { text-align: right; }
+@media (max-width: 600px) { .activity-form { grid-template-columns: minmax(0, 1fr); } .activity-actions .button { flex: 1 1 140px; } .statement-breakdown > div { gap: 12px; } }
+.statement-breakdown dt { flex: 1 1 0; }
+.statement-breakdown dd { flex: 0 0 42%; }

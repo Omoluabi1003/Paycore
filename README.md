@@ -19,7 +19,7 @@ pnpm start
 Vercel should use the repository root, Node.js 24,
 and the default Next.js output directory. The `build` script runs `next build`;
 no custom output directory, static export, or environment variables are required
-for this demo. Git pushes to the PR branch should create preview deployments.
+for the account setup entry page. Live identity and database services are not connected yet. Git pushes to the PR branch should create preview deployments.
 Keep the production branch set to `main` and review the preview before merging.
 
 `pnpm-lock.yaml` locks the dependency graph. The workspace configuration explicitly
@@ -30,6 +30,10 @@ Settlement calculations use decimal arithmetic, convert each monetary input to
 integer cents with half-up rounding, and round each percentage charge independently
 to a cent. Negative settlements retain a review warning. Results outside the safe
 integer-cent range fail closed. Tests include the $100.50 at 57% half-cent regression.
+
+## Current implementation status
+
+The public entry page offers an owner-authorized simulated sign-in and a usable sample payroll workspace with clearly labeled fictional contractors, guided preparation, statements, and sample PDF/CSV downloads. It accepts an email in client memory only, collects no passwords, and clears the email on sign-out or refresh. Supabase is not connected; preview state does not authenticate or authorize anyone. Contractor validation and role rules are unit tested; a proposed PostgreSQL migration is committed but has not been applied. Sign-in and saved contractor operations are not live. See [account setup](docs/ACCOUNT-SETUP.md) and [identity decision](docs/ADR-001-IDENTITY-AND-RECORDS.md) for the remaining integration and verification work.
 
 ## Product principles
 
@@ -100,3 +104,12 @@ Imports, integrations, notifications, multi-company support, configurable jurisd
 ## Important scope note
 
 PayCore will calculate payroll according to configured business rules. Jurisdiction-specific tax, employment, contractor-classification, banking, and filing requirements must be validated before those features are represented as compliant or automated.
+
+
+
+
+
+
+## Contractor-aware fictional walkthrough
+
+The preview now uses contractor-specific percentage, per-mile and fixed-period agreements, automatic deductions, fictional activity entry and explainable settlement lines. See [calculation architecture and rollback](docs/CONTRACTOR-PAYROLL.md) and the [unexecuted migration proposal](docs/PAYROLL-MIGRATION-PROPOSAL.md). Approval, authentication, persistent audit and payments remain unavailable in the preview. Fixed sample downloads do not include draft edits.
