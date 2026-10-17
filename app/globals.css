@@ -2528,3 +2528,12 @@ body:has(:focus-visible) .brand-splash-intro {
 @media print {
   .access-story::before, .portal-welcome::before { display: none; }
 }
+
+.demo-entry-fields { border: 0; padding: 0; margin: 0; min-width: 0; }
+.demo-entry-fields:disabled .payroll-sheet input, .demo-entry-fields:disabled .payroll-sheet select { background: #f1f5f4; color: #38554f; }
+.demo-completion { padding: 24px; margin-top: 24px; }
+.demo-completion p { line-height: 1.6; }
+.demo-completion label { display: grid; gap: 8px; margin-bottom: 16px; }
+.demo-completion textarea { min-height: 80px; padding: 12px; border: 1px solid #b8cbc5; font: inherit; border-radius: 8px; width: 100%; box-sizing: border-box; }
+.demo-completion summary, .activity-entry > summary { cursor: pointer; font-weight: 600; padding: 12px 0; }
+.demo-completion .final-downloads { border-top: 1px solid #c9d8d3; padding: 20px 0 0; }
