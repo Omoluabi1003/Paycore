@@ -12,7 +12,7 @@
 | Compensation/deductions | Settlement unit engine, basis-point rounding, per-contractor rules, occurrence/balance caps | Combination rules, server execution over locked persistent sources, verified workbook coverage |
 | Balance ledger | New immutable preparation/replay/reversal domain with integer arithmetic | Durable append-only schema, account locks, unique source/idempotency/reversal keys, atomic payroll and audit writes |
 | Approval/history/YTD | Domain snapshot/reversal/YTD functions plus transactional approval coordinator/port; no public live approval | Transactional approval, separation of duties, immutable DB snapshots, exactly-once posting, approved-history integration cases |
-| Readiness/exceptions | Calculation blockers/warnings and explanations in preview | Command Center, persistent resolutions/inbox, source completeness, statistical variance and end-to-end review |
+| Readiness/exceptions | Visible command center, searchable workbench/activity, Contractor 360 drilldowns, exception center and deterministic readiness in preview | Command Center, persistent resolutions/inbox, source completeness, statistical variance and end-to-end review |
 | Statements/exports | Client demo exports from frozen entered snapshots; public fixed fictional samples retained | Authorized exports from immutable real snapshots, unique IDs, reproducible PDFs, payment/YTD metadata |
 | Contractor portal | Own-record permission guard only; no live portal | Independent server-scoped portal routes, access/dispute/document/statement integration tests |
 | Documents/notifications | No live service | Private authorized storage/retention, preferences, delivery monitoring and safe messages |
@@ -31,3 +31,5 @@ Coordinator tests now stage snapshot/source/occurrence/ledger/audit writes atomi
 See [transactional approval](TRANSACTIONAL-APPROVAL.md) for the application-service increment and mandatory persistence adapter constraints.
 
 The [client exhibit](CLIENT-EXHIBIT.md) now provides clearly labeled local simulated approval/paid/locked transitions and entered-data exports. These do not satisfy production authorization, persistence, ledger or payment launch gates.
+
+The [operations center](OPERATIONS-CENTER.md) adds visible frontend workflows; production persistence, broader Contractor 360 modules and operational readiness remain launch work.
