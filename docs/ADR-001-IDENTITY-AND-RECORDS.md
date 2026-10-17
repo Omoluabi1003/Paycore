@@ -6,7 +6,7 @@ PayCore follows GeoAware-Core security, accessibility, architecture, and human-a
 
 Use Supabase Free for managed identity and PostgreSQL, within its quotas. No paid plans or add-ons without owner approval. Before real record access, configure invitation-only enrollment, MFA, recovery, session verification, and organization membership. Browser-supplied user IDs, roles, and workspace IDs have no authority. Do not infer privilege from an email address.
 
-The current preview uses a fixed fictional identity and React state only. It never collects passwords or personal data. Refresh returns to sign-in; sign-out clears the presentation state. Both screens disclose that Supabase is not connected. This state is not an access control and must not reach any private API or database.
+The current preview accepts an email in client memory only; it is not verified or transmitted. It never collects passwords or personal data. Refresh returns to sign-in; sign-out clears the presentation state. Both screens disclose that Supabase is not connected. This state is not an access control and must not reach any private API or database.
 
 The first planned record contains contractor name and internal reference. Bank details, tax IDs, rates, balances, real imports, approvals, and payments remain unavailable until their controls are implemented. The workspace has informational sections, with no fictional payroll totals or working record-entry actions.
 
@@ -21,3 +21,4 @@ Configure email delivery for invitations/recovery and independent backups with r
 Payroll calculation remains deterministic. Approved snapshots must be immutable and require human approval. Future AI must not approve payroll, modify bank details, or execute payments; internet research stays separate from private records.
 
 Rollback: revert application deployment independently; do not drop populated tables. Schema rollback requires backup and restore verification.
+

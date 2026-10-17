@@ -7,6 +7,7 @@ import { BrandLogo } from "./brand";
 // Supabase sessions and server-side membership checks will replace this preview.
 export default function PreviewAccess() {
   const [signedIn, setSignedIn] = useState(false);
+  const [email, setEmail] = useState("");
   const [hasInteracted, setHasInteracted] = useState(false);
   const heading = useRef<HTMLHeadingElement>(null);
 
@@ -17,6 +18,7 @@ export default function PreviewAccess() {
   function changePreview(next: boolean) {
     setHasInteracted(true);
     setSignedIn(next);
+    if (!next) setEmail("");
   }
 
   if (signedIn) return <div className="preview-workspace">
@@ -49,14 +51,15 @@ export default function PreviewAccess() {
         <span className="access-emblem" aria-hidden="true">P</span>
         <p className="access-eyebrow">WELCOME TO PAYCORE</p>
         <h2 id="access-heading" ref={heading} tabIndex={-1}>Sign in to your workspace.</h2>
-        <p>Try the account experience with a preview account.</p>
+        <p>Enter your email to open the preview workspace.</p>
         <form className="preview-signin" onSubmit={(event) => { event.preventDefault(); changePreview(true); }}>
-          <label htmlFor="preview-account">Preview account</label>
-          <input id="preview-account" type="text" value="preview@paycore.example" readOnly aria-describedby="preview-description" />
-          <button type="submit">Sign in to preview <span aria-hidden="true">↗</span></button>
+          <label htmlFor="preview-account">Email address</label>
+          <input id="preview-account" type="email" autoComplete="email" placeholder="you@company.com" value={email} onChange={(event) => setEmail(event.target.value)} required maxLength={254} aria-describedby="preview-description" />
+          <button type="submit">Open workspace <span aria-hidden="true">↗</span></button>
         </form>
-        <p className="access-note" id="preview-description">Preview only. Supabase is not connected. No password is needed, and nothing is saved.</p>
+        <p className="access-note" id="preview-description">Preview access only. Your email stays in this tab and is cleared when you sign out or refresh. No password needed.</p>
       </div>
     </section>
   </main>;
 }
+
