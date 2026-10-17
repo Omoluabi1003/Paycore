@@ -1,6 +1,7 @@
 "use client";
 import { useRef, useState } from "react";
 import { BrandLogo } from "./brand";
+import { profileInitials } from "../lib/preview-profile";
 import ActivityEntry from "./activity-entry";
 import PayrollGrid from "./payroll-grid";
 import type { CalculationInput } from "../lib/settlements";
@@ -30,7 +31,8 @@ const preparation = [
     { title: "Are the deductions accounted for?", label: "Deductions", next: "Review payroll", confirm: "I have checked the sample deductions and reimbursements.", help: "Review charges, advances, and reimbursements together. You’ll see their effect on each statement in the next step." },
 ];
 const period = "Oct 5–18, 2026";
-export default function Workspace() {
+export default function Workspace({ displayName, companyName }: { displayName: string; companyName: string }) {
+    const workspaceName = companyName || `${displayName}’s workspace`;
     const [inputs, setInputs] = useState<CalculationInput[]>([]);
     const contractors = inputs.map(sampleContractor);
     const [view, setView] = useState<View>("overview");
@@ -70,14 +72,14 @@ export default function Workspace() {
     <a href="#main-content" className="skip-link">Skip to content</a>
     <aside className="sidebar" aria-label="Workspace navigation">
       <a className="brand" href="/" aria-label="PayCore home"><BrandLogo /></a>
-      <div className="workspace-label"><span className="company-avatar">N</span><div>Northstar Logistics<small>Demo workspace</small></div></div>
+      <div className="workspace-label"><span className="company-avatar" aria-hidden="true">{profileInitials(companyName || displayName)}</span><div>{workspaceName}<small>Demo workspace</small></div></div>
       <p className="nav-caption">YOUR WORKSPACE</p>
       <nav>
         <button className={`nav-item ${view === "overview" ? "active" : ""}`} aria-current={view === "overview" ? "page" : undefined} onClick={() => navigate("overview")}><Icon name="grid"/>Home</button>
         <button className={`nav-item ${view === "prepare" ? "active" : ""}`} aria-current={view === "prepare" ? "page" : undefined} onClick={() => begin()}><Icon name="layers"/>Run payroll</button>
         <button className={`nav-item ${view === "review" ? "active" : ""}`} aria-current={view === "review" ? "page" : undefined} onClick={() => navigate("review")}><Icon name="shield"/>Statements</button>
       </nav>
-      <div className="sidebar-bottom"><div className="guide-card"><span className="guide-symbol"><Icon name="help"/></span><strong>One question.<br />One clear next step.</strong><p>Follow the guide from pay period to final review.</p><button className="guide-link" onClick={() => begin()}>Open payroll guide <Icon name="arrow" size={16}/></button></div><div className="profile"><span className="profile-avatar">NL</span><div>Northstar team<small>Sample account</small></div></div></div>
+      <div className="sidebar-bottom"><div className="guide-card"><span className="guide-symbol"><Icon name="help"/></span><strong>One question.<br />One clear next step.</strong><p>Follow the guide from pay period to final review.</p><button className="guide-link" onClick={() => begin()}>Open payroll guide <Icon name="arrow" size={16}/></button></div><div className="profile"><span className="profile-avatar" aria-hidden="true">{profileInitials(displayName)}</span><div>{displayName}<small>Demo profile</small></div></div></div>
     </aside>
     <div className="workspace-main">
       <header className="topbar"><div className="breadcrumb">Workspace <span>/</span><strong>{view === "overview" ? "Home" : view === "prepare" ? "Run payroll" : "Statements & review"}</strong></div><span className="demo-tag"><span />Interactive demo</span></header>
