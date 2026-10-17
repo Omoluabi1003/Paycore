@@ -2492,3 +2492,11 @@ body:has(:focus-visible) .brand-splash-intro {
 .detailed-activity { margin-bottom: 24px; }
 .detailed-activity > summary { cursor: pointer; padding: 16px; font-weight: 600; }
 @media(max-width: 700px) { .payroll-sheet { padding: 16px; } .payroll-sheet .section-heading { align-items: flex-start; flex-direction: column; gap: 12px; } }
+
+.preview-profile-editor { margin: 16px 24px; padding: 20px; border: 1px solid #bdcccf; border-radius: 12px; background: #fff; display: grid; gap: 10px; max-width: 520px; }
+.preview-profile-editor input { padding: 12px; min-height: 44px; border: 1px solid #bdcccf; border-radius: 8px; font: inherit; box-sizing: border-box; width: 100%; }
+.preview-profile-editor button { min-height: 44px; cursor: pointer; font: inherit; }
+.preview-account { flex-wrap: wrap; }
+.workspace-label > div, .profile > div { min-width: 0; overflow-wrap: anywhere; }
+.company-avatar, .profile-avatar { flex-shrink: 0; }
+.preview-signin small { line-height: 1.5; color: #526c7c; }
