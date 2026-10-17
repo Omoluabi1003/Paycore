@@ -13,7 +13,7 @@
 | Balance ledger | New immutable preparation/replay/reversal domain with integer arithmetic | Durable append-only schema, account locks, unique source/idempotency/reversal keys, atomic payroll and audit writes |
 | Approval/history/YTD | Domain snapshot/reversal/YTD functions plus transactional approval coordinator/port; no public live approval | Transactional approval, separation of duties, immutable DB snapshots, exactly-once posting, approved-history integration cases |
 | Readiness/exceptions | Calculation blockers/warnings and explanations in preview | Command Center, persistent resolutions/inbox, source completeness, statistical variance and end-to-end review |
-| Statements/exports | Public fixed fictional samples only, shown after review | Authorized exports from immutable real snapshots, unique IDs, reproducible PDFs, payment/YTD metadata |
+| Statements/exports | Client demo exports from frozen entered snapshots; public fixed fictional samples retained | Authorized exports from immutable real snapshots, unique IDs, reproducible PDFs, payment/YTD metadata |
 | Contractor portal | Own-record permission guard only; no live portal | Independent server-scoped portal routes, access/dispute/document/statement integration tests |
 | Documents/notifications | No live service | Private authorized storage/retention, preferences, delivery monitoring and safe messages |
 | Simulator/analytics | No authoritative implemented subsystem | Isolated what-if calculations, scoped aggregates/drilldown and source evidence |
@@ -29,3 +29,5 @@ New ledger tests cover prepared activity leaving history untouched, exact zero p
 Coordinator tests now stage snapshot/source/occurrence/ledger/audit writes atomically and cover concurrent retries and rollback using an in-memory transactional adapter. Real-database proof is still missing: approved payroll atomically posts ledger once, retries cannot double-post under database concurrency, whole-run crash rollback, policy-enforced tenant isolation, real provider/session expiry, authorized exports, secure contractor portal, reproducible historical PDFs, tested backup restoration, production telemetry and browser end-to-end launch acceptance. Do not mark these passed based on mocks.
 
 See [transactional approval](TRANSACTIONAL-APPROVAL.md) for the application-service increment and mandatory persistence adapter constraints.
+
+The [client exhibit](CLIENT-EXHIBIT.md) now provides clearly labeled local simulated approval/paid/locked transitions and entered-data exports. These do not satisfy production authorization, persistence, ledger or payment launch gates.

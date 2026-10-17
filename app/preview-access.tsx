@@ -33,7 +33,7 @@ export default function PreviewAccess() {
       <div className="preview-account"><span>{displayName.trim() || "Preview account"}</span><button type="button" onClick={() => setEditingProfile(value => !value)} aria-expanded={editingProfile} aria-controls="preview-profile">Edit profile</button><button type="button" onClick={() => changePreview(false)}>Sign out</button></div>
     </header>
     {editingProfile && <section id="preview-profile" className="preview-profile-editor" aria-labelledby="profile-heading"><h2 id="profile-heading">Your demo profile</h2><label htmlFor="edit-display-name">Your name</label><input id="edit-display-name" value={displayName} maxLength={120} autoComplete="name" onChange={event => setDisplayName(event.target.value)} /><label htmlFor="edit-company-name">Company name (optional)</label><input id="edit-company-name" value={companyName} maxLength={120} autoComplete="organization" onChange={event => setCompanyName(event.target.value)} /><button type="button" onClick={() => setEditingProfile(false)}>Done</button><p>Display details only. Changes stay in this tab and reset on refresh.</p></section>}
-    <div className="preview-notice" role="status">Sample workspace · No live payroll or payments · Changes reset on refresh.</div>
+    <div className="preview-notice" role="status">Demo mode · No real payments · Exhibit resets on refresh.</div>
     <Workspace displayName={displayName.trim() || "Preview user"} companyName={companyName.trim()} />
   </div>;
 

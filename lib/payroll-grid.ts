@@ -26,6 +26,7 @@ export function calculateGridRow(row: GridRow, existing: CalculationInput[], now
   for (const [kind, amount, description] of [["charge", charge, "Entered period deduction"], ["reimbursement", reimbursement, "Entered period reimbursement"]] as const) {
     if (amount) draft.transactions.push({ id: `${prefix}-${kind}`, companyId: draft.run.companyId, contractorId: row.id, payPeriodId: draft.run.payPeriodId, transactionType: kind === "charge" ? "OTHER_DEDUCTION" : "REIMBURSEMENT", referenceNumber: `${prefix}-${kind}`, transactionDate: draft.run.start, description, amountCents: amount, miles: 0, source: "MANUAL", enteredBy: "preview-specialist", createdAt: now });
   }
+  draft.deductionRules = [...draft.deductionRules, ...(prior?.deductionRules.filter(rule => rule.id !== `${row.id}-deduction`) ?? [])];
   draft.history = prior?.history ?? [];
   draft.contractor.createdAt = prior?.contractor.createdAt ?? now;
   const result = calculateContractorSettlement(draft);
