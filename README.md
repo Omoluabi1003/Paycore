@@ -2,6 +2,35 @@
 
 PayCore is a safety-first payroll and contractor settlement platform designed for nontechnical operators.
 
+## Development and build verification
+
+Use Node.js 24 and pnpm 10.34.7 (the version pinned in `package.json`).
+
+```sh
+pnpm install --frozen-lockfile
+pnpm test
+pnpm typecheck
+pnpm build
+pnpm start
+```
+
+`vercel.json` selects the Next.js framework preset, overriding a project's stale
+"Other" preset that otherwise looks for a `public` output directory after building.
+Vercel should use the repository root, Node.js 24,
+and the default Next.js output directory. The `build` script runs `next build`;
+no custom output directory, static export, or environment variables are required
+for this demo. Git pushes to the PR branch should create preview deployments.
+Keep the production branch set to `main` and review the preview before merging.
+
+`pnpm-lock.yaml` locks the dependency graph. The workspace configuration explicitly
+disables Sharp's optional install script; the platform package supplies its binary.
+Next.js and React stay on their existing release lines with patched versions.
+
+Settlement calculations use decimal arithmetic, convert each monetary input to
+integer cents with half-up rounding, and round each percentage charge independently
+to a cent. Negative settlements retain a review warning. Results outside the safe
+integer-cent range fail closed. Tests include the $100.50 at 57% half-cent regression.
+
 ## Product principles
 
 1. **Simple by default**: routine payroll follows a guided workflow with plain-language status and validation.
