@@ -1,6 +1,6 @@
 import { prepareApproval } from "./settlements.ts";
 import type { ApprovedSettlement, CalculationInput } from "./settlements.ts";
-export type DemoApproval = { version: 1; companyName: string; actorName: string; companyId: string; payrollRunId: string; start: string; end: string; status: "APPROVED" | "PAID" | "LOCKED"; approvedAt: string; paidAt?: string; lockedAt?: string; snapshots: ApprovedSettlement[]; balances: { contractorId: string; ruleId: string; expectedBalanceCents: number; remainingBalanceCents: number }[]; audit: { action: string; at: string; actor: string }[] };
+export type DemoApproval = { history?: ApprovedSettlement[]; version: 1; companyName: string; actorName: string; companyId: string; payrollRunId: string; start: string; end: string; status: "APPROVED" | "PAID" | "LOCKED"; approvedAt: string; paidAt?: string; lockedAt?: string; snapshots: ApprovedSettlement[]; balances: { contractorId: string; ruleId: string; expectedBalanceCents: number; remainingBalanceCents: number }[]; audit: { action: string; at: string; actor: string }[] };
 function freeze<T>(value: T): T { if (value && typeof value === "object") { Object.values(value).forEach(freeze); Object.freeze(value); } return value; }
 function identity(value: string) { if (!value.trim() || value.length > 120) throw new Error("Enter a display name of up to 120 characters."); return value.trim(); }
 export function simulateApproval(inputs: CalculationInput[], options: { companyName: string; actor: string; at: string; reviewed: boolean; reviewReasons: Record<string, Record<string, string>> }): DemoApproval {
@@ -15,7 +15,8 @@ export function simulateApproval(inputs: CalculationInput[], options: { companyN
     for(const source of prepared.settlement.sourceIds){ if(sources.has(source)) throw new Error("An activity appears more than once in this payroll.");sources.add(source); }
     snapshots.push(prepared.settlement);balances.push(...prepared.balanceUpdates.map(update=>({...update,contractorId:input.contractor.id})));
   }
-  return freeze({version:1,companyName,actorName:actor,companyId:first.companyId,payrollRunId:first.id,start:first.start,end:first.end,status:"APPROVED",approvedAt:options.at,snapshots:structuredClone(snapshots),balances,audit:[{action:"Simulated approval; financial snapshot frozen",at:options.at,actor}]});
+  const history = [...new Map(inputs.flatMap(input => input.history ?? []).map(snapshot => [`${snapshot.companyId}:${snapshot.contractorId}:${snapshot.payrollRunId}`, snapshot])).values()];
+  return freeze({version:1,history:structuredClone(history),companyName,actorName:actor,companyId:first.companyId,payrollRunId:first.id,start:first.start,end:first.end,status:"APPROVED",approvedAt:options.at,snapshots:structuredClone(snapshots),balances,audit:[{action:"Simulated approval; financial snapshot frozen",at:options.at,actor}]});
 }
 export function transitionDemo(state: DemoApproval, action: "MARK_PAID" | "LOCK", actorName: string, at: string): DemoApproval {
   const actor=identity(actorName), timestamp=Date.parse(at);

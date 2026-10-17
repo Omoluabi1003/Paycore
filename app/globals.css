@@ -2634,3 +2634,19 @@ body:has(.preview-workspace) .brand-splash-intro { display: none; }
 .activity-pagination { display: flex; align-items: center; flex-wrap: wrap; gap: 16px; margin: 20px 0; font-size: 12px; }
 .correction-form { border: 1px solid #bfd5cb; border-radius: 12px; padding: 20px; margin-top: 20px; }
 .activity-register .text-link { display: block; margin-top: 8px; }
+
+.exhibit-journey, .exhibit-onboarding, .exhibit-statement { padding: 24px; margin-bottom: 24px; }
+.exhibit-journey { background: #eef6f1; border-color: #bdd6c9; }
+.exhibit-journey h2 { font-size: 24px; margin: 10px 0; }
+.exhibit-journey p, .exhibit-onboarding p, .exhibit-statement p { font-size: 13px; line-height: 1.7; overflow-wrap: anywhere; }
+.exhibit-stages { display: flex; flex-wrap: wrap; gap: 12px; list-style: none; padding: 0; font-size: 12px; }
+.exhibit-stages li { padding: 10px; border: 1px solid #c0d4ca; border-radius: 6px; }
+.exhibit-stages li[aria-current=step] { background: #245e57; color: white; }
+.exhibit-onboarding .activity-form { max-width: 640px; }
+.exhibit-onboarding input[type=checkbox] { width: 20px; height: 20px; }
+.exhibit-continuity { padding: 20px 28px; margin: 0; background: #e6f3e9; color: #24594d; font-size: 13px; line-height: 1.7; }
+.exhibit-net { display: grid; gap: 12px; padding: 24px; background: #173e4b; color: white; border-radius: 10px; }
+.exhibit-net strong { color: #f2d596; font-size: 38px; }.exhibit-net span { font-size: 13px; }
+.explanation-lines { padding: 0; list-style: none; }.explanation-lines li { display: flex; justify-content: space-between; gap: 20px; padding: 14px 0; border-bottom: 1px solid #d4e3dd; font-size: 13px; }.explanation-lines li > div { min-width: 0; overflow-wrap: anywhere; }.explanation-lines li > span { white-space: nowrap; }.explanation-lines small { display: block; margin-top: 6px; color: #526d76; }
+.exhibit-statement details { padding: 16px 0; }.exhibit-statement summary { cursor: pointer; font-weight: 600; }.contractor-preview { border: 2px solid #80aa98; }
+@media(max-width:600px) { .exhibit-journey, .exhibit-onboarding, .exhibit-statement { padding: 18px; }.exhibit-statement .section-heading { flex-wrap: wrap; } }
