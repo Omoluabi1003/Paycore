@@ -7,7 +7,7 @@ Owns settings, payroll rules and users.
 Initial roles: `ADMIN`, `PAYROLL_MANAGER`, `DATA_ENTRY`, `READ_ONLY`.
 
 ## Contractor
-Identity/profile, status, default settlement rate, payment preference and masked payment metadata. Sensitive identifiers belong in encrypted storage, not source control.
+Identity/profile, status, effective-dated compensation agreements, payment preference and masked payment metadata. Sensitive identifiers belong in encrypted storage, not source control.
 
 ## PayPeriod
 Start/end dates and lifecycle state.
@@ -35,3 +35,5 @@ Actor, action, entity type/id, timestamp, reason and safe before/after metadata.
 
 ## Rule / Setting
 Versioned business rules such as contractor percentage, factoring rate, recurring deductions and approval policy. No business percentage should be hard-coded in UI components.
+
+The contractor-aware contracts and calculation policies are in [CONTRACTOR-PAYROLL.md](CONTRACTOR-PAYROLL.md). Compensation and deduction rules belong to individual contractors and retain historical versions. Proposed persistence constraints and atomic approval operations are specified in [PAYROLL-MIGRATION-PROPOSAL.md](PAYROLL-MIGRATION-PROPOSAL.md); no schema change has been applied.

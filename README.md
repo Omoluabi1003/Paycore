@@ -108,3 +108,8 @@ PayCore will calculate payroll according to configured business rules. Jurisdict
 
 
 
+
+
+## Contractor-aware fictional walkthrough
+
+The preview now uses contractor-specific percentage, per-mile and fixed-period agreements, automatic deductions, fictional activity entry and explainable settlement lines. See [calculation architecture and rollback](docs/CONTRACTOR-PAYROLL.md) and the [unexecuted migration proposal](docs/PAYROLL-MIGRATION-PROPOSAL.md). Approval, authentication, persistent audit and payments remain unavailable in the preview. Fixed sample downloads do not include draft edits.

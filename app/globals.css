@@ -2461,3 +2461,18 @@ body:has(:focus-visible) .brand-splash-intro {
 .walkthrough-toolbar a:hover { background: #17494c; }
 .walkthrough-toolbar a:focus-visible { outline: 3px solid #b77d30; outline-offset: 3px; }
 .walkthrough-toolbar small { display: block; margin-top: 12px; font-size: 12px; line-height: 1.6; }
+
+.activity-entry { margin-bottom: 24px; }
+.activity-entry p { line-height: 1.6; }
+.activity-actions { display: flex; flex-wrap: wrap; gap: 12px; margin: 16px 0; }
+.activity-entry label { display: flex; flex-direction: column; gap: 8px; font-size: 14px; font-weight: 600; }
+.activity-entry input, .activity-entry select { width: 100%; max-width: 100%; min-width: 0; padding: 12px; border: 1px solid #c3cdd0; border-radius: 8px; font: inherit; color: inherit; background: white; }
+.activity-entry > label { max-width: 360px; }
+.activity-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; border-top: 1px solid #e1e8e6; padding-top: 16px; }
+.activity-form h3, .activity-form > p, .activity-form .activity-actions { grid-column: 1 / -1; }
+.line-origin { display: block; font-size: 11px; color: #52666c; margin-top: 5px; overflow-wrap: anywhere; }
+.statement-breakdown dt, .statement-breakdown dd { min-width: 0; overflow-wrap: anywhere; }
+.statement-breakdown dd { text-align: right; }
+@media (max-width: 600px) { .activity-form { grid-template-columns: minmax(0, 1fr); } .activity-actions .button { flex: 1 1 140px; } .statement-breakdown > div { gap: 12px; } }
+.statement-breakdown dt { flex: 1 1 0; }
+.statement-breakdown dd { flex: 0 0 42%; }

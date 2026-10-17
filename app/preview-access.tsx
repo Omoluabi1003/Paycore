@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import { BrandLogo } from "./brand";
 import Workspace from "./workspace";
-import { sampleContractors } from "../lib/sample-payroll";
 
 // Presentation state only. Never use this value to authorize an API or data read.
 // Supabase sessions and server-side membership checks will replace this preview.
@@ -30,7 +29,7 @@ export default function PreviewAccess() {
     </header>
     <div className="preview-notice" role="status">Sample workspace · No live payroll or payments · Changes reset on refresh.</div>
     <div className="walkthrough-toolbar"><span>Client walkthrough · Fictional records only</span><div><a href="/sample-payroll.pdf">Download PDF statements</a><a href="/sample-payroll.csv">Download CSV</a><a href="mailto:?subject=PayCore%20sample%20payroll%20statements&body=Please%20find%20the%20PayCore%20sample%20payroll%20statements.%20These%20are%20fictional%20records%20for%20presentation%20only.%0A%0AAttach%20the%20downloaded%20PDF%20before%20sending.">Prepare email</a></div><small>Email opens your mail app. Attach the downloaded PDF before sending.</small></div>
-    <Workspace contractors={sampleContractors} />
+    <Workspace />
   </div>;
 
   return <main className="access-page">

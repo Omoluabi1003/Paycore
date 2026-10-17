@@ -1,0 +1,35 @@
+# Contractor-aware payroll architecture
+
+The PR #4 preview remains a fictional, in-memory walkthrough. The calculation domain is ready for development and review; no production identity, database persistence, approval endpoint or payments are connected. Public exports contain fixed fictional fixtures, not edits entered in the walkthrough.
+
+`lib/settlements.ts` owns validated contractor, compensation rule, deduction rule, load, transaction, run, settlement and line contracts. `lib/sample-payroll.ts` configures three different agreements. `app/activity-entry.tsx` provides contractor-specific draft entry; the existing walkthrough displays calculated lines and review issues. `lib/payroll.ts` remains a compatibility adapter for existing callers and sub-basis-point decimal-percent regression inputs. New agreements use integer basis points only.
+
+## Calculation policy
+
+All authoritative amounts are safe integer cents; rates are integer basis points (10000 = 100%). BigInt products, sums and ratio rounding avoid binary percentage arithmetic and unsafe intermediate multiplication. Round each earning and percentage deduction independently, half away from zero. Convert cents to dollars only for display/export. Legacy decimal-dollar inputs are converted with Decimal half-up before integer calculation; they never enter the new agreement API.
+
+Percentage and per-mile compensation applies the rule effective on each earning/load date. Flat-per-load pays once per revenue-producing source. Use either a Load or its LOAD_REVENUE transaction, not both; duplicate references require review. Whole loaded plus empty miles are supported. Flat-per-period pays once and requires one rule covering the full period; split periods at a fixed-period rate change. MANUAL_EARNINGS uses OTHER_EARNING entries and requires review. OTHER_CONFIGURED_RULE blocks until an explicit supported implementation exists. Missing and overlapping rules block approval. Supplemental earnings are entered amounts, separate from eligible revenue.
+
+Deduction percentage bases are explicit: eligible revenue or gross earnings. Fixed, per-load, per-mile and installment amounts use the selected period's activity. Weekly/biweekly schedules anchor to effectiveFrom; monthly schedules clamp to the last day of shorter months without moving the original anchor. Calendar rules charge once per due date within the period; their configured amount or percentage of the period base is charged for each occurrence. Review this policy against actual contractor agreements before production. EVERY_PAYROLL and UNTIL_BALANCE_PAID apply once per eligible period, without proration; ONE_TIME catches up once on the first eligible payroll after its effective date. MANUAL rules never silently generate a deduction. Draft generation does not consume occurrences or balances. Approved occurrence keys suppress repeated charges. Installments cap at the remaining balance, including multiple due dates in a single period.
+
+Lines identify kind, category, source, automatic/entered origin, rule and occurrence. Blockers and review warnings are separate. Negative settlements, large deductions (over half of earnings), duplicate references, manual compensation, changing terms and large recent-history variance require a recorded review reason. The thresholds are conservative preview policies, not universal business requirements. Invalid inputs and unsafe totals block; partial amounts shown with blockers must never be approved.
+
+Automatic deductions cannot be removed or overridden in this preview. A future override flow must require a reason, actor, timestamp and append-only audit event, retain the original generated line, and recalculate with explicit replacement lineage. It must never silently delete a charge.
+
+## Approval, history and corrections
+
+`prepareApproval` recalculates a draft, rejects blockers and unacknowledged warnings, detaches and deeply freezes the financial snapshot, and returns expected-balance updates plus a safe audit event. It does not persist anything or supply authorization. Future server code must resolve verified company membership and actor identity, lock rules/sources and balances, recalculate against current approved history, compare expected balances, and commit all contractor snapshots, occurrence consumption, balances and audit events in one transaction. JavaScript Object.freeze is not a database immutability boundary. Never trust a browser-provided snapshot, history or actor.
+
+`prepareReversal` returns a separate signed approved correction and audit event, retaining the original snapshot; duplicate reversal targets are rejected against supplied history and must also be uniquely constrained in storage. Approval of a correction is still a deliberate, authorized human action. Reversal does not automatically release original sources or reinstate deduction balances; those require separately reviewed corrections. Payment/lock state belongs to the run lifecycle and never changes the immutable financial contents.
+
+YTD sums approved snapshots by company, contractor and settlement period-end year through the selected date. Drafts are excluded. Approved signed reversals and subsequent approved adjustments affect their own period's YTD. Historical as-of YTD remains reproducible. No approved history is seeded into the public demo, so official fictional YTD is zero. Persisted history must be loaded from the trusted server, deduplicated and immutable.
+
+## Audit and persistence boundary
+
+Compensation and deduction rule versions retain creator/time and effective dates; changes create a new version instead of editing history. Transactions retain source and enteredBy. Production audit must record rule creation/change, activity entry, generation, override, approval, reversal and payment-state changes without bank/identity values. See [migration proposal](PAYROLL-MIGRATION-PROPOSAL.md). No migration is executed here.
+
+## Verification and rollback
+
+Use Node 24, pnpm 10.34.7, `pnpm install --frozen-lockfile`, `pnpm test`, `pnpm typecheck`, `pnpm build`, then `pnpm start`. Existing tests remain intact. New regression tests cover distinct rates/methods, date changes, all deduction methods, schedules, one-time suppression, installment caps, draft nonmutation, frozen snapshots, validation, duplicates, manual amounts, negative settlement review and approved-only/reversal YTD. The retained environment browser smoke test is `/workspace/.tools/paycore-smoke.cjs` and uses system Chromium; it is not a package dependency or CI requirement.
+
+Rollback the feature commit or redeploy PR #4 commit `5b8492878fda994fac1a3a207ea7c2aa9bafe7f4`. No database or external payroll state changes need rollback. Keep main and the existing Vercel production branch untouched until human review. Local builds do not prove a hosted Vercel deployment is healthy; inspect the branch preview and deployment checks before merging.
