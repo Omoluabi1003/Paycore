@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { BrandLogo } from "./brand";
 import { profileInitials } from "../lib/preview-profile";
+import { GuidedWalkthrough } from "./guided-walkthrough";
 import { PresentationGuide, ExhibitReset } from "./exhibit-controls";
 import { demoDraftKeys } from "../lib/exhibit-controls";
 import ExhibitOnboarding from "./exhibit-onboarding";
@@ -121,6 +122,7 @@ export default function Workspace({ displayName, companyName }: { displayName: s
 function PeriodWorkspace({ displayName, companyName, run, initial, onSnapshot, presenting, tourStage, onPresent, onTourStage, onNextExhibit }: { presenting: boolean; tourStage: number; onPresent: (value: boolean) => void; onTourStage: (value: number) => void; onNextExhibit: () => void; displayName: string; companyName: string; run: PayrollRun; initial: PeriodDraft; onSnapshot: (draft: PeriodDraft) => void }) {
     const period = formatPeriod(run);
     const [rows, setRows] = useState<GridRow[]>(initial.rows);
+    const [walkthrough, setWalkthrough] = useState<number | null>(null);
     const [portalRequest, setPortalRequest] = useState(0);
     const [showSetup, setShowSetup] = useState(false);
     const [corrections, setCorrections] = useState<DraftCorrection[]>(initial.corrections ?? []);
@@ -189,6 +191,11 @@ function PeriodWorkspace({ displayName, companyName, run, initial, onSnapshot, p
             if (target) { target.tabIndex = -1; target.scrollIntoView({ block: "center", behavior: "instant" }); target.focus({ preventScroll: true }); }
         });
     }
+    function guideStage(stage: number) {
+        onPresent(false); setWalkthrough(stage);
+        if (stage === 0) { if (!demo) setShowSetup(true); }
+        else { setShowSetup(false); if (stage === 1) begin(1); else navigate(stage === 2 ? "exceptions" : "review"); }
+    }
     function presentStage(stage: number) {
         if (stage === 0) { if (!demo) setShowSetup(true); }
         else if (stage === 1) begin(1);
@@ -218,13 +225,15 @@ function PeriodWorkspace({ displayName, companyName, run, initial, onSnapshot, p
     </aside>
     <div className="workspace-main">
       <header className="topbar"><div className="breadcrumb">Workspace <span>/</span><strong>{view === "overview" ? "Home" : view === "prepare" ? "Run payroll" : view === "review" ? "Statements & review" : view === "contractors" ? "Contractors" : view === "activity" ? "Activity register" : "Exceptions"}</strong></div><span className="demo-tag"><span />Interactive demo</span></header>
-      <main id="main-content" className="content">
+      <main id="main-content" className={`content ${walkthrough !== null ? "walkthrough-active" : ""}`}>
         <div className="page-heading"><div><p className="eyebrow">PAYROLL OPERATIONS</p><h1 ref={heading} tabIndex={-1}>{view === "overview" ? "Payroll command center." : view === "prepare" ? preparation[step].title : view === "review" ? "Review your payroll." : view === "contractors" ? "Contractor 360." : view === "activity" ? "Activity register." : "Exception center."}</h1><p className="page-description">{view === "overview" ? "See what is ready, what needs attention, and what to do next." : view === "prepare" ? `Step ${step + 1} of 4 · Check the sample information, then continue.` : view === "review" ? "Check each statement before acknowledging the sample review." : "Your people, source records, and calculations in one workspace."}</p></div><span className="period-label"><Icon name="clock" size={16}/>{period}</span></div>
 
+        <div className="walkthrough-launch"><button className="button button-secondary" onClick={() => guideStage(0)}>Take a guided walkthrough</button><button className="text-link" onClick={() => guideStage(view === "exceptions" ? 2 : view === "review" ? 3 : view === "prepare" || view === "activity" ? 1 : 0)}>Help me here</button></div>
+        {walkthrough !== null && <GuidedWalkthrough stage={walkthrough} onStage={guideStage} onExit={() => setWalkthrough(null)} />}
         {presenting && <button className="button button-secondary presentation-return" onClick={() => revealPresentation(".presentation-guide")}>Return to walkthrough</button>}
         {presenting && <PresentationGuide stage={tourStage} approved={Boolean(demo)} onStage={onTourStage} onAction={presentStage} onExit={() => onPresent(false)} />}
-        <section className="panel exhibit-journey" aria-label="Client exhibit journey"><div><p className="eyebrow">FROM AGREEMENT TO NEXT PAYDAY</p><h2>Enter it once. See PayCore remember.</h2><p>Set up a fictional contractor, enter their work, explain the settlement, and simulate approval. Then open the next period above.</p></div><div className="activity-actions">{!presenting && <button className="button button-secondary" onClick={() => { onTourStage(0); onPresent(true); revealPresentation(".presentation-guide"); }}>Start presentation</button>}<button className="button button-primary" disabled={Boolean(demo)} onClick={() => setShowSetup(true)}>Set up contractor</button><button className="button button-secondary" onClick={() => begin(1)}>Enter payroll activity</button><button className="button button-secondary" onClick={() => navigate("review")}>Explain settlement</button></div></section>
-        {showSetup && !demo && <ExhibitOnboarding inputs={inputs} run={run} onCancel={() => setShowSetup(false)} onActivate={(row, input) => { const nextRows = [...rows, row], nextInputs = [...inputs, input]; setRows(nextRows); updateInputs(nextInputs); setGridValid(nextRows.every(item => { try { calculateGridRow(item, nextInputs, new Date().toISOString(), run); return true; } catch { return false; } })); setShowSetup(false); begin(1); }} />}
+        <section className="panel exhibit-journey" aria-label="Client exhibit journey"><div><p className="eyebrow">FROM AGREEMENT TO NEXT PAYDAY</p><h2>Enter it once. See PayCore remember.</h2><p>Set up a fictional contractor, enter their work, explain the settlement, and simulate approval. Then open the next period above.</p></div><div className="activity-actions">{!presenting && <button className="button button-secondary" onClick={() => { setWalkthrough(null); onTourStage(0); onPresent(true); revealPresentation(".presentation-guide"); }}>Start presentation</button>}<button className="button button-primary" disabled={Boolean(demo)} onClick={() => setShowSetup(true)}>Set up contractor</button><button className="button button-secondary" onClick={() => begin(1)}>Enter payroll activity</button><button className="button button-secondary" onClick={() => navigate("review")}>Explain settlement</button></div></section>
+        {showSetup && !demo && <ExhibitOnboarding inputs={inputs} run={run} onCancel={() => setShowSetup(false)} onActivate={(row, input) => { const nextRows = [...rows, row], nextInputs = [...inputs, input]; setRows(nextRows); updateInputs(nextInputs); setGridValid(nextRows.every(item => { try { calculateGridRow(item, nextInputs, new Date().toISOString(), run); return true; } catch { return false; } })); setShowSetup(false); begin(1); if (walkthrough === 0) setWalkthrough(1); }} />}
         <DraftRecovery scope={JSON.stringify([displayName, companyName])} run={run} draft={{inputs, rows, corrections}} frozen={Boolean(demo)} onRestore={draft => { if (demo) return; setRows(draft.rows); setInputs(draft.inputs); setCorrections(draft.corrections ?? []); setGridValid(draft.rows.length > 0 && draft.rows.every(row => { try { calculateGridRow(row, draft.inputs, new Date().toISOString(), run); return true; } catch { return false; } })); setChecked([true, false, false]); setAcknowledged(false); navigate("overview"); }} />
         {demo && <p className="review-ready" role="status">Demo {demo.status} · Figures are frozen for this exhibit. Open another period to enter new activity.</p>}
         {(["overview", "contractors", "activity", "exceptions"] as View[]).includes(view) && <OperationsCenter key={view} view={view as OperationsView} inputs={inputs} rows={rows} run={run} demo={demo} onAdd={addContractor} corrections={corrections} onCorrect={(next, correction) => { if (demo) return; updateInputs(next); setCorrections(previous => [...previous, correction]); }} onEntry={openActivity} onFuelCheck={() => { if (demo) return; setStep(1); navigate("prepare"); requestAnimationFrame(() => { if (activityDetails.current) activityDetails.current.open = true; const target = document.getElementById("fuel-source-check") as HTMLDetailsElement | null; if (target) { target.open = true; target.scrollIntoView({ block: "center" }); target.querySelector("summary")?.focus(); } }); }} onReview={() => completed === 3 || demo ? navigate("review") : begin()} onEdit={editContractor} onView={navigate} />}
