@@ -1,6 +1,6 @@
 import { createDraftContractor, previewRun } from "./draft-contractor.ts";
 import { calculateContractorSettlement } from "./settlements.ts";
-import type { CalculationInput } from "./settlements.ts";
+import type { CalculationInput, PayrollRun } from "./settlements.ts";
 import { z } from "zod";
 export const gridColumns = ["name", "reference", "method", "rate", "revenue", "miles", "deduction", "charge", "reimbursement"] as const;
 export type GridColumn = typeof gridColumns[number];
@@ -13,10 +13,10 @@ function cents(value: string) {
   if (amount > BigInt(Number.MAX_SAFE_INTEGER)) throw new Error("This amount is too large.");
   return Number(amount);
 }
-export function calculateGridRow(row: GridRow, existing: CalculationInput[], now: string): CalculationInput {
-  const prior = existing.find(input => input.contractor.id === row.id);
+export function calculateGridRow(row: GridRow, existing: CalculationInput[], now: string, run: PayrollRun = previewRun): CalculationInput {
+  const prior = existing.find(input => input.contractor.id === row.id && input.run.payPeriodId === run.payPeriodId);
   let draft: CalculationInput;
-  try { draft = createDraftContractor({ name: row.name, reference: row.reference, method: row.method, rate: row.rate, deduction: row.deduction }, existing.filter(input => input.contractor.id !== row.id), previewRun, row.id, now); }
+  try { draft = createDraftContractor({ name: row.name, reference: row.reference, method: row.method, rate: row.rate, deduction: row.deduction }, existing.filter(input => input.contractor.id !== row.id), run, row.id, now); }
   catch (error) { if (error instanceof z.ZodError) throw new Error(error.issues[0]?.message ?? "Check this row."); throw error; }
   const revenue = cents(row.revenue), charge = cents(row.charge), reimbursement = cents(row.reimbursement);
   if (!/^\d+$/.test(row.miles) || !Number.isSafeInteger(Number(row.miles))) throw new Error("Miles must be a whole, nonnegative number.");

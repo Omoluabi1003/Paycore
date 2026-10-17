@@ -2500,3 +2500,11 @@ body:has(:focus-visible) .brand-splash-intro {
 .workspace-label > div, .profile > div { min-width: 0; overflow-wrap: anywhere; }
 .company-avatar, .profile-avatar { flex-shrink: 0; }
 .preview-signin small { line-height: 1.5; color: #526c7c; }
+
+.period-setup-shell { max-width: 840px; margin: 32px auto; padding: 20px; }
+.period-setup { padding: 24px; }
+.period-banner { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 16px 24px; background: #eff7f4; color: #213f4a; border-bottom: 1px solid #c6dad3; }
+.period-banner > span { font-size: 13px; }
+.period-banner label { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.period-banner select { padding: 10px; min-height: 44px; font: inherit; max-width: 100%; border: 1px solid #bdcccf; border-radius: 6px; }
+.period-banner > p { flex-basis: 100%; margin: 0; }
