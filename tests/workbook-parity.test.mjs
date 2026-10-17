@@ -1,4 +1,5 @@
 import test from 'node:test';
+import {demoPdf,demoCsv} from '../lib/demo-exports.ts';
 import assert from 'node:assert/strict';
 import { calculateGridRow,emptyGridRow } from '../lib/payroll-grid.ts';
 import { calculateContractorSettlement,prepareApproval,yearToDate } from '../lib/settlements.ts';
@@ -50,4 +51,20 @@ test('approved history supplies YTD; current draft does not change official tota
 test('grid edits retain fuel reconciliation and selected factoring without double-copying charges',()=>{
  const input=fixture(),next=calculateGridRow({...row,revenue:'10'},[input],at);
  assert.equal(next.fuelReconciliation.expectedTotalCents,20000);assert.equal(next.deductionRules.filter(rule=>rule.category==='FACTORING').length,1);assert.equal(next.transactions.filter(tx=>tx.transactionType==='FUEL_DEDUCTION').length,2);
+});
+
+test('deduction detail preserves each description and reference without changing grouped totals',()=>{
+ const input=fixture();input.transactions[0].description='Fuel purchase — Dallas stop';
+ const approved=prepareApproval(input,'synthetic-approver',at,{}).settlement;
+ input.transactions[0].description='Changed later';
+ const state={snapshots:[approved],status:'APPROVED',companyName:'Synthetic Company',payrollRunId:approved.payrollRunId,start:approved.start,end:approved.end,actorName:'Synthetic Approver',approvedAt:at};
+ const pdf=new TextDecoder().decode(demoPdf(state));assert.ok(pdf.includes('Fuel purchase ? Dallas stop'));assert.ok(pdf.includes('Reference: fuel-a'));assert.ok(demoCsv(state).includes('Fuel purchase — Dallas stop'));
+ const view=workbookStatement(approved),fuel=view.groups.find(group=>group.label==='Fuel');
+ assert.equal(fuel.details.length,2);assert.equal(fuel.details[0].description,'Fuel purchase — Dallas stop');
+ assert.equal(fuel.details[0].reference,'fuel-a');assert.equal(fuel.details[0].date,approved.start);
+ assert.equal(fuel.amountCents,20000);assert.equal(view.netCents,108900);
+ const automatic=view.groups.find(group=>group.label==='Factoring').details[0];
+ assert.equal(automatic.description,'Synthetic selected-load factoring');assert.match(automatic.explanation,/selected eligible load revenue/);
+ const other=fixture();other.transactions[0].transactionType='OTHER_DEDUCTION';
+ assert.equal(workbookStatement(calculateContractorSettlement(other)).groups.find(group=>group.label==='Other deductions').details[0].reference,'fuel-a');
 });
