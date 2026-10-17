@@ -39,3 +39,9 @@ Rehearsal covers desktop at 1440 × 1000 and the complete phone-sized flow at 39
 PR #23 was confirmed merged, and Vercel reported its main-branch deployment completed. Live hosted HTTP/browser verification is separate from these local browser runs; no claim is made about WhatsApp caches or production authentication. Real contractor data, payment processing, private contractor access and durable multi-user storage remain outside exhibition scope.
 
 Rollback for the navigation fix: revert the focused follow-up commit or restore the prior deployment. No financial records, database migrations, environment variables or saved-draft formats change.
+
+## In-context walkthrough check
+
+Choose **Take a guided walkthrough**. The outlined setup form remains editable. Manually activate a fictional contractor; coaching advances to the outlined payroll desk. Enter revenue, use Next/Back/Skip to visit exceptions and explanations, and confirm the revenue remains unchanged. At the approval topic, incomplete review still disables Simulate approval and downloads remain absent. Escape removes the guide and outline; **Help me here** reopens the current topic. Keyboard Tab/Enter can operate guide controls without trapping users away from the forms.
+
+Verified locally on the production build at 1440×900 and 390×900: manual setup and handoff, editable highlighted target, preserved revenue through navigation, disabled unreviewed approval, no preapproval downloads, context help, keyboard exit, bounded mobile guide, and no browser runtime errors. The guide never creates activity or approves payroll. Tour progress is temporary and does not persist across a period change or refresh.
