@@ -2662,5 +2662,8 @@ body:has(.preview-workspace) .brand-splash-intro { display: none; }
 .presentation-topics { display: flex; flex-wrap: wrap; gap: 8px; padding: 0; list-style: none; }.presentation-topics button { font: inherit; font-size: 11px; padding: 10px; border: 1px solid #b7cfc4; border-radius: 6px; background: white; color: #28584e; cursor: pointer; }.presentation-topics button[aria-current=step] { background: #245e57; color: white; }
 .presentation-mode .exhibit-journey { display: none; }
 .exhibit-reset-dialog { max-width: 520px; width: calc(100% - 40px); box-sizing: border-box; border: 1px solid #bad1c5; border-radius: 14px; padding: 28px; color: #193e4c; }.exhibit-reset-dialog::backdrop { background: #102c3eb3; }.exhibit-reset-dialog p { font-size: 14px; line-height: 1.7; }.exhibit-reset-dialog label { display: flex; gap: 12px; align-items: center; margin: 24px 0; }.exhibit-reset-dialog input { width: 20px; height: 20px; }
-@media(min-width:1000px) { .presentation-guide { position: sticky; top: 12px; z-index: 3; box-shadow: 0 6px 24px #102c3e1a; } }
+@media(min-width:1000px) { .presentation-guide { box-shadow: 0 6px 24px #102c3e1a; } }
 @media(max-width:600px) { .presentation-guide { padding: 18px; }.presentation-guide .section-heading { flex-wrap: wrap; }.exhibit-reset-dialog { padding: 20px; } }
+
+.presentation-return { position: fixed; bottom: 16px; right: 16px; z-index: 50; box-shadow: 0 4px 18px #102c3e26; font-size: 12px; }
+.presentation-mode .content { padding-bottom: 96px; }
