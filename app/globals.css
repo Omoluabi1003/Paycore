@@ -2388,3 +2388,6 @@ body:has(:focus-visible) .brand-splash-intro {
 .splash-rule {
   background:#e6c17d
 }
+/* Keep task selection first and compact on smaller screens. */
+.task-section{margin-top:0}.portal-welcome{margin-bottom:24px}
+@media(max-width:720px){.task-section{margin-top:0;margin-bottom:20px}.portal-welcome{padding:22px;margin-bottom:20px}.portal-welcome .welcome-art{display:none}.portal-welcome h2{font-size:25px}.portal-welcome p{font-size:12px}.welcome-caption{margin-top:14px}}
