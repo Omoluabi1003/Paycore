@@ -35,3 +35,11 @@ The [client exhibit](CLIENT-EXHIBIT.md) now provides clearly labeled local simul
 The [operations center](OPERATIONS-CENTER.md) adds visible frontend workflows; production persistence, broader Contractor 360 modules and operational readiness remain launch work.
 
 The [client workbook acceptance map](../workbook/RULE-MAP.md) inventories locally inspected formula structures without private data. Synthetic regressions now cover selected-load factoring (owner-confirmed scope), fuel reconciliation and separate truck/trailer registration. Exact private workbook parity remains unclaimed until agreement rates, section semantics and rounding are verified. The review screen offers a workbook-familiar grouped settlement view.
+
+## Activity desk and demo recovery
+
+The activity register now filters and paginates detailed facts, marks repeated references for review, and allows individually entered draft transactions to be corrected with a reason. Correction evidence retains before/after data in the demo draft. Calculations remain deterministic and corrections reset review. Grid-derived figures must be edited in the payroll desk; loads are currently read-only in the register. Approved exhibits are frozen.
+
+Explicit Save demo draft / Restore saved draft controls use versioned, size-limited sessionStorage, scoped by display profile, company label and pay period. Restore validates record scopes, restores incomplete grid rows without asserting readiness, strips unrecognized/history fields and resets approval acknowledgements. Copies contain fictional data only, are not encrypted backups, and are limited to the current browser tab. Closing a tab normally discards session storage; browser session restoration may retain it. Users can forget the saved copy. No auto-save, production authentication, durable shared storage, receipt upload or production audit service is claimed.
+
+Next production slice: connect authenticated company memberships to a transactional store; enforce server permissions for activity correction, draft revision conflicts and audit events. Infrastructure credentials/providers remain unconfigured. No migration/environment changes in this exhibit increment. Rollback: revert this UI/domain increment and restore the previous deployment; saved demo copies use an isolated key prefix and may be removed without modifying financial history.
