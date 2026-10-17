@@ -1,13 +1,14 @@
 "use client";
 import PeriodComparison from "./period-comparison";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { calculateContractorSettlement, safeCents, yearToDate } from "../lib/settlements";
 import type { CalculationInput } from "../lib/settlements";
 import type { DemoApproval } from "../lib/demo-payroll";
 import { exactDollars } from "../lib/demo-exports";
 const money = (cents: number) => `$${exactDollars(cents)}`;
-export default function ExhibitStatement({ inputs, approval }: { inputs: CalculationInput[]; approval: DemoApproval | null }) {
+export default function ExhibitStatement({ inputs, approval, portalRequest = 0 }: { inputs: CalculationInput[]; approval: DemoApproval | null; portalRequest?: number }) {
   const [person, setPerson] = useState(""), [portal, setPortal] = useState(false), [period, setPeriod] = useState("current");
+  useEffect(() => { if (portalRequest > 0) setPortal(true); }, [portalRequest]);
   const input = inputs.find(input => input.contractor.id === person) ?? inputs[0];
   if (!input) return null;
   const current = approval?.snapshots.find(snapshot => snapshot.contractorId === input.contractor.id) ?? calculateContractorSettlement(input);

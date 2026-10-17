@@ -2,6 +2,8 @@
 import { useEffect, useRef, useState } from "react";
 import { BrandLogo } from "./brand";
 import { profileInitials } from "../lib/preview-profile";
+import { PresentationGuide, ExhibitReset } from "./exhibit-controls";
+import { demoDraftKeys } from "../lib/exhibit-controls";
 import ExhibitOnboarding from "./exhibit-onboarding";
 import ExhibitStatement from "./exhibit-statement";
 import { continueExhibit } from "../lib/exhibit-journey";
@@ -52,6 +54,7 @@ const preparation = [
 type PeriodDraft = { inputs: CalculationInput[]; rows: GridRow[]; valid: boolean; corrections?: DraftCorrection[]; demo?: DemoApproval | null };
 const scheduleKey = "paycore-preview-pay-schedule-v1";
 export default function Workspace({ displayName, companyName }: { displayName: string; companyName: string }) {
+    const [presenting, setPresenting] = useState(false), [tourStage, setTourStage] = useState(0), [resetEpoch, setResetEpoch] = useState(0);
     const [schedule, setSchedule] = useState<PaySchedule | null>(null);
     const [loaded, setLoaded] = useState(false);
     const [now, setNow] = useState<Date | null>(null);
@@ -76,6 +79,16 @@ export default function Workspace({ displayName, companyName }: { displayName: s
         document.addEventListener("visibilitychange", refresh);
         return () => { clearInterval(timer); document.removeEventListener("visibilitychange", refresh); };
     }, []);
+    function resetExhibit(keepSchedule: boolean) {
+        try {
+            const keys = demoDraftKeys(Array.from({ length: sessionStorage.length }, (_, index) => sessionStorage.key(index)!).filter(Boolean), JSON.stringify([displayName, companyName]));
+            for (const key of keys) sessionStorage.removeItem(key);
+            if (!keepSchedule) localStorage.removeItem(scheduleKey);
+            else if (schedule) localStorage.setItem(scheduleKey, JSON.stringify({ ...schedule, workingStart: schedule.start }));
+        } catch { setStorageNotice("Reset could not finish. Current entries were kept, but some saved copies may have been removed."); return; }
+        drafts.current.clear(); setResetEpoch(value => value + 1); setPresenting(false); setTourStage(0); setJourneyNotice("Demo exhibit restarted. No production records were changed."); setStorageNotice("");
+        if (!keepSchedule) { setSchedule(null); setSelectedPeriod(null); } else if (schedule) setSelectedPeriod(workingPeriod(schedule));
+    }
     const current = schedule && now ? periodForDate(schedule, dateInZone(now, schedule.timeZone)) : null;
     if (!loaded) return <p role="status">Loading your pay schedule…</p>;
     if (!schedule || !current) return <div className="period-setup-shell">{storageNotice && <p role="status">{storageNotice}</p>}<PayPeriodSetup onSave={next => {
@@ -101,12 +114,14 @@ export default function Workspace({ displayName, companyName }: { displayName: s
     return <><section className="period-banner" aria-label="Pay schedule"><strong>Working period: {formatPeriod(run)}</strong><span>{schedule.timeZone} · Repeats every {Math.round((Date.parse(schedule.end) - Date.parse(schedule.start)) / 86400000) + 1} days</span>{storageNotice && <p role="status">{storageNotice}</p>}
       <label>Payroll period<select aria-label="Payroll period" value={run.payPeriodId} onChange={event => { const chosen = options.get(event.target.value); if (chosen) selectPeriod(chosen); }}>{Array.from(options.values()).sort((a, b) => a.start.localeCompare(b.start)).map(period => <option key={period.payPeriodId} value={period.payPeriodId}>{formatPeriod(period)}{period.payPeriodId === run.payPeriodId ? " · working" : period.payPeriodId === current.payPeriodId ? " · current by date" : ""}</option>)}</select></label>
       <button type="button" className="button button-secondary" onClick={() => selectPeriod(next)}>Open next period</button>
+      <ExhibitReset onReset={resetExhibit} />
       <details className="period-schedule-details"><summary>Schedule details</summary><p>Next period: {formatPeriod(next)}. Your working period stays selected until you change it.</p>{run.payPeriodId !== current.payPeriodId && <p>Current period by date: {formatPeriod(current)}. Your entries remain in the working period above.</p>}</details>
-    </section>{journeyNotice && <p className="exhibit-continuity" role="status">{journeyNotice}</p>}<PeriodWorkspace key={run.payPeriodId} displayName={displayName} companyName={companyName} run={run} initial={initial} onSnapshot={draft => drafts.current.set(run.payPeriodId, { run, draft })} /></>;
+    </section>{journeyNotice && <p className="exhibit-continuity" role="status">{journeyNotice}</p>}<PeriodWorkspace key={`${run.payPeriodId}:${resetEpoch}`} presenting={presenting} tourStage={tourStage} onPresent={setPresenting} onTourStage={setTourStage} onNextExhibit={() => { selectPeriod(next); setTourStage(1); }} displayName={displayName} companyName={companyName} run={run} initial={initial} onSnapshot={draft => drafts.current.set(run.payPeriodId, { run, draft })} /></>;
 }
-function PeriodWorkspace({ displayName, companyName, run, initial, onSnapshot }: { displayName: string; companyName: string; run: PayrollRun; initial: PeriodDraft; onSnapshot: (draft: PeriodDraft) => void }) {
+function PeriodWorkspace({ displayName, companyName, run, initial, onSnapshot, presenting, tourStage, onPresent, onTourStage, onNextExhibit }: { presenting: boolean; tourStage: number; onPresent: (value: boolean) => void; onTourStage: (value: number) => void; onNextExhibit: () => void; displayName: string; companyName: string; run: PayrollRun; initial: PeriodDraft; onSnapshot: (draft: PeriodDraft) => void }) {
     const period = formatPeriod(run);
     const [rows, setRows] = useState<GridRow[]>(initial.rows);
+    const [portalRequest, setPortalRequest] = useState(0);
     const [showSetup, setShowSetup] = useState(false);
     const [corrections, setCorrections] = useState<DraftCorrection[]>(initial.corrections ?? []);
     const workspaceName = companyName || `${displayName}’s workspace`;
@@ -167,7 +182,16 @@ function PeriodWorkspace({ displayName, companyName, run, initial, onSnapshot }:
     }
     const nextAction = completed === 3 ? "Review the contractor statements" : ["View the automatic pay period", "Check contractor earnings", "Check deductions & reimbursements"][nextStep];
     const summary = <PayrollSummary demoStatus={demo?.status} period={period} count={contractors.length} gross={gross} earnings={total("contractorEarnings")} deductions={total("totalDeductions")} reimbursements={total("totalReimbursements")} net={total("netPay")}/>;
-    return <div className="app-shell">
+    function presentStage(stage: number) {
+        if (stage === 0) { if (!demo) setShowSetup(true); }
+        else if (stage === 1) begin(1);
+        else if (stage === 2) navigate("exceptions");
+        else if (stage === 3) navigate("review");
+        else if (stage === 4) { navigate("review"); requestAnimationFrame(() => document.querySelector<HTMLElement>(".demo-completion")?.scrollIntoView({ block: "center" })); }
+        else if (stage === 5) { navigate("review"); setPortalRequest(value => value + 1); }
+        else if (stage === 6 && demo) onNextExhibit();
+    }
+    return <div className={`app-shell ${presenting ? "presentation-mode" : ""}`}>
     <a href="#main-content" className="skip-link">Skip to content</a>
     <aside className="sidebar" aria-label="Workspace navigation">
       <a className="brand" href="/" aria-label="PayCore home"><BrandLogo /></a>
@@ -188,7 +212,8 @@ function PeriodWorkspace({ displayName, companyName, run, initial, onSnapshot }:
       <main id="main-content" className="content">
         <div className="page-heading"><div><p className="eyebrow">PAYROLL OPERATIONS</p><h1 ref={heading} tabIndex={-1}>{view === "overview" ? "Payroll command center." : view === "prepare" ? preparation[step].title : view === "review" ? "Review your payroll." : view === "contractors" ? "Contractor 360." : view === "activity" ? "Activity register." : "Exception center."}</h1><p className="page-description">{view === "overview" ? "See what is ready, what needs attention, and what to do next." : view === "prepare" ? `Step ${step + 1} of 4 · Check the sample information, then continue.` : view === "review" ? "Check each statement before acknowledging the sample review." : "Your people, source records, and calculations in one workspace."}</p></div><span className="period-label"><Icon name="clock" size={16}/>{period}</span></div>
 
-        <section className="panel exhibit-journey" aria-label="Client exhibit journey"><div><p className="eyebrow">FROM AGREEMENT TO NEXT PAYDAY</p><h2>Enter it once. See PayCore remember.</h2><p>Set up a fictional contractor, enter their work, explain the settlement, and simulate approval. Then open the next period above.</p></div><div className="activity-actions"><button className="button button-primary" disabled={Boolean(demo)} onClick={() => setShowSetup(true)}>Set up contractor</button><button className="button button-secondary" onClick={() => begin(1)}>Enter payroll activity</button><button className="button button-secondary" onClick={() => navigate("review")}>Explain settlement</button></div></section>
+        {presenting && <PresentationGuide stage={tourStage} approved={Boolean(demo)} onStage={onTourStage} onAction={presentStage} onExit={() => onPresent(false)} />}
+        <section className="panel exhibit-journey" aria-label="Client exhibit journey"><div><p className="eyebrow">FROM AGREEMENT TO NEXT PAYDAY</p><h2>Enter it once. See PayCore remember.</h2><p>Set up a fictional contractor, enter their work, explain the settlement, and simulate approval. Then open the next period above.</p></div><div className="activity-actions">{!presenting && <button className="button button-secondary" onClick={() => { onTourStage(0); onPresent(true); }}>Start presentation</button>}<button className="button button-primary" disabled={Boolean(demo)} onClick={() => setShowSetup(true)}>Set up contractor</button><button className="button button-secondary" onClick={() => begin(1)}>Enter payroll activity</button><button className="button button-secondary" onClick={() => navigate("review")}>Explain settlement</button></div></section>
         {showSetup && !demo && <ExhibitOnboarding inputs={inputs} run={run} onCancel={() => setShowSetup(false)} onActivate={(row, input) => { const nextRows = [...rows, row], nextInputs = [...inputs, input]; setRows(nextRows); updateInputs(nextInputs); setGridValid(nextRows.every(item => { try { calculateGridRow(item, nextInputs, new Date().toISOString(), run); return true; } catch { return false; } })); setShowSetup(false); begin(1); }} />}
         <DraftRecovery scope={JSON.stringify([displayName, companyName])} run={run} draft={{inputs, rows, corrections}} frozen={Boolean(demo)} onRestore={draft => { if (demo) return; setRows(draft.rows); setInputs(draft.inputs); setCorrections(draft.corrections ?? []); setGridValid(draft.rows.length > 0 && draft.rows.every(row => { try { calculateGridRow(row, draft.inputs, new Date().toISOString(), run); return true; } catch { return false; } })); setChecked([true, false, false]); setAcknowledged(false); navigate("overview"); }} />
         {demo && <p className="review-ready" role="status">Demo {demo.status} · Figures are frozen for this exhibit. Open another period to enter new activity.</p>}
@@ -219,7 +244,7 @@ function PeriodWorkspace({ displayName, companyName, run, initial, onSnapshot }:
           <WorkflowProgress current={3} checked={checked} onSelect={(index) => { if (index < 3)
             begin(index); }}/>
           {completed !== 3 ? <div className="review-warning" role="status"><Icon name="help"/><div><strong>{3 - completed} preparation checks still need your attention.</strong><p>You can preview statements now. Complete the guide before acknowledging your review.</p></div><button className="button button-secondary" onClick={() => begin()}>Continue preparation<Icon name="arrow" size={16}/></button></div> : <div className="review-ready" role="status"><Icon name="check"/>Preparation complete. Review each statement below.</div>}
-          <ExhibitStatement inputs={inputs} approval={demo} />
+          <ExhibitStatement inputs={inputs} approval={demo} portalRequest={portalRequest} />
           <WorkbookPayroll inputs={inputs} snapshots={demo?.snapshots} />
           <div className="guided-layout"><div><section className="panel review-panel"><div className="section-heading"><div><p className="eyebrow">CONTRACTOR STATEMENTS</p><h2>Here’s what each person receives.</h2></div><span className="draft-chip">{demo ? `Demo ${demo.status}` : "Draft"}</span></div><p className="question-intro">Select a contractor to see the full breakdown.</p><div className="statement-list">{contractors.map((person) => <details className="statement-detail" key={person.reference}><summary><span className="person-avatar">{person.initials}</span><span className="person-name">{person.name}<small>{person.reference} · {person.methodLabel}</small></span><strong>{money(person.settlement.netPay)}</strong><Icon name="chevron" size={16}/></summary><dl className="statement-breakdown"><div><dt>Gross revenue</dt><dd>{money(person.gross)}</dd></div><div><dt>Agreed pay terms</dt><dd>{person.methodLabel}</dd></div>{person.detail.lines.map(line => <div key={line.id}><dt>{line.description}<small className="line-origin">{line.origin === "AUTOMATIC" ? `Automatic · rule ${line.ruleId}` : "Entered activity"}</small></dt><dd>{line.kind === "DEDUCTION" ? "−" : ""}{money(line.amountCents / 100)}</dd></div>)}<div><dt>Calculated contractor earnings</dt><dd>{money(person.detail.grossEarningsCents / 100)}</dd></div><div><dt>Automatic deductions</dt><dd>−{money(person.detail.automaticDeductionsCents / 100)}</dd></div><div><dt>Entered deductions</dt><dd>−{money(person.detail.manualDeductionsCents / 100)}</dd></div><div><dt>Reimbursements</dt><dd>+{money(person.detail.reimbursementsCents / 100)}</dd></div><div><dt>Adjustments</dt><dd>{money(person.detail.adjustmentsCents / 100)}</dd></div><div><dt>YTD earnings / deductions / net</dt><dd>{money(person.ytd.earningsCents / 100)} / {money(person.ytd.deductionsCents / 100)} / {money(person.ytd.netCents / 100)}<small className="line-origin">{demo ? "Demo approved-history YTD; no official production history." : "Draft excluded from demo YTD."}</small></dd></div><div className="breakdown-total"><dt>Estimated net pay</dt><dd>{money(person.settlement.netPay)}</dd></div></dl></details>)}</div></section><section className="panel approval-panel"><span className="section-icon"><Icon name="shield"/></span><div><h2>Finish with your review.</h2><p>Check the statements and totals. Approval is always a separate, deliberate action.</p><label className="acknowledgement"><input type="checkbox" checked={acknowledged} disabled={Boolean(demo) || !hasContractors || completed !== 3 || contractors.some(p => p.detail.blockers.length > 0)} onChange={(event) => setAcknowledged(event.target.checked)}/><span>I have reviewed these sample statements and totals.</span></label><p className="demo-explanation" role="status">{demo ? "Demo financial snapshot is frozen. Continue with downloads or simulated payment status below." : acknowledged ? "Review acknowledged. Continue below to simulate approval." : "Complete your review to enable the demo approval step below."}</p><div className="approval-actions"><button className="text-link" onClick={() => begin()}>Back to preparation</button></div></div></section></div>{summary}</div>
           <DemoCompletion inputs={inputs} ready={acknowledged && hasContractors && completed === 3 && !contractors.some(person => person.detail.blockers.length > 0)} actor={displayName} companyName={workspaceName} approval={demo} onApprove={setDemo} />
