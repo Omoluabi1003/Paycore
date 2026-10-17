@@ -3,7 +3,7 @@ import { BrandSplash } from "./brand";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(`https://${process.env.VERCEL_URL || process.env.VERCEL_PROJECT_PRODUCTION_URL || "paycore-gamma.vercel.app"}`),
+  metadataBase: new URL(`https://${process.env.VERCEL_PROJECT_PRODUCTION_URL || "paycore-gamma.vercel.app"}`),
   title: "PayCore | Contractor Settlements & Payroll",
   description: "Contractor settlements and payroll operations. Enter the facts, understand every deduction. Developed by ETL GIS Consulting LLC.",
   openGraph: {
