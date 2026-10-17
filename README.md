@@ -135,3 +135,7 @@ The date refreshes every 30 seconds and when the page becomes visible. New perio
 ## Downloads at the end of review
 
 PDF/CSV sample downloads and sample email preparation appear once, after the final statements and totals, only after all preparation steps and review acknowledgement are complete with valid contractor entries and no blocking calculation issues. They no longer appear during setup, home, or data entry. Editing payroll or withdrawing acknowledgement hides the actions until review is repeated. The links explicitly identify fixed fictional samples; generating exports from entered drafts remains unimplemented. Email opens the mail client and requires a manual attachment. No email is sent by PayCore. Revert the preview/workspace changes to restore the prior placement.
+
+## Decorative accounting imagery
+
+A locally hosted, AI-generated accounting desk image decorates only the sign-in story and home welcome panel. Dark navy/teal overlays keep the photo faint; operational forms, grids, statements, and totals retain solid surfaces. The decorative CSS layers contain no semantic information or interactive elements and are hidden in print, forced-colors, and increased-contrast modes. The bundled WebP is approximately 75 KB and requires no external image service. It depicts generic documents rather than real payroll data. Revert the decorative CSS and remove the bundled image to roll back.

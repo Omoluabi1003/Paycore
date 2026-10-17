@@ -2512,3 +2512,19 @@ body:has(:focus-visible) .brand-splash-intro {
 .final-downloads { margin-top: 24px; padding: 24px; }
 .final-downloads > p { line-height: 1.6; }
 .final-downloads .walkthrough-toolbar { margin: 16px 0 0; padding: 0; border: 0; background: transparent; }
+
+/* Decorative payroll photography stays behind opaque, readable content. */
+.access-story { position: relative; isolation: isolate; overflow: hidden; }
+.access-story::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: linear-gradient(110deg, rgba(9, 30, 46, .93) 5%, rgba(14, 49, 62, .86) 55%, rgba(17, 66, 72, .80)), url("/images/payroll-desk.webp") center / cover no-repeat; }
+.portal-welcome::before { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(100deg, rgba(17, 75, 83, .97) 10%, rgba(19, 84, 91, .92) 50%, rgba(20, 86, 91, .80)), url("/images/payroll-desk.webp") center 58% / cover no-repeat; }
+.portal-welcome > * { position: relative; }
+@media (max-width: 720px) {
+  .access-story::before { background-position: 65% center; }
+  .portal-welcome::before { background-position: 65% center; }
+}
+@media (prefers-contrast: more), (forced-colors: active) {
+  .access-story::before, .portal-welcome::before { display: none; }
+}
+@media print {
+  .access-story::before, .portal-welcome::before { display: none; }
+}
