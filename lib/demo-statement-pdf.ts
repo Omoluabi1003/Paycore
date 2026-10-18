@@ -1,3 +1,4 @@
+import { StatementHeaderSchema } from "./statement-header.ts";
 import { statementBoldFont, statementBoldFontBase64 } from "./pdf-fonts/century-gothic-bold-italic.ts";
 import { statementFont, statementFontBase64 } from "./pdf-fonts/tr-century-gothic-italic.ts";
 import type { DemoApproval } from "./demo-payroll.ts";
@@ -39,6 +40,7 @@ export function statementReport(state: DemoApproval, snapshot: ApprovedSettlemen
 
 /** Excel-style Letter statement with the supplied TR Century Gothic Italic embedded. */
 export function renderDemoPdf(state: DemoApproval, dollars: (cents: number) => string): Uint8Array {
+  const header = StatementHeaderSchema.parse(state.statementHeader ?? {});
   const pages: string[][] = [];
   const text = (x: number, y: number, size: number, value: string, bold = false) => `q BT /${bold ? "F2" : "F1"} ${size} Tf 0 Tr ${x} ${y} Td (${escape(value)}) Tj ET Q`;
   const money = (value: number) => `$ ${dollars(value)}`;
@@ -53,21 +55,30 @@ export function renderDemoPdf(state: DemoApproval, dollars: (cents: number) => s
     function newPage() {
       content = []; pages.push(content);
       const companyLines = wrap(state.companyName, 160, 10, true);
-      const bannerHeight = Math.max(48, companyLines.length * 12 + 12);
+      const companyInfo = [header.address, header.cityStateZip, header.email ? `Email: ${header.email}` : "", header.phone ? `Phone: ${header.phone}` : "", [header.mcNumber ? `MC ${header.mcNumber}` : "",header.usdotNumber ? `USDOT ${header.usdotNumber}` : ""].filter(Boolean).join(" | ")].filter(Boolean).flatMap(value=>wrap(value,160,6.5));
+      const bannerHeight = Math.max(48, companyLines.length * 12 + companyInfo.length * 8 + 12);
       const identityLines = wrap(`CONTRACTOR: ${contractor.displayName} | ${contractor.contractorNumber}`, 540, 8, true);
       const identityTop = 760 - bannerHeight, identityHeight = identityLines.length * 10 + 7;
       rect(28, 760, 556, bannerHeight, "0.78 0.93 0.98");
       rect(28, 760, 176, bannerHeight, "0.86 0.95 0.82");
       companyLines.forEach((line, i) => content.push(text(36, 744 - i * 12, 10, line, true)));
+      companyInfo.forEach((line,i)=>content.push(text(36,744-companyLines.length*12-i*8,6.5,line)));
       content.push(text(216, 738, 14, "CONTRACTOR PAYROLL", true));
       // Existing PayCore vector mark; never reuse the private logo from the reference.
       content.push("q 0.4 0 0 -0.4 488 752 cm", "0.086 0.349 0.306 rg 19 0 m 45 0 l 55.49 0 64 8.51 64 19 c 64 45 l 64 55.49 55.49 64 45 64 c 19 64 l 8.51 64 0 55.49 0 45 c 0 19 l 0 8.51 8.51 0 19 0 c f", "0.965 0.973 0.941 rg 20 16 m 35 16 l 44 16 50 21.7 50 30 c 50 38.3 44 44 35 44 c 29 44 l 29 53 l 20 53 l h 29 25 m 29 35 l 35 35 l 38.9 35 41 33.2 41 30 c 41 26.8 38.9 25 35 25 c h f*", "0.706 0.831 0.639 rg 50 49 m 50 51.761 47.761 54 45 54 c 42.239 54 40 51.761 40 49 c 40 46.239 42.239 44 45 44 c 47.761 44 50 46.239 50 49 c f Q");
       content.push("0.086 0.349 0.306 rg", text(520, 733, 11, "PayCore", true), "0 0 0 rg");
       rect(28, identityTop, 556, identityHeight, "0.91 0.93 0.95");
       identityLines.forEach((line, i) => content.push(text(35, identityTop - 11 - i * 10, 8, line, true)));
-      y = identityTop - identityHeight - 5;
+      y = identityTop - identityHeight;
+      const contactRows = [[`ID number: ${contractor.contractorNumber}`,`Pay begin date: ${snapshot.start}`],[`Address: ${contractor.address || "Not entered"}`,`Pay end date: ${snapshot.end}`],[`City, state: ${contractor.cityStateZip || "Not entered"}`,`Payroll #: ${header.payrollNumber || "Not entered"}`],[`Phone: ${contractor.phone || "Not entered"}`,`Invoice pay date: ${header.invoicePayDate || "Not entered"}`]];
+      for (const [rowIndex,row] of contactRows.entries()) {
+        const cells=row.map(value=>wrap(value,266,7)),height=Math.max(...cells.map(cell=>cell.length))*9+4;
+        rect(28,y,556,height,rowIndex%2===0?"0.86 0.95 0.98":undefined);
+        cells.forEach((lines,column)=>lines.forEach((line,i)=>content.push(text(33+column*278,y-9-i*9,7,line))));y-=height;
+      }
+      y-=4;
       for (const value of [`Pay period: ${snapshot.start} to ${snapshot.end}`, `Statement DEMO-${state.payrollRunId}-${index + 1}`, `DEMO ${state.status} | ${state.paidAt ? "Marked paid in demo; no funds moved" : "Not marked paid"}`]) {
-        for (const line of wrap(value, 550, 7)) { content.push(text(28, y - 8, 7, line)); y -= 10; }
+        for (const line of wrap(value,550,6.5)) {content.push(text(28,y-7,6.5,line));y-=9;}
       }
       y -= 7;
     }
@@ -148,12 +159,13 @@ export function renderDemoPdf(state: DemoApproval, dollars: (cents: number) => s
       const deducted = sum(snapshot.lines.filter(line => line.kind === "DEDUCTION" && line.ruleId === rule.id).map(line => line.amountCents));
       note(`${rule.description}: Opening USD ${dollars(rule.remainingBalanceCents!)} | Deducted USD ${dollars(deducted)} | Remaining USD ${dollars(safeCents(BigInt(rule.remainingBalanceCents!) - BigInt(deducted)))}`);
     }
-    note(`Approved in demo by ${state.actorName} at ${state.approvedAt}. Payment arrangement: ${contractor.paymentMethod}. Banking details are not stored in this exhibit.`);
+
   }
   const fontObject = (font: typeof statementFont, descriptorId: number) => `<< /Type /Font /Subtype /TrueType /BaseFont /${font.postscriptName} /FirstChar 32 /LastChar 126 /Widths [${Array.from({ length: 95 }, (_, i) => font.widths[String.fromCharCode(i + 32) as keyof typeof font.widths]).join(" ")}] /Encoding /WinAnsiEncoding /FontDescriptor ${descriptorId} 0 R >>`;
   const objects = ["<< /Type /Catalog /Pages 2 0 R >>", `<< /Type /Pages /Count ${pages.length} /Kids [${pages.map((_, index) => `${5 + index * 2} 0 R`).join(" ")}] >>`, fontObject(statementFont, 5 + pages.length * 2), fontObject(statementBoldFont, 7 + pages.length * 2)];
   for (const [index, content] of pages.entries()) {
-    content.push("0 0 0 rg", text(28, 34, 7, "Developed by ETL GIS Consulting LLC", true), text(28, 23, 6.5, "SIMULATION ONLY - no live payroll approval or real payment."), text(493, 23, 6.5, `Page ${index + 1} of ${pages.length}`));
+    wrap(`Approved in demo by ${state.actorName} at ${state.approvedAt}`,450,6).forEach((line,i)=>content.push(text(28,51-i*7,6,line)));
+    content.push("0 0 0 rg", text(28, 34, 7, "Developed by ETL GIS Consulting LLC", true), text(493,34,7,"PayCore",true), text(28, 23, 6.5, "SIMULATION ONLY - no live payroll approval or real payment."), text(493, 23, 6.5, `Page ${index + 1} of ${pages.length}`));
     const stream = content.join("\n");
     objects.push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${6 + index * 2} 0 R >>`, `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`);
   }

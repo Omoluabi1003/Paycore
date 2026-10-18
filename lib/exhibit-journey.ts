@@ -4,7 +4,7 @@ import type { GridRow } from "./payroll-grid.ts";
 import { configureDemoAdvance, demoCents } from "./demo-payroll.ts";
 import type { DemoApproval } from "./demo-payroll.ts";
 import type { CalculationInput, PayrollRun } from "./settlements.ts";
-const setup = z.object({ name: z.string().trim().min(1).max(120), reference: z.string().trim().min(1).max(32), method: z.enum(["PERCENT_OF_ELIGIBLE_REVENUE", "PER_MILE", "FLAT_PER_PERIOD"]), rate: z.string(), insurance: z.string(), insuranceDescription: z.string().trim().max(128), advance: z.string(), installment: z.string() });
+const setup = z.object({ name: z.string().trim().min(1).max(120), address: z.string().trim().max(120).optional(), cityStateZip: z.string().trim().max(120).optional(), phone: z.string().trim().max(60).optional(), reference: z.string().trim().min(1).max(32), method: z.enum(["PERCENT_OF_ELIGIBLE_REVENUE", "PER_MILE", "FLAT_PER_PERIOD"]), rate: z.string(), insurance: z.string(), insuranceDescription: z.string().trim().max(128), advance: z.string(), installment: z.string() });
 export type ExhibitSetup = z.infer<typeof setup>;
 export function activateExhibitContractor(raw: ExhibitSetup, existing: CalculationInput[], run: PayrollRun, id: string, at: string) {
   const parsed = setup.safeParse(raw);
@@ -12,6 +12,7 @@ export function activateExhibitContractor(raw: ExhibitSetup, existing: Calculati
   const data = parsed.data;
   const row: GridRow = { ...emptyGridRow(id), name: data.name, reference: data.reference, method: data.method, rate: data.rate };
   let input = calculateGridRow(row, existing, at, run);
+  input.contractor = { ...input.contractor, address: data.address, cityStateZip: data.cityStateZip, phone: data.phone };
   if (data.insurance && !/^0+(\.0{1,2})?$/.test(data.insurance)) {
     if (!data.insuranceDescription) throw new Error("Describe the recurring insurance deduction.");
     input.deductionRules.push({ id: `exhibit-insurance-${id}`, contractorId: id, active: true, effectiveFrom: run.start, effectiveTo: null, createdBy: "exhibit-specialist", createdAt: at, category: "INSURANCE", description: data.insuranceDescription, calculationMethod: "FIXED_AMOUNT", amountCents: demoCents(data.insurance), frequency: "EVERY_PAYROLL" });

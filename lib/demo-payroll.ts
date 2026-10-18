@@ -1,9 +1,11 @@
+import { StatementHeaderSchema } from "./statement-header.ts";
+import type { StatementHeader } from "./statement-header.ts";
 import { prepareApproval } from "./settlements.ts";
 import type { ApprovedSettlement, CalculationInput } from "./settlements.ts";
-export type DemoApproval = { history?: ApprovedSettlement[]; version: 1; companyName: string; actorName: string; companyId: string; payrollRunId: string; start: string; end: string; status: "APPROVED" | "PAID" | "LOCKED"; approvedAt: string; paidAt?: string; lockedAt?: string; snapshots: ApprovedSettlement[]; balances: { contractorId: string; ruleId: string; expectedBalanceCents: number; remainingBalanceCents: number }[]; audit: { action: string; at: string; actor: string }[] };
+export type DemoApproval = { statementHeader?: StatementHeader; history?: ApprovedSettlement[]; version: 1; companyName: string; actorName: string; companyId: string; payrollRunId: string; start: string; end: string; status: "APPROVED" | "PAID" | "LOCKED"; approvedAt: string; paidAt?: string; lockedAt?: string; snapshots: ApprovedSettlement[]; balances: { contractorId: string; ruleId: string; expectedBalanceCents: number; remainingBalanceCents: number }[]; audit: { action: string; at: string; actor: string }[] };
 function freeze<T>(value: T): T { if (value && typeof value === "object") { Object.values(value).forEach(freeze); Object.freeze(value); } return value; }
 function identity(value: string) { if (!value.trim() || value.length > 120) throw new Error("Enter a display name of up to 120 characters."); return value.trim(); }
-export function simulateApproval(inputs: CalculationInput[], options: { companyName: string; actor: string; at: string; reviewed: boolean; reviewReasons: Record<string, Record<string, string>> }): DemoApproval {
+export function simulateApproval(inputs: CalculationInput[], options: { statementHeader?: StatementHeader; companyName: string; actor: string; at: string; reviewed: boolean; reviewReasons: Record<string, Record<string, string>> }): DemoApproval {
   if (!options.reviewed || !inputs.length) throw new Error("Complete preparation and acknowledge your review first.");
   const actor=identity(options.actor), companyName=identity(options.companyName);
   const first=inputs[0].run, contractors=new Set<string>(), sources=new Set<string>();
@@ -16,7 +18,7 @@ export function simulateApproval(inputs: CalculationInput[], options: { companyN
     snapshots.push(prepared.settlement);balances.push(...prepared.balanceUpdates.map(update=>({...update,contractorId:input.contractor.id})));
   }
   const history = [...new Map(inputs.flatMap(input => input.history ?? []).map(snapshot => [`${snapshot.companyId}:${snapshot.contractorId}:${snapshot.payrollRunId}`, snapshot])).values()];
-  return freeze({version:1,history:structuredClone(history),companyName,actorName:actor,companyId:first.companyId,payrollRunId:first.id,start:first.start,end:first.end,status:"APPROVED",approvedAt:options.at,snapshots:structuredClone(snapshots),balances,audit:[{action:"Simulated approval; financial snapshot frozen",at:options.at,actor}]});
+  return freeze({version:1,statementHeader:structuredClone(StatementHeaderSchema.parse(options.statementHeader ?? {})),history:structuredClone(history),companyName,actorName:actor,companyId:first.companyId,payrollRunId:first.id,start:first.start,end:first.end,status:"APPROVED",approvedAt:options.at,snapshots:structuredClone(snapshots),balances,audit:[{action:"Simulated approval; financial snapshot frozen",at:options.at,actor}]});
 }
 export function transitionDemo(state: DemoApproval, action: "MARK_PAID" | "LOCK", actorName: string, at: string): DemoApproval {
   const actor=identity(actorName), timestamp=Date.parse(at);
