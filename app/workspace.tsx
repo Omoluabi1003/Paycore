@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import PayrollPreview from "./payroll-preview";
 import Invoices, {clearInvoiceMemory} from "./invoices";
 import { previewRun } from "../lib/draft-contractor";
 import { invoiceStorageKey } from "../lib/invoices";
@@ -34,7 +35,7 @@ import OperationsCenter from "./operations-center";
 import type { OperationsView } from "./operations-center";
 import type { GridRow } from "../lib/payroll-grid";
 import { sampleContractor } from "../lib/sample-payroll";
-type View = OperationsView | "prepare" | "review" | "invoices";
+type View = OperationsView | "prepare" | "review" | "invoices" | "reports";
 type Contractor = ReturnType<typeof sampleContractor>;
 type IconName = "grid" | "layers" | "check" | "arrow" | "shield" | "clock" | "chevron" | "help";
 const paths: Record<IconName, string> = {
@@ -62,6 +63,7 @@ type PeriodDraft = { statementHeader?: StatementHeader; inputs: CalculationInput
 const scheduleKey = "paycore-preview-pay-schedule-v1";
 export default function Workspace({ displayName, companyName }: { displayName: string; companyName: string }) {
     const [invoiceMode,setInvoiceMode] = useState(false);
+    const [invoiceOnlyReports,setInvoiceOnlyReports] = useState(false);
     const [presenting, setPresenting] = useState(false), [tourStage, setTourStage] = useState(0), [resetEpoch, setResetEpoch] = useState(0);
     const [schedule, setSchedule] = useState<PaySchedule | null>(null);
     const [loaded, setLoaded] = useState(false);
@@ -101,7 +103,7 @@ export default function Workspace({ displayName, companyName }: { displayName: s
     }
     const current = schedule && now ? periodForDate(schedule, dateInZone(now, schedule.timeZone)) : null;
     if (!loaded) return <p role="status">Loading your pay schedule…</p>;
-    if ((!schedule || !current) && invoiceMode) return <main className="invoice-only-shell"><div className="invoice-only-heading"><BrandLogo/><button className="button button-secondary" onClick={()=>setInvoiceMode(false)}>Set up payroll</button></div><h1>Customer invoices.</h1><p>Invoice-only workspace · No payroll schedule required.</p><Invoices key={JSON.stringify([displayName,companyName])} scope={JSON.stringify([displayName,companyName])} companyId={previewRun.companyId} companyName={companyName||`${displayName}’s workspace`} actor={displayName} header={emptyStatementHeader()}/><footer className="workspace-footer">Developed by ETL GIS Consulting LLC</footer></main>;
+    if ((!schedule || !current) && invoiceMode) return <main className="invoice-only-shell"><div className="invoice-only-heading"><BrandLogo/><button className="button button-secondary" onClick={()=>setInvoiceMode(false)}>Set up payroll</button></div><div className="section-heading"><h1>{invoiceOnlyReports?"Reports.":"Customer invoices."}</h1><button className="button button-secondary" onClick={()=>setInvoiceOnlyReports(!invoiceOnlyReports)}>{invoiceOnlyReports?"Back to invoices":"Open reports"}</button></div><p>Invoice-only workspace · No payroll schedule required.</p><Invoices showReports={invoiceOnlyReports} key={JSON.stringify([displayName,companyName])} scope={JSON.stringify([displayName,companyName])} companyId={previewRun.companyId} companyName={companyName||`${displayName}’s workspace`} actor={displayName} header={emptyStatementHeader()}/><footer className="workspace-footer">Developed by ETL GIS Consulting LLC</footer></main>;
     if (!schedule || !current) return <div className="period-setup-shell"><div className="panel invoice-entry"><div><strong>Ready to bill a customer?</strong><p>Use invoicing without setting up payroll.</p></div><button className="button button-secondary" onClick={()=>setInvoiceMode(true)}>Open invoices</button></div>{storageNotice && <p role="status">{storageNotice}</p>}<PayPeriodSetup onSave={next => {
         try { localStorage.setItem(scheduleKey, JSON.stringify({ ...next, workingStart: next.start })); setStorageNotice(""); }
         catch { setStorageNotice("Browser storage is unavailable. This schedule will reset on refresh."); }
@@ -163,7 +165,7 @@ function PeriodWorkspace({ onInvoiceMode, displayName, companyName, run, initial
     const total = (key: keyof Contractor["settlement"]) => contractors.reduce((sum, p) => sum + Math.round(p.settlement[key] * 100), 0) / 100;
     const gross = contractors.reduce((sum, p) => sum + Math.round(p.gross * 100), 0) / 100;
     function focusHeading() { requestAnimationFrame(() => heading.current?.focus()); }
-    function navigate(next: View) { setView(next); onInvoiceMode(next==="invoices"); focusHeading(); }
+    function navigate(next: View) { setView(next); onInvoiceMode(next==="invoices"||next==="reports"); focusHeading(); }
     function begin(at = nextStep) { setStep(at); navigate("prepare"); }
     function editContractor(id: string) {
         setStep(1); navigate("prepare");
@@ -233,16 +235,17 @@ function PeriodWorkspace({ onInvoiceMode, displayName, companyName, run, initial
         <button className={`nav-item ${view === "invoices" ? "active" : ""}`} aria-current={view === "invoices" ? "page" : undefined} onClick={() => navigate("invoices")}><Icon name="layers"/>Invoices</button>
       </nav>
       <nav aria-label="Payroll records">
+        <button className={`nav-item ${view === "reports" ? "active" : ""}`} aria-current={view === "reports" ? "page" : undefined} onClick={() => navigate("reports")}><Icon name="layers"/>Reports</button>
         {(["contractors", "activity", "exceptions"] as const).map(item => <button key={item} className={`nav-item ${view === item ? "active" : ""}`} aria-current={view === item ? "page" : undefined} onClick={() => navigate(item)}><Icon name={item === "contractors" ? "grid" : item === "activity" ? "layers" : "help"}/>{item === "contractors" ? "Contractors" : item === "activity" ? "Activity register" : "Exceptions"}</button>)}
       </nav>
       <div className="sidebar-bottom"><div className="guide-card"><span className="guide-symbol"><Icon name="help"/></span><strong>One question.<br />One clear next step.</strong><p>Follow the guide from pay period to final review.</p><button className="guide-link" onClick={() => begin()}>Open payroll guide <Icon name="arrow" size={16}/></button></div><div className="profile"><span className="profile-avatar" aria-hidden="true">{profileInitials(displayName)}</span><div>{displayName}<small>Demo profile</small></div></div></div>
     </aside>
     <div className="workspace-main">
-      <header className="topbar"><div className="breadcrumb">Workspace <span>/</span><strong>{view === "invoices" ? "Invoices" : view === "overview" ? "Home" : view === "prepare" ? "Run payroll" : view === "review" ? "Statements & review" : view === "contractors" ? "Contractors" : view === "activity" ? "Activity register" : "Exceptions"}</strong></div><span className="demo-tag"><span />Interactive demo</span></header>
+      <header className="topbar"><div className="breadcrumb">Workspace <span>/</span><strong>{view === "reports" ? "Reports" : view === "invoices" ? "Invoices" : view === "overview" ? "Home" : view === "prepare" ? "Run payroll" : view === "review" ? "Statements & review" : view === "contractors" ? "Contractors" : view === "activity" ? "Activity register" : "Exceptions"}</strong></div><span className="demo-tag"><span />Interactive demo</span></header>
       <main id="main-content" className={`content ${walkthrough !== null ? "walkthrough-active" : ""}`}>
-        <div className="page-heading"><div><p className="eyebrow">{view === "invoices" ? "BILLING OPERATIONS" : "PAYROLL OPERATIONS"}</p><h1 ref={heading} tabIndex={-1}>{view === "invoices" ? "Customer invoices." : view === "overview" ? "Payroll command center." : view === "prepare" ? preparation[step].title : view === "review" ? "Review your payroll." : view === "contractors" ? "Contractor 360." : view === "activity" ? "Activity register." : "Exception center."}</h1><p className="page-description">{view === "invoices" ? "See what you billed, what is due, and what was received." : view === "overview" ? "See what is ready, what needs attention, and what to do next." : view === "prepare" ? `Step ${step + 1} of 4 · Check the sample information, then continue.` : view === "review" ? "Check each statement before acknowledging the sample review." : "Your people, source records, and calculations in one workspace."}</p></div>{view !== "invoices" && <span className="period-label"><Icon name="clock" size={16}/>{period}</span>}</div>
+        <div className="page-heading"><div><p className="eyebrow">{view === "reports" ? "REPORTS" : view === "invoices" ? "BILLING OPERATIONS" : "PAYROLL OPERATIONS"}</p><h1 ref={heading} tabIndex={-1}>{view === "reports" ? "Reports." : view === "invoices" ? "Customer invoices." : view === "overview" ? "Payroll command center." : view === "prepare" ? preparation[step].title : view === "review" ? "Review your payroll." : view === "contractors" ? "Contractor 360." : view === "activity" ? "Activity register." : "Exception center."}</h1><p className="page-description">{view === "reports" ? "Review invoices and contractor settlements, with a clear path to each source record." : view === "invoices" ? "See what you billed, what is due, and what was received." : view === "overview" ? "See what is ready, what needs attention, and what to do next." : view === "prepare" ? `Step ${step + 1} of 4 · Check the sample information, then continue.` : view === "review" ? "Check each statement before acknowledging the sample review." : "Your people, source records, and calculations in one workspace."}</p></div>{view !== "invoices" && view !== "reports" && <div className="heading-preview-actions"><span className="period-label"><Icon name="clock" size={16}/>{period}</span><PayrollPreview inputs={inputs} approval={demo} valid={gridValid} pendingDetails={statementDirty} companyName={workspaceName}/></div>}</div>
 
-        {view !== "invoices" && <>
+        {view !== "invoices" && view !== "reports" && <>
         <div className="walkthrough-launch"><button className="button button-secondary" onClick={() => guideStage(0)}>Take a guided walkthrough</button><button className="text-link" onClick={() => guideStage(view === "exceptions" ? 2 : view === "review" ? 3 : view === "prepare" || view === "activity" ? 1 : 0)}>Help me here</button></div>
         {walkthrough !== null && <GuidedWalkthrough stage={walkthrough} onStage={guideStage} onExit={() => setWalkthrough(null)} />}
         {presenting && <button className="button button-secondary presentation-return" onClick={() => revealPresentation(".presentation-guide")}>Return to walkthrough</button>}
@@ -254,7 +257,7 @@ function PeriodWorkspace({ onInvoiceMode, displayName, companyName, run, initial
         <DraftRecovery scope={JSON.stringify([displayName, companyName])} run={run} draft={{statementHeader, inputs, rows, corrections}} pendingChanges={statementDirty} frozen={Boolean(demo)} onRestore={draft => { if (demo) return; setStatementHeader(draft.statementHeader??emptyStatementHeader()); setRows(draft.rows); setInputs(draft.inputs); setCorrections(draft.corrections ?? []); setGridValid(draft.rows.length > 0 && draft.rows.every(row => { try { calculateGridRow(row, draft.inputs, new Date().toISOString(), run); return true; } catch { return false; } })); setChecked([true, false, false]); setAcknowledged(false); navigate("overview"); }} />
         {demo && <p className="review-ready" role="status">Demo {demo.status} · Figures are frozen for this exhibit. Open another period to enter new activity.</p>}
         </>}
-        <div hidden={view !== "invoices"}><Invoices key={JSON.stringify([displayName,companyName])} scope={JSON.stringify([displayName,companyName])} companyId={run.companyId} companyName={workspaceName} actor={displayName} header={statementHeader}/></div>
+        <div hidden={view !== "invoices" && view !== "reports"}><Invoices showReports={view==="reports"} payroll={{inputs,approval:demo,valid:gridValid,pendingDetails:statementDirty}} key={JSON.stringify([displayName,companyName])} scope={JSON.stringify([displayName,companyName])} companyId={run.companyId} companyName={workspaceName} actor={displayName} header={statementHeader}/></div>
         {(["overview", "contractors", "activity", "exceptions"] as View[]).includes(view) && <OperationsCenter key={view} view={view as OperationsView} inputs={inputs} rows={rows} run={run} demo={demo} onAdd={addContractor} corrections={corrections} onCorrect={(next, correction) => { if (demo) return; updateInputs(next); setCorrections(previous => [...previous, correction]); }} onEntry={openActivity} onFuelCheck={() => { if (demo) return; setStep(1); navigate("prepare"); requestAnimationFrame(() => { if (activityDetails.current) activityDetails.current.open = true; const target = document.getElementById("fuel-source-check") as HTMLDetailsElement | null; if (target) { target.open = true; target.scrollIntoView({ block: "center" }); target.querySelector("summary")?.focus(); } }); }} onReview={() => completed === 3 || demo ? navigate("review") : begin()} onEdit={editContractor} onView={navigate} />}
         {view === "prepare" && <fieldset className="demo-entry-fields" disabled={Boolean(demo)}><legend className="sr-only">Demo payroll entry</legend><PayrollGrid run={run} rows={rows} onRowsChange={next => { if (!demo) setRows(next); }} inputs={inputs} onChange={updateInputs} onValidityChange={(valid) => { if (demo) return; setGridValid(valid); setChecked([true, false, false]); setAcknowledged(false); }} />
         {inputs.length > 0 && <details ref={activityDetails} className="detailed-activity"><summary>Add detailed loads, charges, or adjustments</summary><ActivityEntry requestedAction={activityRequest} inputs={inputs} onChange={updateInputs} /><DemoAdvance inputs={inputs} onChange={updateInputs} /><FuelCheck inputs={inputs} onChange={updateInputs} /><FactoringPlan inputs={inputs} onChange={updateInputs} /></details>}</fieldset>}
