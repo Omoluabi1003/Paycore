@@ -77,3 +77,15 @@ test('payment record corrections preserve original receipts and post one compens
  const pdf=new TextDecoder().decode(invoicePdf(replacement.invoices[0],'2026-10-18'));assert.ok(pdf.includes('REVERSED - not counted'));assert.ok(pdf.includes('Synthetic amount entered in error'));
  const voided=voidInvoice(corrected,'invoice-1','Synthetic replacement invoice needed',actor,at);assert.equal(voided.invoices[0].status,'VOID');assert.equal(voided.invoices[0].payments.length,1);
 });
+test('reference invoice adds described costs after tax and preserves payment instructions at issue',()=>{
+ const input={...draft(),additionalCostsCents:2500,additionalCostsDescription:'Synthetic handling charge',paymentInstructions:'Pay the authorized example payee.',billingContact:'Billing desk: billing@example.test'};
+ const result=calculateInvoice(input);assert.equal(result.taxCents,950);assert.equal(result.totalCents,22450);
+ assert.throws(()=>calculateInvoice({...input,additionalCostsDescription:''}),/Describe/);
+ assert.throws(()=>calculateInvoice({...input,additionalCostsCents:-1}));
+ assert.throws(()=>calculateInvoice({...input,additionalCostsCents:Number.MAX_SAFE_INTEGER}),/range/);
+ const book=issueInvoice(saveInvoiceDraft(emptyInvoiceBook('company-1'),input,actor,at),input.id,actor,at);
+ const invoice=book.invoices[0];assert.equal(invoice.totals.totalCents,22450);assert.equal(invoice.paymentInstructions,input.paymentInstructions);assert.ok(Object.isFrozen(invoice));
+ const pdf=new TextDecoder().decode(invoicePdf(invoice,'2026-10-18'));assert.match(pdf,/PAYMENT INSTRUCTIONS/);assert.match(pdf,/Synthetic handling charge/);assert.match(pdf,/billing@example.test/);assert.match(pdf,/224.50/);
+ const restored=decodeInvoiceBook(encodeInvoiceBook(book,'profile'),'profile','company-1');assert.equal(restored.invoices[0].additionalCostsCents,2500);
+ assert.throws(()=>validateInvoiceBook({...book,invoices:[{...invoice,additionalCostsCents:2600}]},'company-1'),/totals/);
+});

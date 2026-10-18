@@ -6,7 +6,7 @@ const cents=z.number().int().safe().nonnegative();
 const lineSchema=z.object({id,description:text.min(1),quantityMillis:z.number().int().safe().positive(),unitPriceCents:cents});
 const totalsSchema=z.object({subtotalCents:cents,discountCents:cents,taxCents:cents,totalCents:cents});
 const reversalSchema=z.object({id,paymentId:id,at:z.string().datetime(),actor:id,reason:text.min(1)});
-const invoiceSchema=z.object({id,companyId:id,number:id,issuer:text.min(1),issuerAddress:text,customer:text.min(1),customerEmail:z.union([z.literal(""),z.string().trim().email().max(120)]),billingAddress:text,issuedOn:date,dueOn:date,currency:z.literal("USD"),lines:z.array(lineSchema).min(1).max(100),discountCents:cents,taxBasisPoints:z.number().int().min(0).max(10000),notes:z.string().trim().max(1000),status:z.enum(["DRAFT","ISSUED","VOID"]),paymentReversals:z.array(reversalSchema).max(200).default([]),totals:totalsSchema.optional(),payments:z.array(z.object({id,date,reference:id,amountCents:cents.positive(),note:text})).max(200),audit:z.array(z.object({at:z.string().datetime(),actor:id,action:id,reason:text.optional()})).max(600)});
+const invoiceSchema=z.object({id,companyId:id,number:id,issuer:text.min(1),issuerAddress:text,customer:text.min(1),customerEmail:z.union([z.literal(""),z.string().trim().email().max(120)]),billingAddress:text,issuedOn:date,dueOn:date,currency:z.literal("USD"),lines:z.array(lineSchema).min(1).max(100),discountCents:cents,taxBasisPoints:z.number().int().min(0).max(10000),additionalCostsCents:cents.optional(),additionalCostsDescription:text.optional(),paymentInstructions:z.string().trim().max(600).optional(),billingContact:text.optional(),notes:z.string().trim().max(1000),status:z.enum(["DRAFT","ISSUED","VOID"]),paymentReversals:z.array(reversalSchema).max(200).default([]),totals:totalsSchema.optional(),payments:z.array(z.object({id,date,reference:id,amountCents:cents.positive(),note:text})).max(200),audit:z.array(z.object({at:z.string().datetime(),actor:id,action:id,reason:text.optional()})).max(600)});
 export type Invoice=z.infer<typeof invoiceSchema>;
 export type InvoiceLine=z.infer<typeof lineSchema>;
 export type InvoiceBook={version:1;companyId:string;invoices:Invoice[]};
@@ -17,12 +17,13 @@ export function parseInvoiceAmount(value:string,places=2){if(!new RegExp(`^\\d+(
 export const decimalAmount=(value:number,places=2)=>{const scale=BigInt(10)**BigInt(places),n=BigInt(value);return `${n/scale}.${String(n%scale).padStart(places,"0")}`;};
 export const invoiceMoney=(value:number)=>{const n=BigInt(value);return `$${(n/BigInt(100)).toLocaleString("en-US")}.${String(n%BigInt(100)).padStart(2,"0")}`;};
 export function lineAmount(line:InvoiceLine){lineSchema.parse(line);return round(BigInt(line.quantityMillis)*BigInt(line.unitPriceCents),BigInt(1000));}
-export function calculateInvoice(invoice:Pick<Invoice,"lines"|"discountCents"|"taxBasisPoints">){
- z.object({lines:z.array(lineSchema).min(1).max(100),discountCents:cents,taxBasisPoints:z.number().int().min(0).max(10000)}).parse(invoice);
+export function calculateInvoice(invoice:Pick<Invoice,"lines"|"discountCents"|"taxBasisPoints"|"additionalCostsCents"|"additionalCostsDescription">){
+ z.object({lines:z.array(lineSchema).min(1).max(100),discountCents:cents,taxBasisPoints:z.number().int().min(0).max(10000),additionalCostsCents:cents.optional(),additionalCostsDescription:text.optional()}).parse(invoice);
+ if((invoice.additionalCostsCents??0)>0&&!invoice.additionalCostsDescription?.trim())throw Error("Describe the additional costs before saving.");
  const subtotalCents=checked(invoice.lines.reduce((sum,line)=>sum+BigInt(lineAmount(line)),BigInt(0)));
  if(invoice.discountCents>subtotalCents)throw Error("Discount cannot exceed the subtotal.");
  const taxable=BigInt(subtotalCents-invoice.discountCents),taxCents=round(taxable*BigInt(invoice.taxBasisPoints),BigInt(10000));
- return {subtotalCents,discountCents:invoice.discountCents,taxCents,totalCents:checked(taxable+BigInt(taxCents))};
+ return {subtotalCents,discountCents:invoice.discountCents,taxCents,totalCents:checked(taxable+BigInt(taxCents)+BigInt(invoice.additionalCostsCents??0))};
 }
 const key=(value:string)=>value.trim().toUpperCase().replace(/\s+/g,"");
 export function invoiceBalance(invoice:Invoice){const total=invoice.totals??calculateInvoice(invoice),paid=checked(invoice.payments.filter(payment=>!invoice.paymentReversals?.some(reversal=>reversal.paymentId===payment.id)).reduce((sum,payment)=>sum+BigInt(payment.amountCents),BigInt(0)));if(paid>total.totalCents)throw Error("Recorded payments exceed the invoice total.");return {paidCents:paid,balanceCents:total.totalCents-paid,total};}
