@@ -1,0 +1,35 @@
+# Customer invoicing — exhibition increment
+
+PayCore now has an Invoices workspace alongside contractor payroll in the same application/repository. New users can choose Open invoices before configuring a payroll schedule. Existing workspaces use Invoices in the sidebar. Invoices belong to the display profile/company and are independent of pay periods. No customers or invoice figures are seeded automatically.
+
+## Specialist workflow
+
+1. Create invoice. Enter company/customer contact details, a unique invoice number, invoice/due dates and described line items. Customer details may be explicitly reused from a previous invoice; each invoice keeps its own copy.
+2. Enter quantities (up to three decimal places), unit prices, optional fixed discount and a configured tax percentage. PayCore calculates line amounts, subtotal, discount, tax and total. Save the draft; edits are not automatically saved while typing.
+3. Review the saved customer, dates and amounts, tick the review confirmation and finalize explicitly. Company/customer identity, dates, lines, discount, tax and total then remain read-only. The record has not been emailed or paid by this action.
+4. Preview/download the branded invoice PDF, with the supplied embedded Italic/Bold Italic faces and ETL GIS Consulting LLC attribution. Prepare invoice email opens the user's mail app; attach the PDF manually. PayCore sends no email and records no fabricated delivery status.
+5. Record received payments with amount, date, unique reference and note. Partial/full payment statuses and outstanding totals update. Future receipts, overpayments and duplicate active references are blocked. Retries with the same payment ID/facts do not double-post.
+6. Correct an erroneous receipt through a reasoned compensating reversal. Original payment evidence stays visible, the balance reopens, and the correct receipt may be recorded. This reverses an exhibit record, not a real transfer/refund. An unpaid invoice can be voided with a reason; a voided record is preserved and excluded from receivables. Invoices with active receipts cannot be voided.
+7. Review outstanding, overdue, recorded-received and draft summary cards. Overdue alerts are in-app cues while the workspace is open, not scheduled email notifications. Search/filter the register; browse 25 rows per page.
+
+## Calculation and control rules
+
+Money is integer cents, quantities are integer thousandths, rates are integer basis points, and arithmetic uses BigInt intermediates with safe-integer range checks. Each line rounds half-up to cents. Tax applies to subtotal minus the fixed discount and rounds half-up; PayCore does not infer a tax jurisdiction/rate. Invoice currency is USD. Finalized totals are frozen and validated against their original lines; payment and reversal records append audit evidence rather than rewriting invoice figures. Current PDF copies show the current recorded balance/status, not an archive of previously downloaded versions.
+
+Invoice numbers are unique within the scoped book, including void records. Draft/finalized/void lifecycle, actor/time/reason history, date ordering, duplicate line/payment/reversal IDs, malformed totals and cross-company envelopes are validated. Aggregate receivables use BigInt so summing valid invoices does not introduce floating-point money errors.
+
+## Persistence and privacy boundaries
+
+Only fictional data is supported in this increment. Records are saved in scoped sessionStorage after explicit actions, with an in-memory copy for navigation/storage failures. They survive refresh in the same tab after reopening the same display profile/company, and span payroll periods. Unsaved editor changes may be lost on leaving the screen; the UI asks users to save first. A scoped invoice reset confirms before clearing only this profile's invoice data; global exhibit reset also clears this profile's invoices. Other profiles' data and unrelated storage are kept.
+
+Display profile/company labels are not production identities or tenant authorization. Client-side scope validation and corruption detection do not provide security against an active user. No invoice/customer data is sent to a server/provider, logged, put in URL query strings, or inserted into payroll/contractor activity. Production use needs authenticated server commands, membership checks, tenant database policies, durable transactional storage and concurrency/idempotency enforcement. Email delivery, reminders, bank feeds, payment collection, refunds, credit notes, multi-currency and official tax compliance are not connected. Receipt reversal is a record correction only.
+
+The exhibition book is bounded to 250 invoices, 100 lines per invoice, 200 receipts/reversals per invoice and a 3 MB encoded copy. Invalid saved data is preserved and blocks edits until the user explicitly resets; storage failures are visible. This is not an official accounting ledger, secure backup or multi-user persistence service.
+
+## Verification and rollback
+
+Unit tests cover integer rounding, safe ranges, configured tax/discount, dates, number uniqueness, scope, explicit immutable finalization, payment idempotency, partial/full receipt states, overpayment/duplicate/future receipt rejection, void reasons, compensating reversals, tamper detection, deterministic branded PDF, font resources, pagination and object offsets. Existing payroll tests remain unchanged. Typecheck and production build are completion gates. Browser rehearsal uses independently synthetic identities/amounts, with desktop/mobile coverage of the full workflow, profile separation, saved recovery, payroll-period independence and reset.
+
+No migrations, environment variables or dependencies are added. Rollback: revert this increment to remove the invoice UI/navigation/domain; saved data remains under the separate paycore-demo-invoices-v1 prefix and can be intentionally cleared. Payroll calculations, statements and stored payroll formats are unchanged. Built on the pending PDF/font work in PR #28; merge that dependency first before targeting main.
+
+Completed validation: all 20 test files pass, with nine invoice-domain/PDF regression cases. Typecheck, production build and whitespace checks pass. Production-build Chromium at 1440×900 and 390×900 passes invoice-only entry without a schedule, draft create/edit, exact $199.50 configured total, explicit review/finalization, partial/duplicate/overpayment/full receipts, reasoned reversal and corrected receipt, actual PDF download, email-draft URL, reusable customer details, overdue alert, voiding, payroll-period independence, reload recovery, display-profile separation and scoped reset. No browser runtime errors or horizontal overflow were observed. Extracted PDFs retain the original total, net receipts, zero final balance and reversal evidence; both supplied fonts are embedded. This is local end-to-end verification; Vercel deployment/CI status is checked separately.

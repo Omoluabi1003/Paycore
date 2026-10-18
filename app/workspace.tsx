@@ -1,5 +1,8 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import Invoices, {clearInvoiceMemory} from "./invoices";
+import { previewRun } from "../lib/draft-contractor";
+import { invoiceStorageKey } from "../lib/invoices";
 import StatementDetails from "./statement-details";
 import { emptyStatementHeader, nextStatementHeader } from "../lib/statement-header";
 import type { StatementHeader } from "../lib/statement-header";
@@ -31,7 +34,7 @@ import OperationsCenter from "./operations-center";
 import type { OperationsView } from "./operations-center";
 import type { GridRow } from "../lib/payroll-grid";
 import { sampleContractor } from "../lib/sample-payroll";
-type View = OperationsView | "prepare" | "review";
+type View = OperationsView | "prepare" | "review" | "invoices";
 type Contractor = ReturnType<typeof sampleContractor>;
 type IconName = "grid" | "layers" | "check" | "arrow" | "shield" | "clock" | "chevron" | "help";
 const paths: Record<IconName, string> = {
@@ -58,6 +61,7 @@ const preparation = [
 type PeriodDraft = { statementHeader?: StatementHeader; inputs: CalculationInput[]; rows: GridRow[]; valid: boolean; corrections?: DraftCorrection[]; demo?: DemoApproval | null };
 const scheduleKey = "paycore-preview-pay-schedule-v1";
 export default function Workspace({ displayName, companyName }: { displayName: string; companyName: string }) {
+    const [invoiceMode,setInvoiceMode] = useState(false);
     const [presenting, setPresenting] = useState(false), [tourStage, setTourStage] = useState(0), [resetEpoch, setResetEpoch] = useState(0);
     const [schedule, setSchedule] = useState<PaySchedule | null>(null);
     const [loaded, setLoaded] = useState(false);
@@ -87,15 +91,18 @@ export default function Workspace({ displayName, companyName }: { displayName: s
         try {
             const keys = demoDraftKeys(Array.from({ length: sessionStorage.length }, (_, index) => sessionStorage.key(index)!).filter(Boolean), JSON.stringify([displayName, companyName]));
             for (const key of keys) sessionStorage.removeItem(key);
+            sessionStorage.removeItem(invoiceStorageKey(JSON.stringify([displayName,companyName])));
+            clearInvoiceMemory(JSON.stringify([displayName,companyName]));
             if (!keepSchedule) localStorage.removeItem(scheduleKey);
             else if (schedule) localStorage.setItem(scheduleKey, JSON.stringify({ ...schedule, workingStart: schedule.start }));
         } catch { setStorageNotice("Reset could not finish. Current entries were kept, but some saved copies may have been removed."); return; }
-        drafts.current.clear(); setResetEpoch(value => value + 1); setPresenting(false); setTourStage(0); setJourneyNotice("Demo exhibit restarted. No production records were changed."); setStorageNotice("");
+        drafts.current.clear(); setResetEpoch(value => value + 1); setPresenting(false); setInvoiceMode(false); setTourStage(0); setJourneyNotice("Demo exhibit restarted. No production records were changed."); setStorageNotice("");
         if (!keepSchedule) { setSchedule(null); setSelectedPeriod(null); } else if (schedule) setSelectedPeriod(workingPeriod(schedule));
     }
     const current = schedule && now ? periodForDate(schedule, dateInZone(now, schedule.timeZone)) : null;
     if (!loaded) return <p role="status">Loading your pay schedule…</p>;
-    if (!schedule || !current) return <div className="period-setup-shell">{storageNotice && <p role="status">{storageNotice}</p>}<PayPeriodSetup onSave={next => {
+    if ((!schedule || !current) && invoiceMode) return <main className="invoice-only-shell"><div className="invoice-only-heading"><BrandLogo/><button className="button button-secondary" onClick={()=>setInvoiceMode(false)}>Set up payroll</button></div><h1>Customer invoices.</h1><p>Invoice-only workspace · No payroll schedule required.</p><Invoices key={JSON.stringify([displayName,companyName])} scope={JSON.stringify([displayName,companyName])} companyId={previewRun.companyId} companyName={companyName||`${displayName}’s workspace`} actor={displayName} header={emptyStatementHeader()}/><footer className="workspace-footer">Developed by ETL GIS Consulting LLC</footer></main>;
+    if (!schedule || !current) return <div className="period-setup-shell"><div className="panel invoice-entry"><div><strong>Ready to bill a customer?</strong><p>Use invoicing without setting up payroll.</p></div><button className="button button-secondary" onClick={()=>setInvoiceMode(true)}>Open invoices</button></div>{storageNotice && <p role="status">{storageNotice}</p>}<PayPeriodSetup onSave={next => {
         try { localStorage.setItem(scheduleKey, JSON.stringify({ ...next, workingStart: next.start })); setStorageNotice(""); }
         catch { setStorageNotice("Browser storage is unavailable. This schedule will reset on refresh."); }
         setSchedule(next); setSelectedPeriod(workingPeriod(next)); setNow(new Date());
@@ -115,14 +122,15 @@ export default function Workspace({ displayName, companyName }: { displayName: s
         try { localStorage.setItem(scheduleKey, JSON.stringify({ ...schedule, workingStart: period.start })); setStorageNotice(""); }
         catch { setStorageNotice("Browser storage is unavailable. Your selected period will reset on refresh."); }
     }
-    return <><section className="period-banner" aria-label="Pay schedule"><strong>Working period: {formatPeriod(run)}</strong><span>{schedule.timeZone} · Repeats every {Math.round((Date.parse(schedule.end) - Date.parse(schedule.start)) / 86400000) + 1} days</span>{storageNotice && <p role="status">{storageNotice}</p>}
+    return <><section hidden={invoiceMode} className="period-banner" aria-label="Pay schedule"><strong>Working period: {formatPeriod(run)}</strong><span>{schedule.timeZone} · Repeats every {Math.round((Date.parse(schedule.end) - Date.parse(schedule.start)) / 86400000) + 1} days</span>{storageNotice && <p role="status">{storageNotice}</p>}
       <label>Payroll period<select aria-label="Payroll period" value={run.payPeriodId} onChange={event => { const chosen = options.get(event.target.value); if (chosen) selectPeriod(chosen); }}>{Array.from(options.values()).sort((a, b) => a.start.localeCompare(b.start)).map(period => <option key={period.payPeriodId} value={period.payPeriodId}>{formatPeriod(period)}{period.payPeriodId === run.payPeriodId ? " · working" : period.payPeriodId === current.payPeriodId ? " · current by date" : ""}</option>)}</select></label>
       <button type="button" className="button button-secondary" onClick={() => selectPeriod(next)}>Open next period</button>
       <ExhibitReset onReset={resetExhibit} />
       <details className="period-schedule-details"><summary>Schedule details</summary><p>Next period: {formatPeriod(next)}. Your working period stays selected until you change it.</p>{run.payPeriodId !== current.payPeriodId && <p>Current period by date: {formatPeriod(current)}. Your entries remain in the working period above.</p>}</details>
-    </section>{journeyNotice && <p className="exhibit-continuity" role="status">{journeyNotice}</p>}<PeriodWorkspace key={`${run.payPeriodId}:${resetEpoch}`} presenting={presenting} tourStage={tourStage} onPresent={setPresenting} onTourStage={setTourStage} onNextExhibit={() => { selectPeriod(next); setTourStage(1); }} displayName={displayName} companyName={companyName} run={run} initial={initial} onSnapshot={draft => drafts.current.set(run.payPeriodId, { run, draft })} /></>;
+    </section>{journeyNotice && <p className="exhibit-continuity" role="status">{journeyNotice}</p>}<PeriodWorkspace onInvoiceMode={setInvoiceMode} key={`${run.payPeriodId}:${resetEpoch}`} presenting={presenting} tourStage={tourStage} onPresent={setPresenting} onTourStage={setTourStage} onNextExhibit={() => { selectPeriod(next); setTourStage(1); }} displayName={displayName} companyName={companyName} run={run} initial={initial} onSnapshot={draft => drafts.current.set(run.payPeriodId, { run, draft })} /></>;
 }
-function PeriodWorkspace({ displayName, companyName, run, initial, onSnapshot, presenting, tourStage, onPresent, onTourStage, onNextExhibit }: { presenting: boolean; tourStage: number; onPresent: (value: boolean) => void; onTourStage: (value: number) => void; onNextExhibit: () => void; displayName: string; companyName: string; run: PayrollRun; initial: PeriodDraft; onSnapshot: (draft: PeriodDraft) => void }) {
+function PeriodWorkspace({ onInvoiceMode, displayName, companyName, run, initial, onSnapshot, presenting, tourStage, onPresent, onTourStage, onNextExhibit }: { onInvoiceMode:(value:boolean)=>void; presenting: boolean; tourStage: number; onPresent: (value: boolean) => void; onTourStage: (value: number) => void; onNextExhibit: () => void; displayName: string; companyName: string; run: PayrollRun; initial: PeriodDraft; onSnapshot: (draft: PeriodDraft) => void }) {
+    useEffect(()=>{onInvoiceMode(false);},[onInvoiceMode]);
     const period = formatPeriod(run);
     const [statementDirty,setStatementDirty] = useState(false);
     const [statementHeader,setStatementHeader] = useState<StatementHeader>(initial.demo?.statementHeader??initial.statementHeader??emptyStatementHeader());
@@ -155,7 +163,7 @@ function PeriodWorkspace({ displayName, companyName, run, initial, onSnapshot, p
     const total = (key: keyof Contractor["settlement"]) => contractors.reduce((sum, p) => sum + Math.round(p.settlement[key] * 100), 0) / 100;
     const gross = contractors.reduce((sum, p) => sum + Math.round(p.gross * 100), 0) / 100;
     function focusHeading() { requestAnimationFrame(() => heading.current?.focus()); }
-    function navigate(next: View) { setView(next); focusHeading(); }
+    function navigate(next: View) { setView(next); onInvoiceMode(next==="invoices"); focusHeading(); }
     function begin(at = nextStep) { setStep(at); navigate("prepare"); }
     function editContractor(id: string) {
         setStep(1); navigate("prepare");
@@ -222,6 +230,7 @@ function PeriodWorkspace({ displayName, companyName, run, initial, onSnapshot, p
         <button className={`nav-item ${view === "overview" ? "active" : ""}`} aria-current={view === "overview" ? "page" : undefined} onClick={() => navigate("overview")}><Icon name="grid"/>Home</button>
         <button className={`nav-item ${view === "prepare" ? "active" : ""}`} aria-current={view === "prepare" ? "page" : undefined} onClick={() => begin()}><Icon name="layers"/>Run payroll</button>
         <button className={`nav-item ${view === "review" ? "active" : ""}`} aria-current={view === "review" ? "page" : undefined} onClick={() => navigate("review")}><Icon name="shield"/>Statements</button>
+        <button className={`nav-item ${view === "invoices" ? "active" : ""}`} aria-current={view === "invoices" ? "page" : undefined} onClick={() => navigate("invoices")}><Icon name="layers"/>Invoices</button>
       </nav>
       <nav aria-label="Payroll records">
         {(["contractors", "activity", "exceptions"] as const).map(item => <button key={item} className={`nav-item ${view === item ? "active" : ""}`} aria-current={view === item ? "page" : undefined} onClick={() => navigate(item)}><Icon name={item === "contractors" ? "grid" : item === "activity" ? "layers" : "help"}/>{item === "contractors" ? "Contractors" : item === "activity" ? "Activity register" : "Exceptions"}</button>)}
@@ -229,10 +238,11 @@ function PeriodWorkspace({ displayName, companyName, run, initial, onSnapshot, p
       <div className="sidebar-bottom"><div className="guide-card"><span className="guide-symbol"><Icon name="help"/></span><strong>One question.<br />One clear next step.</strong><p>Follow the guide from pay period to final review.</p><button className="guide-link" onClick={() => begin()}>Open payroll guide <Icon name="arrow" size={16}/></button></div><div className="profile"><span className="profile-avatar" aria-hidden="true">{profileInitials(displayName)}</span><div>{displayName}<small>Demo profile</small></div></div></div>
     </aside>
     <div className="workspace-main">
-      <header className="topbar"><div className="breadcrumb">Workspace <span>/</span><strong>{view === "overview" ? "Home" : view === "prepare" ? "Run payroll" : view === "review" ? "Statements & review" : view === "contractors" ? "Contractors" : view === "activity" ? "Activity register" : "Exceptions"}</strong></div><span className="demo-tag"><span />Interactive demo</span></header>
+      <header className="topbar"><div className="breadcrumb">Workspace <span>/</span><strong>{view === "invoices" ? "Invoices" : view === "overview" ? "Home" : view === "prepare" ? "Run payroll" : view === "review" ? "Statements & review" : view === "contractors" ? "Contractors" : view === "activity" ? "Activity register" : "Exceptions"}</strong></div><span className="demo-tag"><span />Interactive demo</span></header>
       <main id="main-content" className={`content ${walkthrough !== null ? "walkthrough-active" : ""}`}>
-        <div className="page-heading"><div><p className="eyebrow">PAYROLL OPERATIONS</p><h1 ref={heading} tabIndex={-1}>{view === "overview" ? "Payroll command center." : view === "prepare" ? preparation[step].title : view === "review" ? "Review your payroll." : view === "contractors" ? "Contractor 360." : view === "activity" ? "Activity register." : "Exception center."}</h1><p className="page-description">{view === "overview" ? "See what is ready, what needs attention, and what to do next." : view === "prepare" ? `Step ${step + 1} of 4 · Check the sample information, then continue.` : view === "review" ? "Check each statement before acknowledging the sample review." : "Your people, source records, and calculations in one workspace."}</p></div><span className="period-label"><Icon name="clock" size={16}/>{period}</span></div>
+        <div className="page-heading"><div><p className="eyebrow">{view === "invoices" ? "BILLING OPERATIONS" : "PAYROLL OPERATIONS"}</p><h1 ref={heading} tabIndex={-1}>{view === "invoices" ? "Customer invoices." : view === "overview" ? "Payroll command center." : view === "prepare" ? preparation[step].title : view === "review" ? "Review your payroll." : view === "contractors" ? "Contractor 360." : view === "activity" ? "Activity register." : "Exception center."}</h1><p className="page-description">{view === "invoices" ? "See what you billed, what is due, and what was received." : view === "overview" ? "See what is ready, what needs attention, and what to do next." : view === "prepare" ? `Step ${step + 1} of 4 · Check the sample information, then continue.` : view === "review" ? "Check each statement before acknowledging the sample review." : "Your people, source records, and calculations in one workspace."}</p></div>{view !== "invoices" && <span className="period-label"><Icon name="clock" size={16}/>{period}</span>}</div>
 
+        {view !== "invoices" && <>
         <div className="walkthrough-launch"><button className="button button-secondary" onClick={() => guideStage(0)}>Take a guided walkthrough</button><button className="text-link" onClick={() => guideStage(view === "exceptions" ? 2 : view === "review" ? 3 : view === "prepare" || view === "activity" ? 1 : 0)}>Help me here</button></div>
         {walkthrough !== null && <GuidedWalkthrough stage={walkthrough} onStage={guideStage} onExit={() => setWalkthrough(null)} />}
         {presenting && <button className="button button-secondary presentation-return" onClick={() => revealPresentation(".presentation-guide")}>Return to walkthrough</button>}
@@ -243,6 +253,8 @@ function PeriodWorkspace({ displayName, companyName, run, initial, onSnapshot, p
         {statementDirty && <p className="review-warning" role="status">Save or discard your changes in Company and statement details before approval or saving a demo draft.</p>}
         <DraftRecovery scope={JSON.stringify([displayName, companyName])} run={run} draft={{statementHeader, inputs, rows, corrections}} pendingChanges={statementDirty} frozen={Boolean(demo)} onRestore={draft => { if (demo) return; setStatementHeader(draft.statementHeader??emptyStatementHeader()); setRows(draft.rows); setInputs(draft.inputs); setCorrections(draft.corrections ?? []); setGridValid(draft.rows.length > 0 && draft.rows.every(row => { try { calculateGridRow(row, draft.inputs, new Date().toISOString(), run); return true; } catch { return false; } })); setChecked([true, false, false]); setAcknowledged(false); navigate("overview"); }} />
         {demo && <p className="review-ready" role="status">Demo {demo.status} · Figures are frozen for this exhibit. Open another period to enter new activity.</p>}
+        </>}
+        <div hidden={view !== "invoices"}><Invoices key={JSON.stringify([displayName,companyName])} scope={JSON.stringify([displayName,companyName])} companyId={run.companyId} companyName={workspaceName} actor={displayName} header={statementHeader}/></div>
         {(["overview", "contractors", "activity", "exceptions"] as View[]).includes(view) && <OperationsCenter key={view} view={view as OperationsView} inputs={inputs} rows={rows} run={run} demo={demo} onAdd={addContractor} corrections={corrections} onCorrect={(next, correction) => { if (demo) return; updateInputs(next); setCorrections(previous => [...previous, correction]); }} onEntry={openActivity} onFuelCheck={() => { if (demo) return; setStep(1); navigate("prepare"); requestAnimationFrame(() => { if (activityDetails.current) activityDetails.current.open = true; const target = document.getElementById("fuel-source-check") as HTMLDetailsElement | null; if (target) { target.open = true; target.scrollIntoView({ block: "center" }); target.querySelector("summary")?.focus(); } }); }} onReview={() => completed === 3 || demo ? navigate("review") : begin()} onEdit={editContractor} onView={navigate} />}
         {view === "prepare" && <fieldset className="demo-entry-fields" disabled={Boolean(demo)}><legend className="sr-only">Demo payroll entry</legend><PayrollGrid run={run} rows={rows} onRowsChange={next => { if (!demo) setRows(next); }} inputs={inputs} onChange={updateInputs} onValidityChange={(valid) => { if (demo) return; setGridValid(valid); setChecked([true, false, false]); setAcknowledged(false); }} />
         {inputs.length > 0 && <details ref={activityDetails} className="detailed-activity"><summary>Add detailed loads, charges, or adjustments</summary><ActivityEntry requestedAction={activityRequest} inputs={inputs} onChange={updateInputs} /><DemoAdvance inputs={inputs} onChange={updateInputs} /><FuelCheck inputs={inputs} onChange={updateInputs} /><FactoringPlan inputs={inputs} onChange={updateInputs} /></details>}</fieldset>}
