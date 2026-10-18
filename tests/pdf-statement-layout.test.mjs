@@ -1,3 +1,4 @@
+import { statementBoldFont, statementBoldFontBase64 } from '../lib/pdf-fonts/century-gothic-bold-italic.ts';
 import { createHash } from 'node:crypto';
 import { statementFont, statementFontBase64 } from '../lib/pdf-fonts/tr-century-gothic-italic.ts';
 import test from 'node:test';
@@ -49,5 +50,17 @@ test('PDF embeds the supplied unmodified TrueType font and uses character-ordere
  assert.equal(statementFont.embeddingFlags,0);
  const widths=pdf.match(/\/FirstChar 32 \/LastChar 126 \/Widths \[([^\]]+)\]/)[1].split(' ').map(Number);
  assert.equal(widths.length,95);for(let i=0;i<95;i++)assert.equal(widths[i],statementFont.widths[String.fromCharCode(i+32)]);
- assert.ok(pdf.includes('0.2 w 2 Tr')); // Same supplied italic face, heavier headings; no invented Bold Italic font.
+ assert.ok(pdf.includes('/F2 4 0 R'));assert.ok(pdf.includes('/F2 7 Tf 0 Tr'));assert.ok(!pdf.includes('2 Tr')); // Real Bold Italic face replaces simulated weight.
+});
+
+test('headings embed the supplied Century Gothic Bold Italic bytes and their own widths',()=>{
+ const pdf=new TextDecoder().decode(demoPdf(approve(fixture('2026-10-08','2026-10-14'))));
+ const streams=[...pdf.matchAll(/\/Length1 (\d+) \/Filter \/ASCIIHexDecode >>\nstream\n([0-9a-f]+)>/g)];
+ assert.equal(streams.length,2);const bytes=Buffer.from(streams[1][2],'hex');
+ assert.equal(bytes.length,statementBoldFont.byteLength);assert.equal(bytes.length,Number(streams[1][1]));
+ assert.deepEqual(bytes,Buffer.from(statementBoldFontBase64,'base64'));assert.equal(createHash('sha256').update(bytes).digest('hex'),statementBoldFont.sha256);
+ assert.equal(statementBoldFont.embeddingFlags,0);assert.ok(pdf.includes('/BaseFont /CenturyGothic-BoldItalic'));
+ const fontWidths=[...pdf.matchAll(/\/FirstChar 32 \/LastChar 126 \/Widths \[([^\]]+)\]/g)];assert.equal(fontWidths.length,2);
+ const widths=fontWidths[1][1].split(' ').map(Number);assert.equal(widths.length,95);
+ for(let i=0;i<95;i++)assert.equal(widths[i],statementBoldFont.widths[String.fromCharCode(i+32)]);
 });

@@ -1,3 +1,4 @@
+import { statementBoldFont, statementBoldFontBase64 } from "./pdf-fonts/century-gothic-bold-italic.ts";
 import { statementFont, statementFontBase64 } from "./pdf-fonts/tr-century-gothic-italic.ts";
 import type { DemoApproval } from "./demo-payroll.ts";
 import type { ApprovedSettlement } from "./settlements.ts";
@@ -10,12 +11,15 @@ type ReportRow = { cells: Cell[]; total?: boolean };
 const clean = (value: string) => value.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^\x20-\x7e]/g, "?");
 const escape = (value: string) => clean(value).replace(/[\\()]/g, "\\$&");
 // Measure the actual embedded font, with space for italic overhang.
-const width = (value: string, size: number) => [...clean(value)].reduce((total, char) => total + (statementFont.widths[char as keyof typeof statementFont.widths] ?? 600) * size / 1000, 0);
-function wrap(value: string, limit: number, size: number): string[] {
+const width = (value: string, size: number, bold = false) => {
+  const font = bold ? statementBoldFont : statementFont;
+  return [...clean(value)].reduce((total, char) => total + (font.widths[char as keyof typeof font.widths] ?? 600) * size / 1000, 0);
+};
+function wrap(value: string, limit: number, size: number, bold = false): string[] {
   const lines: string[] = []; let line = "";
   for (const word of clean(value).split(/\s+/)) {
-    if (line && width(`${line} ${word}`, size) > limit) { lines.push(`${line} `); line = ""; }
-    for (const char of `${line ? " " : ""}${word}`) { if (width(line + char, size) > limit) { lines.push(line); line = ""; } line += char; }
+    if (line && width(`${line} ${word}`, size, bold) > limit) { lines.push(`${line} `); line = ""; }
+    for (const char of `${line ? " " : ""}${word}`) { if (width(line + char, size, bold) > limit) { lines.push(line); line = ""; } line += char; }
   }
   if (line || !lines.length) lines.push(line);
   return lines;
@@ -36,7 +40,7 @@ export function statementReport(state: DemoApproval, snapshot: ApprovedSettlemen
 /** Excel-style Letter statement with the supplied TR Century Gothic Italic embedded. */
 export function renderDemoPdf(state: DemoApproval, dollars: (cents: number) => string): Uint8Array {
   const pages: string[][] = [];
-  const text = (x: number, y: number, size: number, value: string, bold = false) => `q BT /F1 ${size} Tf ${bold ? "0.2 w 2 Tr" : "0 Tr"} ${x} ${y} Td (${escape(value)}) Tj ET Q`;
+  const text = (x: number, y: number, size: number, value: string, bold = false) => `q BT /${bold ? "F2" : "F1"} ${size} Tf 0 Tr ${x} ${y} Td (${escape(value)}) Tj ET Q`;
   const money = (value: number) => `$ ${dollars(value)}`;
   for (const [index, snapshot] of state.snapshots.entries()) {
     const { view, ytd, deductions, earnings } = statementReport(state, snapshot);
@@ -48,9 +52,9 @@ export function renderDemoPdf(state: DemoApproval, dollars: (cents: number) => s
     };
     function newPage() {
       content = []; pages.push(content);
-      const companyLines = wrap(state.companyName, 160, 10);
+      const companyLines = wrap(state.companyName, 160, 10, true);
       const bannerHeight = Math.max(48, companyLines.length * 12 + 12);
-      const identityLines = wrap(`CONTRACTOR: ${contractor.displayName} | ${contractor.contractorNumber}`, 540, 8);
+      const identityLines = wrap(`CONTRACTOR: ${contractor.displayName} | ${contractor.contractorNumber}`, 540, 8, true);
       const identityTop = 760 - bannerHeight, identityHeight = identityLines.length * 10 + 7;
       rect(28, 760, 556, bannerHeight, "0.78 0.93 0.98");
       rect(28, 760, 176, bannerHeight, "0.86 0.95 0.82");
@@ -69,7 +73,7 @@ export function renderDemoPdf(state: DemoApproval, dollars: (cents: number) => s
     }
     function ensure(height: number) { if (y - height < 58) newPage(); }
     function note(value: string, bold = false) {
-      const lines = wrap(value, 544, 7);
+      const lines = wrap(value, 544, 7, bold);
       for (const line of lines) { ensure(11); content.push(text(32, y - 8, 7, line, bold)); y -= 11; }
     }
     function table(title: string, columns: Column[], rows: ReportRow[], x = 28) {
@@ -81,7 +85,7 @@ export function renderDemoPdf(state: DemoApproval, dollars: (cents: number) => s
       };
       ensure(56); header();
       for (const row of rows) {
-        const lines = row.cells.map((cell, i) => wrap(cell, columns[i].width - 12, 7));
+        const lines = row.cells.map((cell, i) => wrap(cell, columns[i].width - 12, 7, row.total));
         const count = Math.max(1, ...lines.map(item => item.length));
         let offset = 0;
         while (offset < count) {
@@ -92,7 +96,7 @@ export function renderDemoPdf(state: DemoApproval, dollars: (cents: number) => s
           let left = x;
           columns.forEach((column, i) => {
             lines[i].slice(offset, offset + chunk).forEach((line, lineIndex) => {
-              const tx = column.right ? left + column.width - 6 - width(line, 7) : left + 5;
+              const tx = column.right ? left + column.width - 6 - width(line, 7, row.total) : left + 5;
               content.push(text(tx, y - 9 - lineIndex * 9, 7, line, row.total));
             });
             left += column.width;
@@ -146,14 +150,17 @@ export function renderDemoPdf(state: DemoApproval, dollars: (cents: number) => s
     }
     note(`Approved in demo by ${state.actorName} at ${state.approvedAt}. Payment arrangement: ${contractor.paymentMethod}. Banking details are not stored in this exhibit.`);
   }
-  const objects = ["<< /Type /Catalog /Pages 2 0 R >>", `<< /Type /Pages /Count ${pages.length} /Kids [${pages.map((_, index) => `${5 + index * 2} 0 R`).join(" ")}] >>`, `<< /Type /Font /Subtype /TrueType /BaseFont /${statementFont.postscriptName} /FirstChar 32 /LastChar 126 /Widths [${Array.from({ length: 95 }, (_, i) => statementFont.widths[String.fromCharCode(i + 32) as keyof typeof statementFont.widths]).join(" ")}] /Encoding /WinAnsiEncoding /FontDescriptor ${5 + pages.length * 2} 0 R >>`, "<< >>"];
+  const fontObject = (font: typeof statementFont, descriptorId: number) => `<< /Type /Font /Subtype /TrueType /BaseFont /${font.postscriptName} /FirstChar 32 /LastChar 126 /Widths [${Array.from({ length: 95 }, (_, i) => font.widths[String.fromCharCode(i + 32) as keyof typeof font.widths]).join(" ")}] /Encoding /WinAnsiEncoding /FontDescriptor ${descriptorId} 0 R >>`;
+  const objects = ["<< /Type /Catalog /Pages 2 0 R >>", `<< /Type /Pages /Count ${pages.length} /Kids [${pages.map((_, index) => `${5 + index * 2} 0 R`).join(" ")}] >>`, fontObject(statementFont, 5 + pages.length * 2), fontObject(statementBoldFont, 7 + pages.length * 2)];
   for (const [index, content] of pages.entries()) {
     content.push("0 0 0 rg", text(28, 34, 7, "Developed by ETL GIS Consulting LLC", true), text(28, 23, 6.5, "SIMULATION ONLY - no live payroll approval or real payment."), text(493, 23, 6.5, `Page ${index + 1} of ${pages.length}`));
     const stream = content.join("\n");
-    objects.push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents ${6 + index * 2} 0 R >>`, `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`);
+    objects.push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${6 + index * 2} 0 R >>`, `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`);
   }
-  const fontHex = [...atob(statementFontBase64)].map(char => char.charCodeAt(0).toString(16).padStart(2, "0")).join("") + ">";
-  objects.push(`<< /Type /FontDescriptor /FontName /${statementFont.postscriptName} /Flags 96 /FontBBox [${statementFont.bbox.join(" ")}] /ItalicAngle ${statementFont.italicAngle} /Ascent ${statementFont.ascent} /Descent ${statementFont.descent} /CapHeight ${statementFont.capHeight} /StemV 80 /FontFile2 ${6 + pages.length * 2} 0 R >>`, `<< /Length ${fontHex.length} /Length1 ${statementFont.byteLength} /Filter /ASCIIHexDecode >>\nstream\n${fontHex}\nendstream`);
+  for (const [font, base64] of [[statementFont, statementFontBase64], [statementBoldFont, statementBoldFontBase64]] as const) {
+    const fontHex = [...atob(base64)].map(char => char.charCodeAt(0).toString(16).padStart(2, "0")).join("") + ">";
+    objects.push(`<< /Type /FontDescriptor /FontName /${font.postscriptName} /Flags 96 /FontBBox [${font.bbox.join(" ")}] /ItalicAngle ${font.italicAngle} /Ascent ${font.ascent} /Descent ${font.descent} /CapHeight ${font.capHeight} /StemV 80 /FontFile2 ${objects.length + 2} 0 R >>`, `<< /Length ${fontHex.length} /Length1 ${font.byteLength} /Filter /ASCIIHexDecode >>\nstream\n${fontHex}\nendstream`);
+  }
   let pdf = "%PDF-1.4\n"; const offsets = [0];
   objects.forEach((object, index) => { offsets.push(pdf.length); pdf += `${index + 1} 0 obj\n${object}\nendobj\n`; });
   const start = pdf.length;
