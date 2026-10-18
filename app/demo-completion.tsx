@@ -1,4 +1,5 @@
 "use client";
+import type { StatementHeader } from "../lib/statement-header";
 import { useState } from "react";
 import { simulateApproval, transitionDemo } from "../lib/demo-payroll";
 import type { DemoApproval } from "../lib/demo-payroll";
@@ -9,10 +10,10 @@ function download(contents: string | Uint8Array, type: string, filename: string)
   const blob = typeof contents === "string" ? new Blob([contents],{type}) : new Blob([new Uint8Array(contents).buffer],{type});
   const url=URL.createObjectURL(blob), link=document.createElement("a");link.href=url;link.download=filename;document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
-export default function DemoCompletion({ inputs, ready, actor, companyName, approval, onApprove }: { inputs: CalculationInput[]; ready: boolean; actor: string; companyName: string; approval: DemoApproval | null; onApprove: (approval: DemoApproval)=>void }) {
+export default function DemoCompletion({ statementHeader, inputs, ready, actor, companyName, approval, onApprove }: { statementHeader?: StatementHeader; inputs: CalculationInput[]; ready: boolean; actor: string; companyName: string; approval: DemoApproval | null; onApprove: (approval: DemoApproval)=>void }) {
   const [reasons,setReasons]=useState<Record<string,Record<string,string>>>({}), [error,setError]=useState("");
   const warnings=inputs.flatMap(input=>calculateContractorSettlement(input).warnings.map(warning=>({...warning,contractorId:input.contractor.id,name:input.contractor.displayName})));
-  function approve(event: React.FormEvent){event.preventDefault();setError("");try{onApprove(simulateApproval(inputs,{actor,companyName,at:new Date().toISOString(),reviewed:ready,reviewReasons:reasons}));}catch(error){setError(error instanceof Error?error.message:"Check the demo payroll.");}}
+  function approve(event: React.FormEvent){event.preventDefault();setError("");try{onApprove(simulateApproval(inputs,{statementHeader,actor,companyName,at:new Date().toISOString(),reviewed:ready,reviewReasons:reasons}));}catch(error){setError(error instanceof Error?error.message:"Check the demo payroll.");}}
   function transition(action: "MARK_PAID" | "LOCK"){if(!approval)return;try{onApprove(transitionDemo(approval,action,actor,new Date().toISOString()));}catch(error){setError(error instanceof Error?error.message:"Check the demo state.");}}
   return <section className="panel demo-completion" aria-labelledby="demo-completion-title"><h2 id="demo-completion-title">{approval?`Demo payroll · ${approval.status}`:"Simulate payroll approval"}</h2>
     {!approval?<form onSubmit={approve}><p>Finish preparation and acknowledge your review above. Simulated approval freezes these figures for the exhibit.</p>{warnings.map(warning=><label key={`${warning.contractorId}-${warning.code}`}>{warning.name}: {warning.message}<textarea required maxLength={500} value={reasons[warning.contractorId]?.[warning.code]??""} placeholder="Explain what you checked" onChange={event=>setReasons({...reasons,[warning.contractorId]:{...reasons[warning.contractorId],[warning.code]:event.target.value}})} /></label>)}<button className="button button-primary" type="submit" disabled={!ready}>Simulate approval</button></form>:<><p role="status">Financial snapshot frozen. This is a local simulation; no real approval or payment occurred.</p><div className="activity-actions">{approval.status==="APPROVED"&&<button className="button button-primary" onClick={()=>transition("MARK_PAID")}>Mark paid in demo</button>}{approval.status!=="LOCKED"&&<button className="button button-secondary" onClick={()=>transition("LOCK")}>Lock demo payroll</button>}</div>

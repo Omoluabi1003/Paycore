@@ -1,3 +1,5 @@
+import { StatementHeaderSchema } from "./statement-header.ts";
+import type { StatementHeader } from "./statement-header.ts";
 import { z } from "zod";
 import { ContractorSchema, CompensationRuleSchema, DeductionRuleSchema, TransactionSchema, LoadSchema } from "./settlements.ts";
 import type { CalculationInput, PayrollRun } from "./settlements.ts";
@@ -16,8 +18,8 @@ const historySchema = z.object({
 });
 const inputSchema = z.object({ run: runSchema, history: z.array(historySchema).max(1000).default([]), contractor: ContractorSchema, compensationRules: z.array(CompensationRuleSchema).max(100), deductionRules: z.array(DeductionRuleSchema).max(100), transactions: z.array(TransactionSchema).max(10000), loads: z.array(LoadSchema).max(10000), fuelReconciliation: z.object({ expectedTotalCents: z.number().int().safe().nonnegative() }).optional() });
 const rowSchema = z.object({ id: text, name: text, reference: text, method: text, rate: text, revenue: text, miles: text, deduction: text, charge: text, reimbursement: text });
-const schema = z.object({ version: z.literal(1), scope: z.string().max(1000), savedAt: z.string().datetime(), run: runSchema, inputs: z.array(inputSchema).max(1000), rows: z.array(rowSchema).max(1000), corrections: z.array(z.object({ sourceId: text, contractorId: text, reason: z.string().trim().min(1).max(240), at: z.string().datetime(), before: TransactionSchema, after: TransactionSchema })).max(10000).default([]) });
-export type DemoDraft = { inputs: CalculationInput[]; rows: GridRow[]; corrections?: DraftCorrection[] };
+const schema = z.object({ statementHeader: StatementHeaderSchema.optional(), version: z.literal(1), scope: z.string().max(1000), savedAt: z.string().datetime(), run: runSchema, inputs: z.array(inputSchema).max(1000), rows: z.array(rowSchema).max(1000), corrections: z.array(z.object({ sourceId: text, contractorId: text, reason: z.string().trim().min(1).max(240), at: z.string().datetime(), before: TransactionSchema, after: TransactionSchema })).max(10000).default([]) });
+export type DemoDraft = { statementHeader?: StatementHeader; inputs: CalculationInput[]; rows: GridRow[]; corrections?: DraftCorrection[] };
 export const draftKey = (scope: string, run: PayrollRun) => `paycore-demo-draft-v1:${encodeURIComponent(scope)}:${run.payPeriodId}`;
 export function decodeDraft(value: string, scope: string, run: PayrollRun) {
   if (value.length > 2_000_000) throw new Error("This demo draft is too large to restore.");
@@ -45,7 +47,7 @@ export function decodeDraft(value: string, scope: string, run: PayrollRun) {
 }
 export function encodeDraft(draft: DemoDraft, scope: string, run: PayrollRun, savedAt: string) {
   if (!["DRAFT", "REVIEW"].includes(run.status)) throw new Error("Only draft payroll can be saved here.");
-  const value = JSON.stringify(schema.parse({ version: 1, scope, savedAt, run, inputs: draft.inputs, rows: draft.rows, corrections: draft.corrections ?? [] }));
+  const value = JSON.stringify(schema.parse({ version: 1, statementHeader: draft.statementHeader, scope, savedAt, run, inputs: draft.inputs, rows: draft.rows, corrections: draft.corrections ?? [] }));
   decodeDraft(value, scope, run);
   return value;
 }
