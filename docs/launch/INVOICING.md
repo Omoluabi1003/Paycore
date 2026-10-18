@@ -4,7 +4,7 @@ PayCore now has an Invoices workspace alongside contractor payroll in the same a
 
 ## Specialist workflow
 
-1. Create invoice. Enter company/customer contact details, a unique invoice number, invoice/due dates and described line items. Customer details may be explicitly reused from a previous invoice; each invoice keeps its own copy.
+1. Create invoice. Enter company/customer contact details, an automatically proposed invoice number, invoice/due dates and described line items. Customer details may be explicitly reused from a previous invoice; each invoice keeps its own copy.
 2. Enter quantities (up to three decimal places), unit prices, optional fixed discount and a configured tax percentage. PayCore calculates line amounts, subtotal, discount, tax and total. Save the draft; edits are not automatically saved while typing.
 3. Review the saved customer, dates and amounts, tick the review confirmation and finalize explicitly. Company/customer identity, dates, lines, discount, tax and total then remain read-only. The record has not been emailed or paid by this action.
 4. Preview/download the branded invoice PDF, with the supplied embedded Italic/Bold Italic faces and ETL GIS Consulting LLC attribution. Prepare invoice email opens the user's mail app; attach the PDF manually. PayCore sends no email and records no fabricated delivery status.
@@ -16,7 +16,7 @@ PayCore now has an Invoices workspace alongside contractor payroll in the same a
 
 Money is integer cents, quantities are integer thousandths, rates are integer basis points, and arithmetic uses BigInt intermediates with safe-integer range checks. Each line rounds half-up to cents. Tax applies to subtotal minus the fixed discount and rounds half-up; PayCore does not infer a tax jurisdiction/rate. Invoice currency is USD. Finalized totals are frozen and validated against their original lines; payment and reversal records append audit evidence rather than rewriting invoice figures. Current PDF copies show the current recorded balance/status, not an archive of previously downloaded versions.
 
-Invoice numbers are unique within the scoped book, including void records. Draft/finalized/void lifecycle, actor/time/reason history, date ordering, duplicate line/payment/reversal IDs, malformed totals and cross-company envelopes are validated. Aggregate receivables use BigInt so summing valid invoices does not introduce floating-point money errors.
+Invoice numbers are assigned automatically on first save as INV-YYYY-NNNNNN, then remain fixed even while editing a saved draft. YYYY is the first-save UTC year; the sequence continues across years within the company’s saved book. Saved drafts and void records reserve their numbers. Existing manually entered numbers and all internal IDs remain unchanged. New UI records already use crypto.randomUUID() as their stable internal join key. Invoice numbers are unique within the scoped book, including void records. Draft/finalized/void lifecycle, actor/time/reason history, date ordering, duplicate line/payment/reversal IDs, malformed totals and cross-company envelopes are validated. Aggregate receivables use BigInt so summing valid invoices does not introduce floating-point money errors.
 
 ## Persistence and privacy boundaries
 

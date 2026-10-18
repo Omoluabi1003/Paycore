@@ -36,3 +36,9 @@ test('invoice bundle preserves individual invoice pages and rejects draft, void 
 test('summary PDFs paginate with repeated identity and fonts; CSV escapes formula input',()=>{
  const doc={companyName:'Synthetic Company',title:'Invoice summary',filterLabel:'2026 | Finalized',columns:['Invoice','Total'],rows:Array.from({length:80},(_,i)=>[`SYN-${i}`,'-$1.00']),totals:[['Net','-$80.00']]};const bytes=reportPdf(doc),pdf=new TextDecoder().decode(bytes);assert.ok(Number(pdf.match(/\/Count (\d+)/)[1])>1);assert.match(pdf,/ETL GIS Consulting LLC/);assert.match(pdf,/FontFile2/);assert.match(pdf,/-\$80.00/);assert.ok(pdf.includes(`startxref\n${pdf.indexOf('xref\n')}`));assert.deepEqual(bytes,reportPdf(doc));assert.throws(()=>reportPdf({...doc,rows:[]}),/valid/);assert.match(reportCsv([['=SUM(A1)',' +cmd','normal, "quoted"']]),/"'=SUM\(A1\)"/);assert.match(reportCsv([['a"b']]),/"a""b"/);
 });
+
+test('invoice CSV exposes stable join keys, separate invoice numbers and exact cents without mixed summary rows',async()=>{
+ const {invoiceReportCsv}=await import('../lib/reports.ts');const book=invoices(),rows=invoiceReportRows(book,'company-1',filter,'2026-10-18'),before=JSON.stringify(book),csv=invoiceReportCsv('company-1','Synthetic Company',rows,'2026-10-18');
+ assert.ok(csv.startsWith('"Company ID","Invoice ID","Invoice number"'));assert.equal(csv.trim().split('\r\n').length,2);assert.match(csv,/"company-1","one","SYN-one"/);assert.match(csv,/"10000","2500","7500"/);assert.equal(JSON.stringify(book),before);
+ assert.throws(()=>invoiceReportCsv('foreign','Synthetic Company',rows,'2026-10-18'),/company/);assert.throws(()=>invoiceReportCsv('company-1','Synthetic Company',book.invoices,'2026-10-18'),/finalized/);
+});
