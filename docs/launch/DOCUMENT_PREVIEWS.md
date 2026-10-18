@@ -1,0 +1,13 @@
+# Read-only document previews
+
+A quiet Preview action sits beside the invoice draft/detail title and payroll page title. It opens a native modal side drawer on desktop and a full-screen sheet on phones. Escape or Back to editing closes it, with focus returned to its trigger. The background is inert while open; Tab stays inside the dialog. There are no save, approval, email, payment or download actions in the preview.
+
+Invoice editing previews read the current unsaved description/quantity/price/discount/tax/additional-cost strings. Incomplete identity fields show placeholders. Invalid numeric entries show Pending and suppress the total instead of reusing a stale amount. Valid amounts use the existing integer calculation engine. Saved-draft and finalized invoice details offer the same preview. Draft PDF downloading is removed; finalized invoice downloading and manual email preparation remain available after explicit finalization.
+
+Payroll previews show a company/period earnings and net-settlement summary followed by a contractor selector and a read-only line-by-line statement. Draft calculations use the existing deterministic engine. Invalid grid edits hide prior figures, because the grid intentionally retains the last valid calculation inputs while a row is incomplete. Unsaved company/statement-detail edits display a warning that the last saved details are in use. Approved previews read frozen exhibit snapshots. Opening a preview cannot consume balances, create history or approve payroll.
+
+These are responsive browser document views, not a byte-for-byte PDF pagination preview. Existing final PDF layout, embedded italic fonts, exports and human approval controls are unchanged. Exhibition mode and browser-tab storage limitations remain. No production integrations are added.
+
+Validation: all 20 automated test files, typecheck and production build pass. Production-build Chromium flows at 1440x900 and 390x900 verify incomplete/unsaved invoice previews, exact totals after edits, invalid-input suppression, no storage changes on open/close, Escape/focus restoration, saved-draft preview, no draft download, desktop drawer/mobile full width, payroll empty/valid/invalid states and no runtime errors or page overflow. Screenshots were inspected. Regression example: $100 service + 5% tax + $12.50 additional costs = $117.50; changing service to $200 gives $222.50 before saving. Payroll: entered $1,000 revenue at 50% produces $500; an invalid revenue edit hides that prior amount.
+
+Rollback: revert this PR. No migrations, dependencies, environment variables or storage-format changes. It restores the former draft PDF button and removes the read-only panels. Keep the upstream font/invoice changes.
