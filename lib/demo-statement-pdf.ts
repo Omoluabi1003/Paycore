@@ -39,12 +39,13 @@ export function statementReport(state: DemoApproval, snapshot: ApprovedSettlemen
 }
 
 /** Excel-style Letter statement with the supplied TR Century Gothic Italic embedded. */
-export function renderDemoPdf(state: DemoApproval, dollars: (cents: number) => string): Uint8Array {
+export function renderDemoPdf(state: DemoApproval, dollars: (cents: number) => string, contractorIds?: readonly string[]): Uint8Array {
   const header = StatementHeaderSchema.parse(state.statementHeader ?? {});
   const pages: string[][] = [];
   const text = (x: number, y: number, size: number, value: string, bold = false) => `q BT /${bold ? "F2" : "F1"} ${size} Tf 0 Tr ${x} ${y} Td (${escape(value)}) Tj ET Q`;
   const money = (value: number) => `$ ${dollars(value)}`;
   for (const [index, snapshot] of state.snapshots.entries()) {
+    if(contractorIds&&!contractorIds.includes(snapshot.contractorId))continue;
     const { view, ytd, deductions, earnings } = statementReport(state, snapshot);
     const frozen = snapshot.calculationSnapshot, contractor = frozen.contractor;
     let content: string[] = [], y = 0;

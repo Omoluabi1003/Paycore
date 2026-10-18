@@ -18,6 +18,7 @@ export function demoCsv(state: DemoApproval): string {
   });
   return rows.map(row=>row.map(safeCell).join(",")).join("\r\n")+"\r\n";
 }
-export function demoPdf(state: DemoApproval): Uint8Array {
-  return renderDemoPdf(state, exactDollars);
+export function demoPdf(state: DemoApproval, contractorIds?: readonly string[]): Uint8Array {
+  if(contractorIds&&(!contractorIds.length||contractorIds.some(id=>!state.snapshots.some(snapshot=>snapshot.contractorId===id))))throw Error("Select statements from this approved payroll.");
+  return renderDemoPdf(state, exactDollars, contractorIds);
 }
