@@ -105,3 +105,17 @@ test('automatic numbering preserves legacy identities, normalizes reserved refer
  const reserved=saveInvoiceDraft(legacy,{...draft(),id:'reserved',number:' inv-2025-000009 '},actor,at);assert.equal(nextInvoiceNumber(reserved,'2026-10-18'),'INV-2026-000010');assert.throws(()=>nextInvoiceNumber(reserved,'2026-02-30'));
  const overflow=saveInvoiceDraft(emptyInvoiceBook('company-1'),{...draft(),number:'INV-2026-9007199254740991'},actor,at);assert.throws(()=>nextInvoiceNumber(overflow,'2026-10-18'),/range/);
 });
+
+test('optional freight facts survive save, restoration and finalization without changing charges',()=>{
+ const raw=draft();raw.customerPhone='555-0100';raw.customerFax='555-0101';
+ Object.assign(raw.lines[0],{loadReference:'SYN-LOAD-42',pickupName:'Synthetic Origin',pickupAddress:'101 Example Road',deliveryName:'Synthetic Destination',deliveryAddress:'202 Example Avenue'});
+ const before=calculateInvoice(draft());const book=saveInvoiceDraft(emptyInvoiceBook(raw.companyId),raw,actor,at);
+ const restored=decodeInvoiceBook(encodeInvoiceBook(book,'freight-test'),'freight-test',raw.companyId);
+ const final=issueInvoice(restored,raw.id,actor,at).invoices[0];
+ assert.deepEqual(final.totals,before);assert.equal(final.customerPhone,raw.customerPhone);assert.equal(final.customerFax,raw.customerFax);
+ for(const key of ['loadReference','pickupName','pickupAddress','deliveryName','deliveryAddress'])assert.equal(final.lines[0][key],raw.lines[0][key]);
+ assert.ok(Object.isFrozen(final.lines[0]));
+ const pdf=new TextDecoder().decode(invoicePdf(final,'2026-10-18'));
+ for(const value of ['SYN-LOAD-42','Synthetic Origin','101 Example Road','Synthetic Destination','202 Example Avenue','555-0100'])assert.ok(pdf.includes(value),value);
+ assert.throws(()=>saveInvoiceDraft(restored,{...raw,lines:[{...raw.lines[0],pickupAddress:'x'.repeat(241)}]},actor,at));
+});

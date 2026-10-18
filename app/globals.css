@@ -2726,3 +2726,11 @@ body:has(.preview-workspace) .brand-splash-intro { display: none; }
   .sidebar nav + nav { margin-top:6px; }
   .sidebar .nav-item { min-width:0; min-height:44px; white-space:normal; font-size:11px; padding:10px 6px; gap:6px; }
 }
+
+/* Optional freight facts stay collapsed until needed. */
+.freight-entry details { margin: .8rem 0; padding: .8rem; border: 1px solid #b7ccce; border-radius: .5rem; }
+.freight-entry summary { cursor: pointer; font-weight: 700; }
+.freight-entry .invoice-form-grid { margin-top: 1rem; }
+.freight-load { display: block; color: #17647b; margin-bottom: .6rem; }
+.freight-route { white-space: pre-wrap; overflow-wrap: anywhere; margin: .8rem 0; }
+.preview-paper td:has(.freight-route) { background: #e3f1f9; min-width: 180px; }
