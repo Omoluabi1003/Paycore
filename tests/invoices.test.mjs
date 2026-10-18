@@ -119,3 +119,28 @@ test('optional freight facts survive save, restoration and finalization without 
  for(const value of ['SYN-LOAD-42','Synthetic Origin','101 Example Road','Synthetic Destination','202 Example Avenue','555-0100'])assert.ok(pdf.includes(value),value);
  assert.throws(()=>saveInvoiceDraft(restored,{...raw,lines:[{...raw.lines[0],pickupAddress:'x'.repeat(241)}]},actor,at));
 });
+
+test('factoring template positions broker and remittance columns and omits the internal due date',()=>{
+ const raw=draft();Object.assign(raw,{factoringName:'Synthetic Factor LLC',factoringAddress:'Dept 5\n300 Example Avenue\nExample City, ZZ 00000',factoringContact:'factor@example.test',billingContact:'billing@example.test',paymentInstructions:'Reference the invoice number.',notes:'Retain company instructions.'});
+ Object.assign(raw.lines[0],{loadReference:'SYN-ROUTE-9',pickupName:'Synthetic Origin',pickupAddress:'101 Example Road',deliveryName:'Synthetic Destination',deliveryAddress:'202 Example Avenue'});
+ const book=saveInvoiceDraft(emptyInvoiceBook(raw.companyId),raw,actor,at),restored=decodeInvoiceBook(encodeInvoiceBook(book,'factoring'),'factoring',raw.companyId),invoice=issueInvoice(restored,raw.id,actor,at).invoices[0];
+ assert.equal(invoice.dueOn,raw.dueOn);assert.equal(invoice.factoringAddress,raw.factoringAddress);assert.ok(Object.isFrozen(invoice));assert.deepEqual(calculateInvoice(invoice),calculateInvoice(draft()));
+ const pdf=new TextDecoder().decode(invoicePdf(invoice,'2026-10-18'));
+ for(const text of ['INVOICE # : SYN-INV-001','Date: 2026-10-01','BILL TO:','FOR:','Synthetic Factor LLC','300 Example Avenue','factor@example.test','Reference the invoice number.','Retain company instructions.','TOTAL COST'])assert.ok(pdf.includes(text),text);
+ assert.ok(!pdf.includes('Due date'));assert.ok(!pdf.includes(raw.dueOn));assert.match(pdf,/BT \/F2 9 Tf 350 [\d.]+ Td \(Synthetic Factor LLC\)/);
+ const position=text=>Number(pdf.match(new RegExp('BT /F[12] [\\d.]+ Tf 30 ([\\d.]+) Td \\('+text))[1]);
+ assert.ok(position('INVOICE #')>position('Date:'));assert.ok(position('Date:')>position('BILL TO:'));
+ assert.throws(()=>saveInvoiceDraft(book,{...raw,factoringAddress:'x'.repeat(601)},actor,at));
+});
+
+test('long factoring invoices paginate every load, preserve the amount and keep text inside the page',()=>{
+ const raw=draft();raw.lines=Array.from({length:20},(_,index)=>({...raw.lines[0],id:`load-${index}`,loadReference:`SYN-LONG-${index}`,pickupAddress:'Synthetic pickup address '.repeat(9),deliveryAddress:'Synthetic delivery address '.repeat(9).slice(0,240)}));
+ raw.factoringName='Synthetic Factor';raw.factoringAddress='Synthetic remittance address '.repeat(20);
+ const invoice=issueInvoice(saveInvoiceDraft(emptyInvoiceBook(raw.companyId),raw,actor,at),raw.id,actor,at).invoices[0];
+ const bytes=invoicePdf(invoice,'2026-10-18'),pdf=new TextDecoder().decode(bytes);
+ assert.ok(Number(pdf.match(/\/Count (\d+)/)[1])>1);
+ for(let i=0;i<20;i++)assert.ok(pdf.includes(`For the Load #: SYN-LONG-${i}`));
+ assert.ok(pdf.includes(invoiceMoney(calculateInvoice(invoice).totalCents)));
+ for(const match of pdf.matchAll(/BT \/F[12] [\d.]+ Tf [\d.]+ ([\d.-]+) Td/g))assert.ok(Number(match[1])>=22&&Number(match[1])<=760,`Unsafe text height ${match[1]}`);
+ assert.deepEqual(invoicePdf(invoice,'2026-10-18'),bytes);
+});

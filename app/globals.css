@@ -2734,3 +2734,20 @@ body:has(.preview-workspace) .brand-splash-intro { display: none; }
 .freight-load { display: block; color: #17647b; margin-bottom: .6rem; }
 .freight-route { white-space: pre-wrap; overflow-wrap: anywhere; margin: .8rem 0; }
 .preview-paper td:has(.freight-route) { background: #e3f1f9; min-width: 180px; }
+
+.factoring-document { background: #f5fafc; }
+.factoring-document-header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; border-block: 2px solid #197fa0; padding: .8rem 0; }
+.factoring-company-card { max-width: 58%; background: #dcebf7; border: 1px solid #849cae; padding: .6rem; text-align: center; }
+.factoring-company-card strong { text-decoration: underline; }
+.factoring-company-card p { margin: .4rem 0 0; }
+.factoring-document-parties { display: grid; grid-template-columns: 1.15fr 1fr; gap: 2rem; padding: 1rem 0; }
+.factoring-document-parties h3, .factoring-document-parties h4 { color: #166b85; margin: .5rem 0; }
+.factoring-bill-to { margin-top: 1.4rem; }
+.factoring-remit-to { padding-top: 2.5rem; }
+.factoring-document p { white-space: pre-wrap; overflow-wrap: anywhere; }
+.factoring-document .factoring-payee { color: #9d2828; }
+.factoring-charges th { background: #087c9f; color: white; }
+.factoring-charges td:first-child { width: 65%; background: #dcebf7; }
+.factoring-charges td:last-child { vertical-align: middle; }
+.factoring-document .invoice-totals > div:last-child { background: #087c9f; color: white; padding: .5rem; }
+@media (max-width: 480px) { .factoring-document-parties { gap: .75rem; } .factoring-document-header .paycore-logo { flex-direction: column; font-size: 1rem; } }
