@@ -89,3 +89,19 @@ test('reference invoice adds described costs after tax and preserves payment ins
  const restored=decodeInvoiceBook(encodeInvoiceBook(book,'profile'),'profile','company-1');assert.equal(restored.invoices[0].additionalCostsCents,2500);
  assert.throws(()=>validateInvoiceBook({...book,invoices:[{...invoice,additionalCostsCents:2600}]},'company-1'),/totals/);
 });
+
+test('automatic invoice numbers allocate on first save, retain UUID and remain fixed across edits, voids and years',async()=>{
+ const {nextInvoiceNumber,saveAutomaticInvoiceDraft}=await import('../lib/invoices.ts');let book=emptyInvoiceBook('company-1');const raw={...draft(),id:'11111111-1111-4111-8111-111111111111',number:''};
+ const before=JSON.stringify(book);assert.equal(nextInvoiceNumber(book,'2026-10-18'),'INV-2026-000001');assert.equal(JSON.stringify(book),before); // Viewing/cancelling a proposed draft consumes nothing.
+ assert.throws(()=>saveAutomaticInvoiceDraft(book,{...raw,customer:""},actor,at));assert.equal(nextInvoiceNumber(book,"2026-10-18"),"INV-2026-000001");
+ book=saveAutomaticInvoiceDraft(book,raw,actor,at);book=saveAutomaticInvoiceDraft(book,raw,actor,at);assert.equal(book.invoices.length,1);assert.equal(book.invoices[0].number,'INV-2026-000001');assert.equal(book.invoices[0].id,raw.id);const first=book.invoices[0];
+ book=saveAutomaticInvoiceDraft(book,{...first,notes:'Updated synthetic note',issuedOn:'2026-11-01',dueOn:'2026-11-10'},actor,at);assert.equal(book.invoices[0].number,first.number);assert.equal(nextInvoiceNumber(book,'2026-10-18'),'INV-2026-000002');
+ assert.equal(saveAutomaticInvoiceDraft(book,{...book.invoices[0],number:'CHANGED'},actor,at).invoices[0].number,first.number);assert.throws(()=>saveInvoiceDraft(book,{...book.invoices[0],number:'CHANGED'},actor,at),/cannot be changed/);
+ book=issueInvoice(book,raw.id,actor,at);book=voidInvoice(book,raw.id,'Synthetic cancellation',actor,at);book=saveAutomaticInvoiceDraft(book,{...raw,id:'22222222-2222-4222-8222-222222222222',number:first.number},actor,at);assert.equal(book.invoices[0].number,'INV-2026-000002');
+ const restored=decodeInvoiceBook(encodeInvoiceBook(book,'scope'),'scope','company-1');assert.equal(nextInvoiceNumber(restored,'2027-01-01'),'INV-2027-000003');assert.equal(nextInvoiceNumber(emptyInvoiceBook('company-2'),'2026-10-18'),'INV-2026-000001');
+});
+test('automatic numbering preserves legacy identities, normalizes reserved references and blocks unsafe sequence ranges',async()=>{
+ const {nextInvoiceNumber,saveAutomaticInvoiceDraft}=await import('../lib/invoices.ts');const legacy=saved();const updated=saveAutomaticInvoiceDraft(legacy,{...legacy.invoices[0],notes:'Legacy retained'},actor,at);assert.equal(updated.invoices[0].number,'SYN-INV-001');assert.equal(updated.invoices[0].id,'invoice-1');
+ const reserved=saveInvoiceDraft(legacy,{...draft(),id:'reserved',number:' inv-2025-000009 '},actor,at);assert.equal(nextInvoiceNumber(reserved,'2026-10-18'),'INV-2026-000010');assert.throws(()=>nextInvoiceNumber(reserved,'2026-02-30'));
+ const overflow=saveInvoiceDraft(emptyInvoiceBook('company-1'),{...draft(),number:'INV-2026-9007199254740991'},actor,at);assert.throws(()=>nextInvoiceNumber(overflow,'2026-10-18'),/range/);
+});

@@ -1,4 +1,4 @@
-import {invoiceBalance,invoiceStatus} from "./invoices.ts";
+import {invoiceBalance,invoiceStatus,validateInvoiceBook} from "./invoices.ts";
 import type {Invoice,InvoiceBook} from "./invoices.ts";
 import {calculateContractorSettlement} from "./settlements.ts";
 import type {CalculationInput,Settlement} from "./settlements.ts";
@@ -31,3 +31,10 @@ export function selectedPayrollDocuments(rows:PayrollReportRow[],selected:string
 }
 const csvCell=(value:string)=>`"${(/^[\s\x00-\x1f]*[=+\-@]/.test(value)?"'":"")+value.replace(/"/g,'""')}"`;
 export const reportCsv=(rows:string[][])=>rows.map(row=>row.map(csvCell).join(",")).join("\r\n")+"\r\n";
+
+/** One row per finalized invoice, with stable company/invoice keys for downstream joins. */
+export function invoiceReportCsv(companyId:string,companyName:string,invoices:Invoice[],today:string){
+ validateInvoiceBook({version:1,companyId,invoices},companyId);
+ if(!invoices.length||invoices.some(invoice=>invoice.status!=="ISSUED"))throw Error("Choose finalized non-void invoices for export.");
+ return reportCsv([["Company ID","Invoice ID","Invoice number","Company","Customer","Issue date","Due date","Status","Currency","Total cents","Received cents","Balance cents","Record mode"],...invoices.map(invoice=>{const balance=invoiceBalance(invoice);return [companyId,invoice.id,invoice.number,companyName,invoice.customer,invoice.issuedOn,invoice.dueOn,invoiceStatus(invoice,today),invoice.currency,String(balance.total.totalCents),String(balance.paidCents),String(balance.balanceCents),"FICTIONAL EXHIBIT"];})]);
+}
