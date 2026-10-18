@@ -19,7 +19,7 @@ test('styled PDF uses frozen financial facts, described deductions, balances, YT
  const bytes=demoPdf(approved),pdf=new TextDecoder().decode(bytes),text=[...pdf.matchAll(/\((.*)\) Tj/g)].map(match=>match[1]).join('');
  assert.ok(text.includes('NET SETTLEMENT: USD 575.00'));assert.ok(text.includes('Synthetic described insurance'));assert.ok(text.includes('Opening USD 150.00 | Deducted USD 100.00 | Remaining USD 50.00'));assert.ok(text.includes('net 575.00'));
  assert.ok(text.includes('Developed by ETL GIS Consulting LLC'));assert.ok(text.includes('LOADS AND ELIGIBLE REVENUE'));assert.ok(text.includes('DEDUCTIONS BY CATEGORY'));assert.ok(text.includes('not additional charges'));
- assert.deepEqual(demoPdf(approved),bytes);assert.equal(JSON.stringify(approved),before);assert.ok(pdf.includes('/Helvetica-Bold'));
+ assert.deepEqual(demoPdf(approved),bytes);assert.equal(JSON.stringify(approved),before);assert.ok(pdf.includes('/BaseFont /TRCenturyGothicItalic'));assert.ok(pdf.includes('/FontFile2'));
  const xref=Number(pdf.match(/startxref\n(\d+)/)[1]);assert.equal(pdf.slice(xref,xref+4),'xref');
 });
 test('long receipt details paginate with repeated period, footer and no missing descriptions',()=>{

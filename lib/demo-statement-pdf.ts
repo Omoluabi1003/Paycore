@@ -1,3 +1,4 @@
+import { statementFont, statementFontBase64 } from "./pdf-fonts/tr-century-gothic-italic.ts";
 import type { DemoApproval } from "./demo-payroll.ts";
 import type { ApprovedSettlement } from "./settlements.ts";
 import { safeCents, yearToDate } from "./settlements.ts";
@@ -8,8 +9,8 @@ type Column = { label: string; width: number; right?: boolean };
 type ReportRow = { cells: Cell[]; total?: boolean };
 const clean = (value: string) => value.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^\x20-\x7e]/g, "?");
 const escape = (value: string) => clean(value).replace(/[\\()]/g, "\\$&");
-// Conservative widths include room for italic overhang. Fonts are built-in PDF faces.
-const width = (value: string, size: number) => [...value].reduce((sum, char) => sum + (/[0-9$]/.test(char) ? .556 : /[., ]/.test(char) ? .278 : char === "-" ? .333 : /[MW@%mw]/.test(char) ? .98 : /[A-Z]/.test(char) ? .76 : /[ilI.,' :;!|]/.test(char) ? .32 : .62) * size, 0);
+// Measure the actual embedded font, with space for italic overhang.
+const width = (value: string, size: number) => [...clean(value)].reduce((total, char) => total + (statementFont.widths[char as keyof typeof statementFont.widths] ?? 600) * size / 1000, 0);
 function wrap(value: string, limit: number, size: number): string[] {
   const lines: string[] = []; let line = "";
   for (const word of clean(value).split(/\s+/)) {
@@ -32,10 +33,10 @@ export function statementReport(state: DemoApproval, snapshot: ApprovedSettlemen
   };
 }
 
-/** Excel-style Letter statement; Helvetica Oblique substitutes for Century Gothic Italic. */
+/** Excel-style Letter statement with the supplied TR Century Gothic Italic embedded. */
 export function renderDemoPdf(state: DemoApproval, dollars: (cents: number) => string): Uint8Array {
   const pages: string[][] = [];
-  const text = (x: number, y: number, size: number, value: string, bold = false) => `BT /${bold ? "F2" : "F1"} ${size} Tf ${x} ${y} Td (${escape(value)}) Tj ET`;
+  const text = (x: number, y: number, size: number, value: string, bold = false) => `q BT /F1 ${size} Tf ${bold ? "0.2 w 2 Tr" : "0 Tr"} ${x} ${y} Td (${escape(value)}) Tj ET Q`;
   const money = (value: number) => `$ ${dollars(value)}`;
   for (const [index, snapshot] of state.snapshots.entries()) {
     const { view, ytd, deductions, earnings } = statementReport(state, snapshot);
@@ -145,12 +146,14 @@ export function renderDemoPdf(state: DemoApproval, dollars: (cents: number) => s
     }
     note(`Approved in demo by ${state.actorName} at ${state.approvedAt}. Payment arrangement: ${contractor.paymentMethod}. Banking details are not stored in this exhibit.`);
   }
-  const objects = ["<< /Type /Catalog /Pages 2 0 R >>", `<< /Type /Pages /Count ${pages.length} /Kids [${pages.map((_, index) => `${5 + index * 2} 0 R`).join(" ")}] >>`, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Oblique >>", "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-BoldOblique >>"];
+  const objects = ["<< /Type /Catalog /Pages 2 0 R >>", `<< /Type /Pages /Count ${pages.length} /Kids [${pages.map((_, index) => `${5 + index * 2} 0 R`).join(" ")}] >>`, `<< /Type /Font /Subtype /TrueType /BaseFont /${statementFont.postscriptName} /FirstChar 32 /LastChar 126 /Widths [${Array.from({ length: 95 }, (_, i) => statementFont.widths[String.fromCharCode(i + 32) as keyof typeof statementFont.widths]).join(" ")}] /Encoding /WinAnsiEncoding /FontDescriptor ${5 + pages.length * 2} 0 R >>`, "<< >>"];
   for (const [index, content] of pages.entries()) {
     content.push("0 0 0 rg", text(28, 34, 7, "Developed by ETL GIS Consulting LLC", true), text(28, 23, 6.5, "SIMULATION ONLY - no live payroll approval or real payment."), text(493, 23, 6.5, `Page ${index + 1} of ${pages.length}`));
     const stream = content.join("\n");
-    objects.push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${6 + index * 2} 0 R >>`, `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`);
+    objects.push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents ${6 + index * 2} 0 R >>`, `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`);
   }
+  const fontHex = [...atob(statementFontBase64)].map(char => char.charCodeAt(0).toString(16).padStart(2, "0")).join("") + ">";
+  objects.push(`<< /Type /FontDescriptor /FontName /${statementFont.postscriptName} /Flags 96 /FontBBox [${statementFont.bbox.join(" ")}] /ItalicAngle ${statementFont.italicAngle} /Ascent ${statementFont.ascent} /Descent ${statementFont.descent} /CapHeight ${statementFont.capHeight} /StemV 80 /FontFile2 ${6 + pages.length * 2} 0 R >>`, `<< /Length ${fontHex.length} /Length1 ${statementFont.byteLength} /Filter /ASCIIHexDecode >>\nstream\n${fontHex}\nendstream`);
   let pdf = "%PDF-1.4\n"; const offsets = [0];
   objects.forEach((object, index) => { offsets.push(pdf.length); pdf += `${index + 1} 0 obj\n${object}\nendobj\n`; });
   const start = pdf.length;

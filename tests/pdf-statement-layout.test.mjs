@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+import { statementFont, statementFontBase64 } from '../lib/pdf-fonts/tr-century-gothic-italic.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {activateExhibitContractor} from '../lib/exhibit-journey.ts';
@@ -23,7 +25,7 @@ test('spreadsheet PDF preserves YTD categories when the compensation method chan
  assert.equal(report.earnings.find(item=>item.category==='FLAT_PER_PERIOD').current,80000);
  const before=JSON.stringify(approved);const pdf=new TextDecoder().decode(demoPdf(approved));
  for(const heading of ['CONTRACTOR PAYROLL','HOURS AND EARNINGS','DEDUCTIONS BY CATEGORY','TOTALS','ADVANCES, DEDUCTIONS AND REIMBURSEMENT DETAILS','LOAD DETAIL'])assert.ok(pdf.includes(heading));
- assert.ok(pdf.includes('/Helvetica-Oblique'));assert.ok(pdf.includes('/Helvetica-BoldOblique'));assert.equal(JSON.stringify(approved),before);
+ assert.ok(pdf.includes('/BaseFont /TRCenturyGothicItalic'));assert.ok(pdf.includes('/FontFile2'));assert.ok(!pdf.includes('/Helvetica'));assert.equal(JSON.stringify(approved),before);
  assert.deepEqual(demoPdf(approved),demoPdf(approved));
 });
 test('report YTD excludes future, foreign-company, foreign-contractor and unapproved history',()=>{
@@ -37,4 +39,15 @@ test('compact reference-style statement fits one Letter page and escapes entered
  const pdf=new TextDecoder().decode(demoPdf(approve(input)));
  assert.match(pdf,/\/MediaBox \[0 0 612 792\]/);assert.match(pdf,/\/Count 1\b/);
  assert.ok(pdf.includes('Synthetic \\(PDF\\) \\\\ Person'));assert.ok(pdf.includes('SIMULATION ONLY'));
+});
+
+test('PDF embeds the supplied unmodified TrueType font and uses character-ordered metrics',()=>{
+ const pdf=new TextDecoder().decode(demoPdf(approve(fixture('2026-10-08','2026-10-14'))));
+ const stream=pdf.match(/\/Length1 (\d+) \/Filter \/ASCIIHexDecode >>\nstream\n([0-9a-f]+)>/);
+ assert.ok(stream);const bytes=Buffer.from(stream[2],'hex');assert.equal(bytes.length,Number(stream[1]));
+ assert.deepEqual(bytes,Buffer.from(statementFontBase64,'base64'));assert.equal(createHash('sha256').update(bytes).digest('hex'),statementFont.sha256);
+ assert.equal(statementFont.embeddingFlags,0);
+ const widths=pdf.match(/\/FirstChar 32 \/LastChar 126 \/Widths \[([^\]]+)\]/)[1].split(' ').map(Number);
+ assert.equal(widths.length,95);for(let i=0;i<95;i++)assert.equal(widths[i],statementFont.widths[String.fromCharCode(i+32)]);
+ assert.ok(pdf.includes('0.2 w 2 Tr')); // Same supplied italic face, heavier headings; no invented Bold Italic font.
 });
