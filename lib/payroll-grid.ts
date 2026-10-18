@@ -32,6 +32,7 @@ export function previewGridRow(row: GridRow, existing: CalculationInput[], now: 
   draft.deductionRules = [...draft.deductionRules, ...(prior?.deductionRules.filter(rule => rule.id !== `${row.id}-deduction`) ?? [])];
   draft.history = prior?.history ?? [];
   if (prior?.fuelReconciliation) draft.fuelReconciliation = { ...prior.fuelReconciliation };
+  if (prior) { draft.contractor.address = prior.contractor.address; draft.contractor.cityStateZip = prior.contractor.cityStateZip; draft.contractor.phone = prior.contractor.phone; }
   draft.contractor.createdAt = prior?.contractor.createdAt ?? now;
   draft.contractor.effectiveStartDate = prior?.contractor.effectiveStartDate ?? run.start;
   return draft;

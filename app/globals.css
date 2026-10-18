@@ -2679,3 +2679,5 @@ body:has(.preview-workspace) .brand-splash-intro { display: none; }
 .review-reference>summary span{display:block;font-size:.8rem;font-weight:400;margin-top:6px}
 .review-reference>.workbook-payroll{margin:0;border:0;box-shadow:none}
 .review-reference>summary:focus-visible{outline:3px solid #246b68;outline-offset:3px;border-radius:10px}
+
+.statement-details>summary{font-weight:700;cursor:pointer}.statement-details>summary span{display:block;font-size:.8rem;font-weight:400;margin:6px 0}.statement-details fieldset{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;border:1px solid #bacdd5;padding:16px;margin:12px 0}.statement-details legend{font-weight:700}.statement-details label{min-width:0}.statement-details input,.statement-details select{width:100%;min-width:0}.statement-details img{max-width:100%;height:auto}@media(max-width:640px){.statement-details fieldset{grid-template-columns:1fr}}
