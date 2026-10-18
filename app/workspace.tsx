@@ -234,9 +234,9 @@ function PeriodWorkspace({ onInvoiceMode, displayName, companyName, run, initial
         <button className={`nav-item ${view === "prepare" ? "active" : ""}`} aria-current={view === "prepare" ? "page" : undefined} onClick={() => begin()}><Icon name="layers"/>Run payroll</button>
         <button className={`nav-item ${view === "review" ? "active" : ""}`} aria-current={view === "review" ? "page" : undefined} onClick={() => navigate("review")}><Icon name="shield"/>Statements</button>
         <button className={`nav-item ${view === "invoices" ? "active" : ""}`} aria-current={view === "invoices" ? "page" : undefined} onClick={() => navigate("invoices")}><Icon name="layers"/>Invoices</button>
+        <button className={`nav-item ${view === "reports" ? "active" : ""}`} aria-current={view === "reports" ? "page" : undefined} onClick={() => navigate("reports")}><Icon name="layers"/>Reports</button>
       </nav>
       <nav aria-label="Payroll records">
-        <button className={`nav-item ${view === "reports" ? "active" : ""}`} aria-current={view === "reports" ? "page" : undefined} onClick={() => navigate("reports")}><Icon name="layers"/>Reports</button>
         {(["contractors", "activity", "exceptions"] as const).map(item => <button key={item} className={`nav-item ${view === item ? "active" : ""}`} aria-current={view === item ? "page" : undefined} onClick={() => navigate(item)}><Icon name={item === "contractors" ? "grid" : item === "activity" ? "layers" : "help"}/>{item === "contractors" ? "Contractors" : item === "activity" ? "Activity register" : "Exceptions"}</button>)}
       </nav>
       <div className="sidebar-bottom"><div className="guide-card"><span className="guide-symbol"><Icon name="help"/></span><strong>One question.<br />One clear next step.</strong><p>Follow the guide from pay period to final review.</p><button className="guide-link" onClick={() => begin()}>Open payroll guide <Icon name="arrow" size={16}/></button></div><div className="profile"><span className="profile-avatar" aria-hidden="true">{profileInitials(displayName)}</span><div>{displayName}<small>Demo profile</small></div></div></div>

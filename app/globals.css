@@ -2719,3 +2719,10 @@ body:has(.preview-workspace) .brand-splash-intro { display: none; }
 .setup-module-nav button { border:0; border-bottom:3px solid transparent; background:transparent; padding:12px 18px; color:#315965; font:inherit; cursor:pointer; }
 .setup-module-nav button[aria-current=page] { color:#184f4b; border-bottom-color:#215d58; font-weight:700; }
 @media(max-width:640px) { .setup-module-nav button { padding:12px 14px; } }
+
+/* Keep every module discoverable on phones instead of hiding destinations off-screen. */
+@media(max-width:720px) {
+  .sidebar nav { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; overflow:visible; }
+  .sidebar nav + nav { margin-top:6px; }
+  .sidebar .nav-item { min-width:0; min-height:44px; white-space:normal; font-size:11px; padding:10px 6px; gap:6px; }
+}
