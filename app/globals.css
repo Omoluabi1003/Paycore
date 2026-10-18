@@ -2714,3 +2714,8 @@ body:has(.preview-workspace) .brand-splash-intro { display: none; }
 .report-empty { padding:24px 0; }
 .invoice-workspace[hidden] { display:none; }
 @media(max-width:640px) { .report-filters { grid-template-columns:1fr 1fr; } .report-filters label:last-child { grid-column:1/-1; } .report-tabs [role=tab] { padding:12px; } }
+
+.setup-module-nav { display:flex; gap:8px; margin:12px 0 24px; border-bottom:1px solid #cad9dc; }
+.setup-module-nav button { border:0; border-bottom:3px solid transparent; background:transparent; padding:12px 18px; color:#315965; font:inherit; cursor:pointer; }
+.setup-module-nav button[aria-current=page] { color:#184f4b; border-bottom-color:#215d58; font-weight:700; }
+@media(max-width:640px) { .setup-module-nav button { padding:12px 14px; } }
