@@ -64,3 +64,15 @@ test('headings embed the supplied Century Gothic Bold Italic bytes and their own
  const widths=fontWidths[1][1].split(' ').map(Number);assert.equal(widths.length,95);
  for(let i=0;i<95;i++)assert.equal(widths[i],statementBoldFont.widths[String.fromCharCode(i+32)]);
 });
+
+test('client Excel arrangement uses side-by-side blocks, stepped headings and one page for five loads and four fuel receipts',()=>{
+ const input=fixture('2026-10-05','2026-10-16');const template=input.loads[0];
+ input.loads=Array.from({length:5},(_,i)=>({...template,id:`synthetic-load-${i+1}`,loadNumber:`SYN-LOAD-${i+1}`,proNumber:`SYN-PRO-${i+1}`,date:`2026-10-0${5+i}`,origin:'Example Origin, ST',destination:`Example Destination ${i+1}, ST`,loadedMiles:100,emptyMiles:20,grossRevenueCents:100000}));
+ for(let i=0;i<4;i++)input.transactions.push({id:`synthetic-fuel-${i+1}`,companyId:input.run.companyId,contractorId:input.contractor.id,payPeriodId:input.run.payPeriodId,transactionType:'FUEL_DEDUCTION',referenceNumber:`SYN-FUEL-${i+1}`,transactionDate:`2026-10-0${5+i}`,description:`Fuel - Example Station ${i+1}, Example City, ST`,amountCents:1000,miles:0,source:'MANUAL',enteredBy:'synthetic-specialist',createdAt:at});
+ input.fuelReconciliation={expectedTotalCents:4000};
+ const approved=approve(input),before=JSON.stringify(approved),pdf=new TextDecoder().decode(demoPdf(approved));assert.match(pdf,/\/Count 1\b/);assert.equal(approved.snapshots[0].netSettlementCents,343500);
+ const position=label=>{const match=pdf.match(new RegExp('([0-9.]+) ([0-9.]+) Td \\('+label+'\\) Tj'));assert.ok(match,label);return {x:Number(match[1]),y:Number(match[2])};};
+ const earnings=position('HOURS AND EARNINGS'),payment=position('PAYMENT DETAILS'),deductions=position('DEDUCTIONS BY CATEGORY');assert.ok(payment.x>earnings.x+300);assert.ok(payment.y<earnings.y);assert.ok(deductions.y<payment.y);
+ for(const value of ['SYN-LOAD-5','SYN-PRO-5','SYN-FUEL-4','Example Station 4','Bank / account','Not configured','No real transfer','Driver gross','City, state','70%'])assert.ok(pdf.includes(value),value);
+ assert.ok(!pdf.includes('Direct deposit completed'));assert.equal(JSON.stringify(approved),before);assert.ok(pdf.includes('NET SETTLEMENT: USD 3435.00'));
+});
