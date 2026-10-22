@@ -1,1 +1,0 @@
-PayCore Scan responsive refactor uses class-based layouts and mobile breakpoints. Financial scan logic remains preview-only.
