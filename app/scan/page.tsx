@@ -10,17 +10,19 @@ const sampleRecords: ScanCandidateRecord[] = [
   { id: "advance", documentId: "demo", contractorId: "james", reference: "F/ADV", category: "CASH_ADVANCE", amountCents: -20000, sourceFieldIds: ["f4"], state: "NEEDS_REVIEW", issues: ["Confirm that F/ADV means cash advance recovery."] }
 ];
 
-const money = (cents) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100);
+const money = (cents: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100);
 
 export default function ScanPage() {
-  const [records, setRecords] = useState(sampleRecords);
+  const [records, setRecords] = useState<ScanCandidateRecord[]>(sampleRecords);
   const [scanned, setScanned] = useState(false);
+  const [approved, setApproved] = useState(false);
   const sourceTotalCents = 370000;
   const reconciliation = useMemo(() => reconcileScan(records, sourceTotalCents), [records]);
   const summary = useMemo(() => summarizeScan(records, reconciliation), [records, reconciliation]);
 
   function verifyAdvance() {
     setRecords((current) => current.map((record) => record.id === "advance" ? { ...record, state: "VERIFIED", issues: [] } : record));
+    setApproved(false);
   }
 
   return (
@@ -34,7 +36,7 @@ export default function ScanPage() {
           <h2>Drop a payroll document here</h2>
           <p>PDF, scanned PDF, photo, CSV or Excel</p>
           <button onClick={() => setScanned(true)} style={{ padding: "12px 18px", fontWeight: 700, cursor: "pointer" }}>Try fictional scan</button>
-          <p style={{ fontSize: 13, color: "#667085", marginTop: 16 }}>This foundation uses fictional data. Production OCR and private document storage are not connected yet.</p>
+          <p style={{ fontSize: 13, color: "#667085", marginTop: 16 }}>This preview uses fictional data. Production OCR and private document storage remain intentionally disconnected until the secure scanning backend is ready.</p>
         </> : <>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 24, flexWrap: "wrap" }}>
             <div><strong>Scan complete</strong><p>4 records found in Fictional_Weekly_Settlement.pdf</p></div>
@@ -43,10 +45,10 @@ export default function ScanPage() {
 
           <div style={{ overflowX: "auto", marginTop: 20 }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead><tr style={{ textAlign: "left", borderBottom: "1px solid #d9e0e6" }}><th style={{ padding: 10 }}>Source</th><th>PayCore read</th><th>Amount</th><th>Status</th><th></th></tr></thead>
+              <thead><tr style={{ textAlign: "left", borderBottom: "1px solid #d9e0e6" }}><th style={{ padding: 10 }}>Source</th><th>PayCore read</th><th>Amount</th><th>Status</th><th>Action</th></tr></thead>
               <tbody>{records.map((record) => <tr key={record.id} style={{ borderBottom: "1px solid #edf0f2" }}>
-                <td style={{ padding: 10 }}>{record.reference}</td><td>{record.category ?? "Load revenue"}</td><td>{money(record.amountCents ?? 0)}</td><td>{record.state === "VERIFIED" ? "Verified" : "Needs your attention"}</td>
-                <td>{record.id === "advance" && record.state !== "VERIFIED" ? <button onClick={verifyAdvance}>Confirm cash advance</button> : null}</td>
+                <td style={{ padding: 10 }}>{record.reference}</td><td>{record.category ?? "Load revenue"}</td><td>{money(record.amountCents ?? 0)}</td><td>{record.state === "VERIFIED" ? "Verified" : record.state === "UNREADABLE" ? "Could not read" : "Needs your attention"}</td>
+                <td>{record.id === "advance" && record.state !== "VERIFIED" ? <button onClick={verifyAdvance}>Confirm cash advance</button> : ""}</td>
               </tr>)}</tbody>
             </table>
           </div>
@@ -55,7 +57,8 @@ export default function ScanPage() {
             <strong>Reconciliation</strong>
             <p>Source total: {money(sourceTotalCents)} · PayCore extracted: {money(reconciliation.extractedTotalCents)} · Difference: {money(reconciliation.differenceCents ?? 0)}</p>
             <p>{summary.canApprove ? "Verified and reconciled. Ready for specialist approval." : "Review required. Nothing will be committed yet."}</p>
-            <button disabled={!summary.canApprove} style={{ padding: "12px 18px", fontWeight: 700 }}>Approve scan</button>
+            <button disabled={!summary.canApprove || approved} onClick={() => setApproved(true)} style={{ padding: "12px 18px", fontWeight: 700 }}>{approved ? "Scan approved" : "Approve scan"}</button>
+            {approved ? <p style={{ fontSize: 13, color: "#52606d" }}>Preview approval recorded locally only. No payroll records or payments were created.</p> : null}
           </section>
         </>}
       </section>
