@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { BrandSplash } from "./brand";
+import ScanNavigationBridge from "./scan-navigation-bridge";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -26,7 +27,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body><BrandSplash />{children}</body>
+      <body><BrandSplash /><ScanNavigationBridge />{children}</body>
     </html>
   );
 }
