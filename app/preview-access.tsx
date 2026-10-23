@@ -1,63 +1,9 @@
 "use client";
-
-import { useEffect, useRef, useState } from "react";
+import { useEffect,useRef,useState } from "react";
 import { BrandLogo } from "./brand";
 import Workspace from "./workspace";
+import MobileCommandDrawer from "./mobile-command-drawer";
 import { suggestDisplayName } from "../lib/preview-profile";
-
-const SESSION_KEY = "paycore.workspace.session.v1";
-type WorkspaceSession = { email: string; displayName: string; companyName: string };
-
-function readSession(): WorkspaceSession | null {
-  try {
-    const raw = window.localStorage.getItem(SESSION_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as Partial<WorkspaceSession>;
-    if (!parsed.email || !parsed.displayName) return null;
-    return { email: parsed.email, displayName: parsed.displayName, companyName: parsed.companyName || "" };
-  } catch { return null; }
-}
-
-// Presentation session only. It improves workspace continuity but is not server authorization.
-// Production identity must still validate the authenticated user and company membership server-side.
-export default function PreviewAccess() {
-  const [signedIn, setSignedIn] = useState(false);
-  const [hydrated, setHydrated] = useState(false);
-  const [email, setEmail] = useState("");
-  const [displayName, setDisplayName] = useState("");
-  const [companyName, setCompanyName] = useState("");
-  const [nameEdited, setNameEdited] = useState(false);
-  const [editingProfile, setEditingProfile] = useState(false);
-  const [hasInteracted, setHasInteracted] = useState(false);
-  const heading = useRef<HTMLHeadingElement>(null);
-
-  useEffect(() => {
-    const session = readSession();
-    if (session) { setEmail(session.email); setDisplayName(session.displayName); setCompanyName(session.companyName); setSignedIn(true); }
-    setHydrated(true);
-  }, []);
-  useEffect(() => { if (hasInteracted) heading.current?.focus(); }, [signedIn, hasInteracted]);
-  useEffect(() => {
-    if (!hydrated || !signedIn) return;
-    window.localStorage.setItem(SESSION_KEY, JSON.stringify({ email, displayName, companyName }));
-  }, [hydrated, signedIn, email, displayName, companyName]);
-
-  function changePreview(next: boolean) {
-    setHasInteracted(true);
-    setSignedIn(next);
-    if (next) window.localStorage.setItem(SESSION_KEY, JSON.stringify({ email, displayName, companyName }));
-    else { window.localStorage.removeItem(SESSION_KEY); setEmail(""); setDisplayName(""); setCompanyName(""); setNameEdited(false); setEditingProfile(false); }
-  }
-
-  if (!hydrated) return <main className="access-page" aria-busy="true"><div className="access-story"><BrandLogo /><div className="access-story-copy"><p className="access-eyebrow">PAYCORE</p><h1>Opening your workspace.</h1></div><p className="access-attribution">Developed by <strong>ETL GIS Consulting LLC</strong></p></div></main>;
-
-  if (signedIn) return <div className="preview-workspace">
-    <header className="preview-header"><a href="/" aria-label="PayCore home" style={{color:"inherit",textDecoration:"none"}}><BrandLogo /></a><div className="preview-account"><span>{displayName.trim() || "Preview account"}</span><button type="button" onClick={() => setEditingProfile(value => !value)} aria-expanded={editingProfile} aria-controls="preview-profile">Edit profile</button><button type="button" onClick={() => changePreview(false)}>Sign out</button></div></header>
-    {editingProfile && <section id="preview-profile" className="preview-profile-editor" aria-labelledby="profile-heading"><h2 id="profile-heading">Your profile</h2><label htmlFor="edit-display-name">Your name</label><input id="edit-display-name" value={displayName} maxLength={120} autoComplete="name" onChange={event => setDisplayName(event.target.value)} /><label htmlFor="edit-company-name">Company name (optional)</label><input id="edit-company-name" value={companyName} maxLength={120} autoComplete="organization" onChange={event => setCompanyName(event.target.value)} /><button type="button" onClick={() => setEditingProfile(false)}>Done</button></section>}
-    <div className="preview-notice" role="status">Workspace session active · Navigation stays inside PayCore until you sign out.</div>
-    <Workspace displayName={displayName.trim() || "Preview user"} companyName={companyName.trim()} />
-    <footer className="workspace-developer-footer">Developed by <strong>ETL GIS Consulting LLC</strong></footer>
-  </div>;
-
-  return <main className="access-page"><div className="access-story"><BrandLogo /><div className="access-story-copy"><p className="access-eyebrow">YOUR PAYROLL, WITH CLARITY</p><h1>A calmer way<br />to manage payday.</h1><p>People, records, and approvals.<br />Together in one workspace.</p></div><p className="access-attribution">Developed by <strong>ETL GIS Consulting LLC</strong></p></div><section className="access-panel" aria-labelledby="access-heading"><div className="access-card"><span className="access-emblem" aria-hidden="true">P</span><p className="access-eyebrow">WELCOME TO PAYCORE</p><h2 id="access-heading" ref={heading} tabIndex={-1}>Sign in to your workspace.</h2><p>Enter your email to open the PayCore workspace.</p><form className="preview-signin" onSubmit={(event) => { event.preventDefault(); changePreview(true); }}><label htmlFor="preview-account">Email address</label><input id="preview-account" type="email" autoComplete="email" placeholder="you@company.com" value={email} onChange={(event) => { setEmail(event.target.value); if (!nameEdited) setDisplayName(suggestDisplayName(event.target.value)); }} required maxLength={254} aria-describedby="preview-description" /><label htmlFor="preview-name">Your name</label><input id="preview-name" autoComplete="name" value={displayName} onChange={event => { setNameEdited(true); setDisplayName(event.target.value); }} required pattern={".*\\S.*"} maxLength={120} placeholder="Enter your name" aria-describedby="preview-name-help" /><small id="preview-name-help">Suggested from your email when possible. Please check or edit it.</small><label htmlFor="preview-company">Company name (optional)</label><input id="preview-company" autoComplete="organization" value={companyName} onChange={event => setCompanyName(event.target.value)} maxLength={120} placeholder="Your company" /><button type="submit">Open workspace <span aria-hidden="true">↗</span></button></form><p className="access-note" id="preview-description">Your workspace remains available across PayCore navigation and refreshes until you explicitly sign out on this device.</p></div></section></main>;
-}
+const SESSION_KEY="paycore.workspace.session.v1";type WorkspaceSession={email:string;displayName:string;companyName:string};
+function readSession():WorkspaceSession|null{try{const raw=window.localStorage.getItem(SESSION_KEY);if(!raw)return null;const p=JSON.parse(raw) as Partial<WorkspaceSession>;if(!p.email||!p.displayName)return null;return{email:p.email,displayName:p.displayName,companyName:p.companyName||""}}catch{return null}}
+export default function PreviewAccess(){const[signedIn,setSignedIn]=useState(false),[hydrated,setHydrated]=useState(false),[email,setEmail]=useState(""),[displayName,setDisplayName]=useState(""),[companyName,setCompanyName]=useState(""),[nameEdited,setNameEdited]=useState(false),[editingProfile,setEditingProfile]=useState(false),[hasInteracted,setHasInteracted]=useState(false);const heading=useRef<HTMLHeadingElement>(null);useEffect(()=>{const s=readSession();if(s){setEmail(s.email);setDisplayName(s.displayName);setCompanyName(s.companyName);setSignedIn(true)}setHydrated(true)},[]);useEffect(()=>{if(hasInteracted)heading.current?.focus()},[signedIn,hasInteracted]);useEffect(()=>{if(hydrated&&signedIn)window.localStorage.setItem(SESSION_KEY,JSON.stringify({email,displayName,companyName}))},[hydrated,signedIn,email,displayName,companyName]);function changePreview(next:boolean){setHasInteracted(true);setSignedIn(next);if(next)window.localStorage.setItem(SESSION_KEY,JSON.stringify({email,displayName,companyName}));else{window.localStorage.removeItem(SESSION_KEY);setEmail("");setDisplayName("");setCompanyName("");setNameEdited(false);setEditingProfile(false)}}if(!hydrated)return <main className="access-page" aria-busy="true"><div className="access-story"><BrandLogo/><div className="access-story-copy"><p className="access-eyebrow">PAYCORE</p><h1>Opening your workspace.</h1></div><p className="access-attribution">Developed by <strong>ETL GIS Consulting LLC</strong></p></div></main>;if(signedIn)return <div className="preview-workspace"><header className="preview-header"><a href="/" aria-label="PayCore home" style={{color:"inherit",textDecoration:"none"}}><BrandLogo/></a><div className="preview-account"><span>{displayName.trim()||"Preview account"}</span><button type="button" onClick={()=>setEditingProfile(v=>!v)}>Edit profile</button><button type="button" onClick={()=>changePreview(false)}>Sign out</button></div><MobileCommandDrawer displayName={displayName.trim()||"PayCore user"} companyName={companyName.trim()} onEditProfile={()=>setEditingProfile(true)} onSignOut={()=>changePreview(false)}/></header>{editingProfile&&<section id="preview-profile" className="preview-profile-editor"><h2>Your profile</h2><label htmlFor="edit-display-name">Your name</label><input id="edit-display-name" value={displayName} maxLength={120} onChange={e=>setDisplayName(e.target.value)}/><label htmlFor="edit-company-name">Company name (optional)</label><input id="edit-company-name" value={companyName} maxLength={120} onChange={e=>setCompanyName(e.target.value)}/><button type="button" onClick={()=>setEditingProfile(false)}>Done</button></section>}<div className="preview-notice" role="status">Workspace session active · Navigation stays inside PayCore until you sign out.</div><Workspace displayName={displayName.trim()||"Preview user"} companyName={companyName.trim()}/><footer className="workspace-developer-footer">Developed by <strong>ETL GIS Consulting LLC</strong></footer></div>;return <main className="access-page"><div className="access-story"><BrandLogo/><div className="access-story-copy"><p className="access-eyebrow">YOUR PAYROLL, WITH CLARITY</p><h1>A calmer way<br/>to manage payday.</h1><p>People, records, and approvals.<br/>Together in one workspace.</p></div><p className="access-attribution">Developed by <strong>ETL GIS Consulting LLC</strong></p></div><section className="access-panel"><div className="access-card"><span className="access-emblem">P</span><p className="access-eyebrow">WELCOME TO PAYCORE</p><h2 ref={heading} tabIndex={-1}>Sign in to your workspace.</h2><p>Enter your email to open the PayCore workspace.</p><form className="preview-signin" onSubmit={e=>{e.preventDefault();changePreview(true)}}><label htmlFor="preview-account">Email address</label><input id="preview-account" type="email" autoComplete="email" placeholder="you@company.com" value={email} onChange={e=>{setEmail(e.target.value);if(!nameEdited)setDisplayName(suggestDisplayName(e.target.value))}} required maxLength={254}/><label htmlFor="preview-name">Your name</label><input id="preview-name" autoComplete="name" value={displayName} onChange={e=>{setNameEdited(true);setDisplayName(e.target.value)}} required maxLength={120}/><label htmlFor="preview-company">Company name (optional)</label><input id="preview-company" value={companyName} onChange={e=>setCompanyName(e.target.value)} maxLength={120}/><button type="submit">Open workspace <span>↗</span></button></form><p className="access-note">Your workspace remains available across PayCore navigation and refreshes until you explicitly sign out on this device.</p></div></section></main>}
