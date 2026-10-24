@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { BrandSplash } from "./brand";
 import ScanNavigationBridge from "./scan-navigation-bridge";
 import "./globals.css";
+import "./page-story-backgrounds.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(`https://${process.env.VERCEL_PROJECT_PRODUCTION_URL || "paycore-gamma.vercel.app"}`),
