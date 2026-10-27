@@ -1,0 +1,10 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {dueReminderStages,reminderDate,reminderId} from "../lib/invoice-reminders";
+const invoice={id:"inv-1",number:"PC-1048",customer:"Acme",customerEmail:"billing@acme.test",dueOn:"2026-11-06",status:"ISSUED",balanceCents:125000};
+test("computes reminder dates deterministically",()=>{assert.equal(reminderDate(invoice.dueOn,-3),"2026-11-03");assert.equal(reminderDate(invoice.dueOn,14),"2026-11-20");});
+test("returns only stages reached as of today",()=>{assert.deepEqual(dueReminderStages(invoice,"2026-11-09").map(x=>x.stage),["BEFORE_DUE","DUE_TODAY","OVERDUE_3"]);});
+test("does not repeat sent stages",()=>{assert.deepEqual(dueReminderStages(invoice,"2026-11-09",[{invoiceId:"inv-1",stage:"DUE_TODAY",scheduledFor:"2026-11-06",sentAt:"2026-11-06T13:15:00Z",status:"SENT"}]).map(x=>x.stage),["BEFORE_DUE","OVERDUE_3"]);});
+test("stops reminders when balance is settled",()=>{assert.equal(dueReminderStages({...invoice,balanceCents:0},"2026-11-20").length,0);});
+test("stops reminders for void invoices",()=>{assert.equal(dueReminderStages({...invoice,status:"VOID"},"2026-11-20").length,0);});
+test("creates an idempotency key per invoice and stage",()=>{assert.equal(reminderId("inv-1","OVERDUE_3"),"inv-1:OVERDUE_3");});
