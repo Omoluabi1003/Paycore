@@ -24,8 +24,9 @@ export const sampleCalculationInputs: CalculationInput[] = [
 export function sampleContractor(input: CalculationInput) {
   const detail = calculateContractorSettlement(input);
   const rule = input.compensationRules[0];
-  const methodLabel = rule.method === "PERCENT_OF_ELIGIBLE_REVENUE" ? `${(rule.rateBasisPoints ?? 0) / 100}% of eligible revenue` : rule.method === "PER_MILE" ? `$${((rule.perMileCents ?? 0) / 100).toFixed(2)} per mile` : rule.method === "FLAT_PER_PERIOD" ? `$${((rule.flatAmountCents ?? 0) / 100).toFixed(2)} per period` : rule.method.replaceAll("_", " ");
+  const methodLabel = rule.method === "PERCENT_OF_ELIGIBLE_REVENUE" ? `${(rule.rateBasisPoints ?? 0) / 100}% of eligible revenue` : rule.method === "PER_MILE" ? `$${((rule.perMileCents ?? 0) / 100).toFixed(2)} per mile` : rule.method === "FLAT_PER_PERIOD" ? `$${((rule.flatAmountCents ?? 0) / 100).toFixed(2)} per period` : rule.method === "FLAT_PER_LOAD" ? `$${((rule.flatAmountCents ?? 0) / 100).toFixed(2)} per load` : rule.method === "MANUAL_EARNINGS" ? "Earnings entered each period" : rule.method.replaceAll("_", " ");
   return {
+    effectiveFrom: rule.effectiveFrom,
     name: input.contractor.displayName, initials: input.contractor.displayName.split(" ").map(p => p[0]).join(""), reference: input.contractor.contractorNumber,
     gross: detail.grossEligibleRevenueCents / 100, rate: (rule.rateBasisPoints ?? 0) / 100, methodLabel,
     detail, ytd: yearToDate(input.history ?? [], input.run.companyId, input.contractor.id, input.run.end),

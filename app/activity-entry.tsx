@@ -1,9 +1,10 @@
 "use client";
 import { useState } from "react";
 import type { CalculationInput, PayrollTransaction } from "../lib/settlements";
-import Decimal from "decimal.js";
+import { parseDecimalEntry } from "../lib/settlements";
+import DeductionEntry from "./deduction-entry";
 
-type Action = "Load" | "Deduction" | "Reimbursement" | "Adjustment";
+type Action = "Load" | "Earning" | "Deduction" | "Reimbursement" | "Adjustment";
 const categories = ["FUEL_DEDUCTION", "INSURANCE_DEDUCTION", "CASH_ADVANCE", "ESCROW_DEDUCTION", "REGISTRATION_DEDUCTION", "IFTA_DEDUCTION", "MAINTENANCE_DEDUCTION", "FACTORING_DEDUCTION", "OTHER_DEDUCTION"] as const;
 export default function ActivityEntry({ inputs, onChange }: { inputs: CalculationInput[]; onChange: (inputs: CalculationInput[]) => void }) {
   const [person, setPerson] = useState(0), [action, setAction] = useState<Action>("Load"), [open, setOpen] = useState(false);
@@ -13,12 +14,7 @@ export default function ActivityEntry({ inputs, onChange }: { inputs: Calculatio
     event.preventDefault(); setError("");
     const form = event.currentTarget, values = new FormData(form);
     try {
-      const dollars = String(values.get("amount"));
-      if (!/^-?\d+(\.\d{1,2})?$/.test(dollars)) throw new Error("Enter an amount with at most two decimal places.");
-      const exact = new Decimal(dollars).times(100);
-      if (exact.abs().greaterThan(Number.MAX_SAFE_INTEGER)) throw new Error("This amount is too large.");
-      const amountCents = exact.toNumber();
-      if (action !== "Adjustment" && amountCents < 0) throw new Error("Enter a positive amount.");
+      const amountCents = parseDecimalEntry(String(values.get("amount")), action === "Adjustment");
       const description = String(values.get("description")).trim(), reference = String(values.get("reference")).trim();
       if (!description || !reference) throw new Error("Enter a description and reference.");
       const date = String(values.get("date"));
@@ -30,14 +26,16 @@ export default function ActivityEntry({ inputs, onChange }: { inputs: Calculatio
         if (!Number.isSafeInteger(miles) || miles < 0) throw new Error("Enter whole, nonnegative miles.");
         updated = { ...selected, loads: [...selected.loads, { id: identifier, companyId: selected.run.companyId, contractorId: selected.contractor.id, loadNumber: reference, proNumber: reference, date, origin: "Sample origin", destination: description, loadedMiles: miles, emptyMiles: 0, grossRevenueCents: amountCents, status: "ELIGIBLE" }] };
       } else {
-        const transactionType = action === "Deduction" ? String(values.get("category")) as PayrollTransaction["transactionType"] : action === "Reimbursement" ? "REIMBURSEMENT" : "ADJUSTMENT";
+        const transactionType = action === "Deduction" ? String(values.get("category")) as PayrollTransaction["transactionType"] : action === "Reimbursement" ? "REIMBURSEMENT" : action === "Earning" ? "OTHER_EARNING" : "ADJUSTMENT";
         updated = { ...selected, transactions: [...selected.transactions, { id: identifier, companyId: selected.run.companyId, contractorId: selected.contractor.id, payPeriodId: selected.run.payPeriodId, transactionType, referenceNumber: reference, transactionDate: date, description, amountCents, miles: 0, source: "MANUAL", enteredBy: "sample-specialist", createdAt: new Date().toISOString() }] };
       }
       onChange(inputs.map((input, index) => index === person ? updated : input)); form.reset(); setOpen(false);
     } catch (e) { setError(e instanceof Error ? e.message : "Check the activity details."); }
   }
-  return <section className="panel activity-entry" aria-labelledby="activity-title"><h2 id="activity-title">Enter fictional activity</h2><p>Choose a contractor. Their configured pay and deductions apply automatically. Amounts and review checks update immediately.</p><label>Contractor <select value={person} onChange={e => { setPerson(Number(e.target.value)); setOpen(false); setError(""); }}>{inputs.map((input, i) => <option key={input.contractor.id} value={i}>{input.contractor.displayName}</option>)}</select></label><div className="activity-actions">{(["Load", "Deduction", "Reimbursement", "Adjustment"] as const).map(label => <button className="button button-secondary" key={label} onClick={() => { setAction(label); setOpen(true); setError(""); }}>Add {label}</button>)}</div>
-    {open && <form onSubmit={submit} className="activity-form"><h3>Add {action.toLowerCase()} · {selected.contractor.displayName}</h3><label>Reference <input name="reference" required maxLength={128} /></label><label>{action === "Load" ? "Destination / description" : "Description"}<input name="description" required maxLength={128} /></label><label>Date <input type="date" name="date" min={selected.run.start} max={selected.run.end} defaultValue={selected.run.start} required /></label><label>{action === "Load" ? "Gross revenue ($)" : "Amount ($)"}<input name="amount" inputMode="decimal" required placeholder={action === "Adjustment" ? "Signed amount, e.g. -25.00" : "0.00"} /></label>{action === "Load" && <label>Total miles <input name="miles" type="number" min="0" step="1" required defaultValue="0" /></label>}{action === "Deduction" && <label>Category <select name="category">{categories.map(category => <option key={category} value={category}>{category.replaceAll("_", " ").toLowerCase()}</option>)}</select></label>}{error && <p role="alert">{error}</p>}<div className="activity-actions"><button type="submit" className="button button-primary">Add to draft</button><button type="button" className="button button-secondary" onClick={() => setOpen(false)}>Cancel</button></div></form>}
+  if (!selected) return null;
+  return <section className="panel activity-entry" aria-labelledby="activity-title"><h2 id="activity-title">Add activity for this pay period</h2><p>Choose a contractor. Their configured pay and deductions apply automatically. Amounts and review checks update immediately.</p><label>Contractor <select aria-label="Contractor" value={person} onChange={e => { setPerson(Number(e.target.value)); setOpen(false); setError(""); }}>{inputs.map((input, i) => <option key={input.contractor.id} value={i}>{input.contractor.displayName}</option>)}</select></label><div className="activity-actions">{(["Load", "Earning", "Deduction", "Reimbursement", "Adjustment"] as const).map(label => <button className="button button-secondary" key={label} onClick={() => { setAction(label); setOpen(true); setError(""); }}>Add {label}</button>)}</div>
+    {open && <form onSubmit={submit} className="activity-form"><h3>Add {action.toLowerCase()} · {selected.contractor.displayName}</h3><label>Reference <input name="reference" required maxLength={128} /></label><label>{action === "Load" ? "Destination / description" : "Description"}<input name="description" required maxLength={128} /></label><label>Date <input type="date" name="date" min={selected.run.start} max={selected.run.end} defaultValue={selected.run.start} required /></label><label>{action === "Load" ? "Gross revenue ($)" : "Amount ($)"}<input name="amount" inputMode="decimal" required placeholder={action === "Adjustment" ? "Signed amount, e.g. -25.00" : "0.00"} /></label>{action === "Load" && <label>Total miles <input name="miles" type="number" min="0" step="1" required defaultValue="0" /></label>}{action === "Deduction" && <label>Category <select aria-label="Category" name="category">{categories.map(category => <option key={category} value={category}>{category.replaceAll("_", " ").toLowerCase()}</option>)}</select></label>}{error && <p role="alert">{error}</p>}<div className="activity-actions"><button type="submit" className="button button-primary">Add to draft</button><button type="button" className="button button-secondary" onClick={() => setOpen(false)}>Cancel</button></div></form>}
+    <DeductionEntry key={selected.contractor.id} input={selected} onAdd={rule => onChange(inputs.map((input, index) => index === person ? { ...input, deductionRules: [...input.deductionRules, rule] } : input))} />
     <p className="guide-rail-note">Fictional entries stay in this page and reset on refresh. Downloads contain the fixed sample statements, without these draft edits.</p>
   </section>;
 }

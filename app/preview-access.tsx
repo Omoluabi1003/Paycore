@@ -28,7 +28,7 @@ export default function PreviewAccess() {
       <div className="preview-account"><span>Preview account</span><button type="button" onClick={() => changePreview(false)}>Sign out</button></div>
     </header>
     <div className="preview-notice" role="status">Sample workspace · No live payroll or payments · Changes reset on refresh.</div>
-    <div className="walkthrough-toolbar"><span>Client walkthrough · Fictional records only</span><div><a href="/sample-payroll.pdf">Download PDF statements</a><a href="/sample-payroll.csv">Download CSV</a><a href="mailto:?subject=PayCore%20sample%20payroll%20statements&body=Please%20find%20the%20PayCore%20sample%20payroll%20statements.%20These%20are%20fictional%20records%20for%20presentation%20only.%0A%0AAttach%20the%20downloaded%20PDF%20before%20sending.">Prepare email</a></div><small>Email opens your mail app. Attach the downloaded PDF before sending.</small></div>
+    <div className="walkthrough-toolbar"><span>Client walkthrough · Fictional records only</span><div><a href="/sample-payroll.pdf">Download example PDF</a><a href="/sample-payroll.csv">Download example CSV</a><a href="mailto:?subject=PayCore%20sample%20payroll%20statements&body=Please%20find%20the%20PayCore%20sample%20payroll%20statements.%20These%20are%20fictional%20records%20for%20presentation%20only.%0A%0AAttach%20the%20downloaded%20PDF%20before%20sending.">Prepare email</a></div><small>Example downloads use fixed fictional records, separate from your entries. Email opens your mail app. Attach the example PDF before sending.</small></div>
     <Workspace />
   </div>;
 

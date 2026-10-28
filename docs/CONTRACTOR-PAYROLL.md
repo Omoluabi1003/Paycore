@@ -2,7 +2,17 @@
 
 The PR #4 preview remains a fictional, in-memory walkthrough. The calculation domain is ready for development and review; no production identity, database persistence, approval endpoint or payments are connected. Public exports contain fixed fictional fixtures, not edits entered in the walkthrough.
 
-`lib/settlements.ts` owns validated contractor, compensation rule, deduction rule, load, transaction, run, settlement and line contracts. `lib/sample-payroll.ts` configures three different agreements. `app/activity-entry.tsx` provides contractor-specific draft entry; the existing walkthrough displays calculated lines and review issues. `lib/payroll.ts` remains a compatibility adapter for existing callers and sub-basis-point decimal-percent regression inputs. New agreements use integer basis points only.
+`lib/settlements.ts` owns validated contractor, compensation rule, deduction rule, load, transaction, run, settlement and line contracts. `lib/sample-payroll.ts` keeps three fictional agreements for fixed example exports only; these never populate the workspace automatically. `app/contractor-entry.tsx` starts from an empty list and accepts specialist-entered identity and pay terms. `app/deduction-entry.tsx` configures contractor-specific automatic deductions. `app/activity-entry.tsx` provides contractor-specific draft entry; the existing walkthrough displays calculated lines and review issues. `lib/payroll.ts` remains a compatibility adapter for existing callers and sub-basis-point decimal-percent regression inputs. New agreements use integer basis points only.
+
+## Specialist-led entry
+
+The workspace starts with no contractors, loads, transactions or deduction rules. Add contractor requires a name, unique reference, explicit compensation method, agreed rate where applicable and effective start date. No contractor name, percentage or factoring charge is selected for the specialist. Fixed-period earnings derive from the entered agreement; other methods use entered activity. Add Earning supports manual or supplemental earnings. Decimal text is converted directly to integer cents/basis points, without formulas, implicit rounding or binary multiplication.
+
+Automatic deductions run only after the specialist configures the category, description, calculation method, amount/percentage, frequency and effective dates. Percentage deductions require an explicit revenue/earnings base; installment rules require an outstanding balance and never consume it during a preview. Duplicate contractor references and overlapping duplicate deduction descriptions are rejected. Any contractor, rule or activity entry invalidates previous preparation and review acknowledgements.
+
+This remains a tab-local preview: use fictional records only; refresh and sign-out clear entries. The PDF/CSV links are labeled example downloads and retain fixed fictional fixtures, separately from the specialist’s draft. They must not be presented as exports of entered records. Approval, persistent storage and production access remain disconnected.
+
+The user-supplied [Agency Agents](https://github.com/msitarzewski/agency-agents) UX Researcher and Evidence Collector guides were reviewed as design references: follow the operator’s task and pair screenshots with behavioral assertions. No third-party agent prompts, installers or runtime dependencies are installed in PayCore.
 
 ## Calculation policy
 
@@ -30,6 +40,6 @@ Compensation and deduction rule versions retain creator/time and effective dates
 
 ## Verification and rollback
 
-Use Node 24, pnpm 10.34.7, `pnpm install --frozen-lockfile`, `pnpm test`, `pnpm typecheck`, `pnpm build`, then `pnpm start`. Existing tests remain intact. New regression tests cover distinct rates/methods, date changes, all deduction methods, schedules, one-time suppression, installment caps, draft nonmutation, frozen snapshots, validation, duplicates, manual amounts, negative settlement review and approved-only/reversal YTD. The retained environment browser smoke test is `/workspace/.tools/paycore-smoke.cjs` and uses system Chromium; it is not a package dependency or CI requirement.
+Use Node 24, pnpm 10.34.7, `pnpm install --frozen-lockfile`, `pnpm test`, `pnpm typecheck`, `pnpm build`, then `pnpm start`. Existing tests remain intact. New regression tests cover distinct rates/methods, date changes, all deduction methods, schedules, one-time suppression, installment caps, draft nonmutation, frozen snapshots, validation, duplicates, manual amounts, negative settlement review and approved-only/reversal YTD. The retained environment browser smoke test for the empty-start flow is `/workspace/.tools/paycore-entry-smoke.cjs` and uses system Chromium; it is not a package dependency or CI requirement.
 
 Rollback the feature commit or redeploy PR #4 commit `5b8492878fda994fac1a3a207ea7c2aa9bafe7f4`. No database or external payroll state changes need rollback. Keep main and the existing Vercel production branch untouched until human review. Local builds do not prove a hosted Vercel deployment is healthy; inspect the branch preview and deployment checks before merging.

@@ -245,3 +245,40 @@ export function prepareReversal(original: ApprovedSettlement, history: History, 
   };
   return freeze({ settlement: reversal, audit: { action: "payroll.reversed", actorId: actor, payrollRunId: run.id, originalPayrollRunId: original.payrollRunId, contractorId: original.contractorId, reason, occurredAt: at } });
 }
+
+// Convert specialist-entered decimal text once at the boundary. All calculation
+// inputs remain integers; accepting formulas or implicit rounding would hide errors.
+export function parseDecimalEntry(value: string, signed = false): number {
+  if (!(signed ? /^-?\d+(?:\.\d{1,2})?$/ : /^\d+(?:\.\d{1,2})?$/).test(value.trim())) throw new Error("Enter a number with at most two decimal places, without currency symbols or formulas.");
+  const text = value.trim(), negative = text.startsWith("-");
+  const [whole, fraction = ""] = text.replace(/^-/, "").split(".");
+  return safeCents((BigInt(whole) * BigInt(100) + BigInt(fraction.padEnd(2, "0"))) * (negative ? -one : one));
+}
+export function createDraftContractor(
+  entry: { name: string; reference: string; method: CompensationRule["method"]; rate: string; effectiveFrom: string },
+  context: { run: PayrollRun; id: string; actorId: string; createdAt: string },
+  existing: readonly CalculationInput[],
+): CalculationInput {
+  const name = z.string().trim().min(2, "Enter the contractor’s name.").max(120).parse(entry.name);
+  const reference = z.string().trim().min(1, "Enter a contractor reference.").max(32).regex(/^[A-Za-z0-9][A-Za-z0-9_-]*$/, "Use letters, numbers, hyphens or underscores for the reference.").parse(entry.reference).toUpperCase();
+  if (existing.some(input => input.contractor.companyId === context.run.companyId && input.contractor.contractorNumber.toUpperCase() === reference)) throw new Error("This contractor reference is already in use. Choose a unique reference.");
+  const effectiveFrom = date.parse(entry.effectiveFrom);
+  if (effectiveFrom > context.run.end) throw new Error("The pay agreement starts after this pay period. Choose an eligible start date.");
+  if (entry.method === "OTHER_CONFIGURED_RULE") throw new Error("Choose a supported pay agreement.");
+  const rate = entry.method === "MANUAL_EARNINGS" ? undefined : parseDecimalEntry(entry.rate);
+  const contractor = ContractorSchema.parse({ id: context.id, companyId: context.run.companyId, contractorNumber: reference, displayName: name, status: "ACTIVE", paymentMethod: "PREVIEW_ONLY", effectiveStartDate: effectiveFrom, effectiveEndDate: null, createdAt: context.createdAt, updatedAt: context.createdAt });
+  const compensation = CompensationRuleSchema.parse({ id: `comp-${context.id}`, contractorId: contractor.id, method: entry.method, rateBasisPoints: entry.method === "PERCENT_OF_ELIGIBLE_REVENUE" ? rate : undefined, flatAmountCents: entry.method === "FLAT_PER_LOAD" || entry.method === "FLAT_PER_PERIOD" ? rate : undefined, perMileCents: entry.method === "PER_MILE" ? rate : undefined, effectiveFrom, effectiveTo: null, active: true, createdBy: context.actorId, createdAt: context.createdAt });
+  return { contractor, run: { ...context.run }, compensationRules: [compensation], deductionRules: [], transactions: [], loads: [], history: [] };
+}
+
+export function createDraftDeduction(
+  entry: { category: DeductionRule["category"]; description: string; method: "FIXED_AMOUNT" | "PERCENTAGE" | "INSTALLMENT"; amount: string; balance: string; percentageBase?: DeductionRule["percentageBase"]; frequency: DeductionRule["frequency"]; effectiveFrom: string; effectiveTo: string },
+  context: { input: CalculationInput; id: string; actorId: string; createdAt: string },
+): DeductionRule {
+  const parsed = DeductionRuleSchema.parse({ id: context.id, contractorId: context.input.contractor.id, category: entry.category, description: entry.description, calculationMethod: entry.method, amountCents: entry.method !== "PERCENTAGE" ? parseDecimalEntry(entry.amount) : undefined, rateBasisPoints: entry.method === "PERCENTAGE" ? parseDecimalEntry(entry.amount) : undefined, percentageBase: entry.method === "PERCENTAGE" ? entry.percentageBase : undefined, remainingBalanceCents: entry.method === "INSTALLMENT" ? parseDecimalEntry(entry.balance) : undefined, frequency: entry.method === "INSTALLMENT" ? "UNTIL_BALANCE_PAID" : entry.frequency, effectiveFrom: entry.effectiveFrom, effectiveTo: entry.effectiveTo || null, active: true, createdBy: context.actorId, createdAt: context.createdAt });
+  if (parsed.effectiveTo && parsed.effectiveTo < parsed.effectiveFrom) throw new Error("The deduction end date must follow its start date.");
+  if (parsed.effectiveFrom > context.input.run.end || (parsed.effectiveTo && parsed.effectiveTo < context.input.run.start)) throw new Error("Choose deduction dates that apply to this pay period.");
+  if (context.input.deductionRules.some(rule => rule.category === parsed.category && normalized(rule.description) === normalized(parsed.description) && overlaps(rule, parsed, context.input.run))) throw new Error("A deduction with this category and description already applies to this contractor. Review the existing deduction before adding another.");
+  calculateDeduction(parsed, 0, 0, 0, 0);
+  return parsed;
+}

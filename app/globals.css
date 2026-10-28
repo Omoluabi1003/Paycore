@@ -2476,3 +2476,6 @@ body:has(:focus-visible) .brand-splash-intro {
 @media (max-width: 600px) { .activity-form { grid-template-columns: minmax(0, 1fr); } .activity-actions .button { flex: 1 1 140px; } .statement-breakdown > div { gap: 12px; } }
 .statement-breakdown dt { flex: 1 1 0; }
 .statement-breakdown dd { flex: 0 0 42%; }
+.deduction-setup { border-top: 1px solid #c3d5df; margin-top: 20px; padding-top: 20px; }
+.deduction-setup li { font-size: 13px; margin-block: 8px; overflow-wrap: anywhere; }
+.task-tile:disabled { opacity: .6; cursor: default; }
