@@ -55,3 +55,12 @@ export function pasteGrid(rows: GridRow[], startRow: number, startColumn: number
     return updated;
   });
 }
+
+// Recalculate only explicitly managed rows; preserve other entered contractors.
+export function calculateGridRows(rows: GridRow[], previousRows: GridRow[], inputs: CalculationInput[], now: string, run: PayrollRun = previewRun): CalculationInput[] {
+  const managedIds = new Set([...rows, ...previousRows].map(row => row.id));
+  const untouched = inputs.filter(input => !managedIds.has(input.contractor.id));
+  const candidates: CalculationInput[] = [];
+  for (const row of rows) candidates.push(calculateGridRow(row, [...untouched, ...inputs.filter(input => input.contractor.id === row.id), ...candidates], now, run));
+  return [...untouched, ...candidates];
+}

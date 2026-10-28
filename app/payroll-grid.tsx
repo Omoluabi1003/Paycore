@@ -1,6 +1,6 @@
 "use client";
 import { useRef, useState } from "react";
-import { calculateGridRow, emptyGridRow, gridColumns, pasteGrid } from "../lib/payroll-grid";
+import { calculateGridRow, calculateGridRows, emptyGridRow, gridColumns, pasteGrid } from "../lib/payroll-grid";
 import type { GridRow } from "../lib/payroll-grid";
 import { calculateContractorSettlement } from "../lib/settlements";
 import type { CalculationInput, PayrollRun } from "../lib/settlements";
@@ -15,16 +15,16 @@ export default function PayrollGrid({ inputs, onChange, onValidityChange, run, r
   });
   function update(next: GridRow[]) {
     onRowsChange(next); setPasteError("");
-    const candidates: CalculationInput[] = [];
-    let valid = true;
-    for (const row of next) {
-      try { candidates.push(calculateGridRow(row, [...inputs.filter(input => input.contractor.id === row.id), ...candidates], new Date().toISOString(), run)); }
-      catch { valid = false; }
+    try {
+      const candidates = calculateGridRows(next, rows, inputs, new Date().toISOString(), run);
+      onValidityChange(candidates.length > 0);
+      onChange(candidates);
+    } catch {
+      // Incomplete rows retain the last complete payroll and block review.
+      onValidityChange(false);
     }
-    // Incomplete edits never replace the last valid payroll with partial amounts.
-    onValidityChange(valid && next.length > 0);
-    if (valid) onChange(candidates);
   }
+
   function focusCell(row: number, column: number) { table.current?.querySelector<HTMLElement>(`[data-cell="${row}-${column}"]`)?.focus(); }
   function addRow() {
     update([...rows, emptyGridRow(crypto.randomUUID())]);

@@ -32,3 +32,26 @@ test('invalid money, fractional miles and duplicate references cannot update pay
  const prior = calculateGridRow(row, [], now);
  assert.throws(() => calculateGridRow({ ...row, id: 'person-2', reference: 'pc-1' }, [prior], now), /already exists/);
 });
+
+test('table edits preserve contractors added outside the table, including removing its last row', async () => {
+ const { calculateGridRows } = await import('../lib/payroll-grid.ts');
+ const guided = calculateGridRow({ ...row, id: 'guided-person', reference: 'GUIDED-1' }, [], now);
+ const before = structuredClone(guided);
+ const mixed = calculateGridRows([row], [], [guided], now);
+ assert.equal(mixed.length, 2); assert.deepEqual(mixed[0], before);
+ const removed = calculateGridRows([], [row], mixed, now);
+ assert.deepEqual(removed, [before]); assert.deepEqual(guided, before);
+});
+test('table duplicate validation includes contractors entered through the guided form', async () => {
+ const { calculateGridRows } = await import('../lib/payroll-grid.ts');
+ const guided = calculateGridRow({ ...row, id: 'guided-person', reference: 'GUIDED-1' }, [], now);
+ assert.throws(() => calculateGridRows([{ ...row, reference: 'guided-1' }], [], [guided], now), /already exists/);
+});
+test('table figure updates preserve separately configured automatic deductions', () => {
+ const prior = calculateGridRow(row, [], now);
+ prior.deductionRules.push({ ...prior.deductionRules[0], id: 'configured-insurance', category: 'INSURANCE', description: 'Specialist configured insurance', amountCents: 1000 });
+ const next = calculateGridRow({ ...row, revenue: '2000' }, [prior], now);
+ assert.equal(next.deductionRules.length, 2);
+ assert.equal(next.deductionRules.find(rule => rule.id === 'configured-insurance').amountCents, 1000);
+ assert.equal(calculateContractorSettlement(next).automaticDeductionsCents, 3000);
+});
