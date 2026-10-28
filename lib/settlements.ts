@@ -6,10 +6,10 @@ const integer = z.number().int().safe();
 const cents = integer.nonnegative();
 const bp = cents.max(10000);
 const effective = { effectiveFrom: date, effectiveTo: date.nullable().default(null), active: z.boolean().default(true), createdBy: id, createdAt: id };
-export const ContractorSchema = z.object({ id, companyId: id, contractorNumber: id, displayName: id, status: z.enum(["ACTIVE", "INACTIVE"]), paymentMethod: id, effectiveStartDate: date, effectiveEndDate: date.nullable(), createdAt: id, updatedAt: id });
+export const ContractorSchema = z.object({ id, companyId: id, contractorNumber: id, displayName: id, address: z.string().trim().max(120).optional(), cityStateZip: z.string().trim().max(120).optional(), phone: z.string().trim().max(60).optional(), status: z.enum(["ACTIVE", "INACTIVE"]), paymentMethod: id, effectiveStartDate: date, effectiveEndDate: date.nullable(), createdAt: id, updatedAt: id });
 export const CompensationRuleSchema = z.object({ id, contractorId: id, ...effective, method: z.enum(["PERCENT_OF_ELIGIBLE_REVENUE", "FLAT_PER_LOAD", "FLAT_PER_PERIOD", "PER_MILE", "MANUAL_EARNINGS", "OTHER_CONFIGURED_RULE"]), rateBasisPoints: bp.optional(), flatAmountCents: cents.optional(), perMileCents: cents.optional() });
-export const DeductionRuleSchema = z.object({ id, contractorId: id, ...effective, category: z.enum(["FUEL", "INSURANCE", "CASH_ADVANCE", "ESCROW", "REGISTRATION", "IFTA", "MAINTENANCE", "FACTORING", "ADMIN_FEE", "OTHER"]), description: id, calculationMethod: z.enum(["FIXED_AMOUNT", "PERCENTAGE", "PER_LOAD", "PER_MILE", "INSTALLMENT", "MANUAL_AMOUNT"]), amountCents: cents.optional(), rateBasisPoints: bp.optional(), percentageBase: z.enum(["ELIGIBLE_REVENUE", "GROSS_EARNINGS"]).optional(), frequency: z.enum(["ONE_TIME", "EVERY_PAYROLL", "WEEKLY", "BIWEEKLY", "MONTHLY", "UNTIL_BALANCE_PAID", "MANUAL"]), remainingBalanceCents: cents.optional() });
-export const TransactionSchema = z.object({ id, companyId: id, contractorId: id, payPeriodId: id, transactionType: z.enum(["LOAD_REVENUE", "OTHER_EARNING", "FUEL_DEDUCTION", "INSURANCE_DEDUCTION", "CASH_ADVANCE", "ESCROW_DEDUCTION", "REGISTRATION_DEDUCTION", "IFTA_DEDUCTION", "MAINTENANCE_DEDUCTION", "FACTORING_DEDUCTION", "REIMBURSEMENT", "ADJUSTMENT", "OTHER_DEDUCTION"]), referenceNumber: id, transactionDate: date, description: id, amountCents: integer, miles: cents.default(0), source: id, enteredBy: id, createdAt: id });
+export const DeductionRuleSchema = z.object({ id, contractorId: id, ...effective, category: z.enum(["FUEL", "INSURANCE", "CASH_ADVANCE", "ESCROW", "REGISTRATION", "TRUCK_REGISTRATION", "TRAILER_REGISTRATION", "IFTA", "MAINTENANCE", "FACTORING", "ADMIN_FEE", "OTHER"]), description: id, calculationMethod: z.enum(["FIXED_AMOUNT", "PERCENTAGE", "PER_LOAD", "PER_MILE", "INSTALLMENT", "MANUAL_AMOUNT"]), amountCents: cents.optional(), rateBasisPoints: bp.optional(), percentageBase: z.enum(["ELIGIBLE_REVENUE", "GROSS_EARNINGS", "SELECTED_LOAD_REVENUE"]).optional(), selectedLoadIds: z.array(id).min(1).max(10000).optional(), frequency: z.enum(["ONE_TIME", "EVERY_PAYROLL", "WEEKLY", "BIWEEKLY", "MONTHLY", "UNTIL_BALANCE_PAID", "MANUAL"]), remainingBalanceCents: cents.optional() });
+export const TransactionSchema = z.object({ id, companyId: id, contractorId: id, payPeriodId: id, transactionType: z.enum(["LOAD_REVENUE", "OTHER_EARNING", "FUEL_DEDUCTION", "INSURANCE_DEDUCTION", "CASH_ADVANCE", "ESCROW_DEDUCTION", "REGISTRATION_DEDUCTION", "TRUCK_REGISTRATION_DEDUCTION", "TRAILER_REGISTRATION_DEDUCTION", "IFTA_DEDUCTION", "MAINTENANCE_DEDUCTION", "FACTORING_DEDUCTION", "REIMBURSEMENT", "ADJUSTMENT", "OTHER_DEDUCTION"]), referenceNumber: id, transactionDate: date, description: id, amountCents: integer, miles: cents.default(0), source: id, enteredBy: id, createdAt: id });
 export const LoadSchema = z.object({ id, companyId: id, contractorId: id, loadNumber: id, proNumber: id, date, origin: id, destination: id, loadedMiles: cents, emptyMiles: cents, grossRevenueCents: cents, status: z.enum(["ELIGIBLE", "EXCLUDED"]) });
 export type Contractor = z.infer<typeof ContractorSchema>;
 export type CompensationRule = z.infer<typeof CompensationRuleSchema>;
@@ -25,7 +25,7 @@ export type Settlement = {
   compensationMethod: string; compensationRateBasisPoints?: number;
   grossEligibleRevenueCents: number; grossEarningsCents: number; automaticDeductionsCents: number; manualDeductionsCents: number; reimbursementsCents: number; adjustmentsCents: number; netSettlementCents: number;
   lines: SettlementLine[]; blockers: Issue[]; warnings: Issue[]; sourceIds: string[];
-  calculationSnapshot: { version: 1; contractor: Contractor; compensationRules: CompensationRule[]; deductionRules: DeductionRule[]; transactions: PayrollTransaction[]; loads: Load[] };
+  calculationSnapshot: { version: 1; fuelReconciliation?: { expectedTotalCents: number }; contractor: Contractor; compensationRules: CompensationRule[]; deductionRules: DeductionRule[]; transactions: PayrollTransaction[]; loads: Load[] };
 };
 export type ApprovedSettlement = Settlement & { status: "APPROVED"; approvedAt: string; approvedBy: string; reviewReasons: Record<string, string>; reversesPayrollRunId?: string };
 export type History = readonly ApprovedSettlement[];
@@ -93,7 +93,7 @@ export function calculateDeduction(rule: DeductionRule, revenue: number, earning
   let amount: number;
   if (rule.calculationMethod === "PERCENTAGE") {
     if (rule.rateBasisPoints === undefined || !rule.percentageBase) throw new Error("A percentage deduction needs its rate and calculation base.");
-    amount = roundRatio(rule.percentageBase === "ELIGIBLE_REVENUE" ? revenue : earnings, rule.rateBasisPoints);
+    amount = roundRatio(rule.percentageBase === "GROSS_EARNINGS" ? earnings : revenue, rule.rateBasisPoints);
   } else {
     if (rule.calculationMethod === "MANUAL_AMOUNT") throw new Error("Manual deductions must be entered as activity; set this rule to manual frequency.");
     if (rule.amountCents === undefined) throw new Error("A deduction amount is missing.");
@@ -104,7 +104,8 @@ export function calculateDeduction(rule: DeductionRule, revenue: number, earning
   return balanceLimited ? Math.min(amount, rule.remainingBalanceCents!) : amount;
 }
 
-export type CalculationInput = { contractor: Contractor; run: PayrollRun; compensationRules: CompensationRule[]; deductionRules: DeductionRule[]; transactions: PayrollTransaction[]; loads: Load[]; history?: History };
+export type FuelReconciliation = { expectedTotalCents: number };
+export type CalculationInput = { fuelReconciliation?: FuelReconciliation; contractor: Contractor; run: PayrollRun; compensationRules: CompensationRule[]; deductionRules: DeductionRule[]; transactions: PayrollTransaction[]; loads: Load[]; history?: History };
 export function calculateContractorSettlement(input: CalculationInput): Settlement {
   const blockers: Issue[] = [], warnings: Issue[] = [], lines: SettlementLine[] = [];
   const block = (code: string, message: string) => blockers.push({ code, message });
@@ -182,18 +183,29 @@ export function calculateContractorSettlement(input: CalculationInput): Settleme
       if (ruleIds.has(rule.id)) { block("DUPLICATE_RULE", "A deduction rule appears more than once."); continue; } ruleIds.add(rule.id);
       if (rule.effectiveFrom > run.end || (rule.effectiveTo && rule.effectiveTo < run.start)) continue;
       if (rule.frequency === "MANUAL") continue;
+      let deductionRevenue = eligible;
+      if (rule.percentageBase === "SELECTED_LOAD_REVENUE") {
+        const selected = rule.selectedLoadIds;
+        if (rule.category !== "FACTORING" || rule.calculationMethod !== "PERCENTAGE" || !selected?.length || new Set(selected).size !== selected.length || selected.some(id => !loads.some(load => load.id === id))) throw new Error("Factoring needs a unique selection of eligible loads assigned to this contractor and period.");
+        deductionRevenue = sum(loads.filter(load => selected.includes(load.id)).map(load => load.grossRevenueCents));
+      } else if (rule.selectedLoadIds?.length) throw new Error("Selected loads require the selected-load factoring calculation base.");
       let balance = rule.remainingBalanceCents;
       for (const key of deductionOccurrences(rule, run).filter(k => !applied.has(k))) {
-        const amount = calculateDeduction({ ...rule, remainingBalanceCents: balance }, eligible, earnings, revenue.length, miles);
+        const amount = calculateDeduction({ ...rule, remainingBalanceCents: balance }, deductionRevenue, earnings, revenue.length, miles);
         if (balance !== undefined && (rule.calculationMethod === "INSTALLMENT" || rule.frequency === "UNTIL_BALANCE_PAID")) balance -= amount;
         if (amount === 0) continue;
-        add({ kind: "DEDUCTION", category: rule.category, amountCents: amount, description: `${rule.description} · ${rule.frequency.replaceAll("_", " ").toLowerCase()} · ${rule.calculationMethod.replaceAll("_", " ").toLowerCase()}${rule.rateBasisPoints !== undefined ? ` · ${rule.rateBasisPoints / 100}% of ${rule.percentageBase === "ELIGIBLE_REVENUE" ? "eligible revenue" : "contractor earnings"}` : ""}`, ruleId: rule.id, occurrenceKey: key, origin: "AUTOMATIC" });
+        add({ kind: "DEDUCTION", category: rule.category, amountCents: amount, description: `${rule.description} · ${rule.frequency.replaceAll("_", " ").toLowerCase()} · ${rule.calculationMethod.replaceAll("_", " ").toLowerCase()}${rule.rateBasisPoints !== undefined ? ` · ${rule.rateBasisPoints / 100}% of ${rule.percentageBase === "SELECTED_LOAD_REVENUE" ? "selected eligible load revenue" : rule.percentageBase === "ELIGIBLE_REVENUE" ? "eligible revenue" : "contractor earnings"}` : ""}`, ruleId: rule.id, occurrenceKey: key, origin: "AUTOMATIC" });
         if (transactions.some(t => (t.transactionType.endsWith("_DEDUCTION") || t.transactionType === "CASH_ADVANCE") && t.transactionType.includes(rule.category))) warn("POSSIBLE_DUPLICATE_DEDUCTION", "An entered deduction has the same category as an automatic deduction. Review both.");
       }
     }
   } catch (error) { block(error instanceof RangeError ? "SAFE_INTEGER" : "RULE_CONFIGURATION", error instanceof Error ? error.message : "Invalid payroll rule."); }
   let grossEarningsCents = 0, automaticDeductionsCents = 0, manualDeductionsCents = 0, reimbursementsCents = 0, adjustmentsCents = 0, netSettlementCents = 0;
   try {
+    if (input.fuelReconciliation !== undefined) {
+      const check = z.object({ expectedTotalCents: cents }).strict().safeParse(input.fuelReconciliation);
+      if (!check.success) block("FUEL_RECONCILIATION_INPUT", "Enter a valid expected fuel-detail total.");
+      else if (check.data.expectedTotalCents !== sum(transactions.filter(tx => tx.transactionType === "FUEL_DEDUCTION").map(tx => tx.amountCents))) block("FUEL_RECONCILIATION", "Fuel-detail entries do not match the expected fuel total. Check the receipts before approval.");
+    }
     grossEarningsCents = sum(lines.filter(l => l.kind === "EARNING").map(l => l.amountCents));
     automaticDeductionsCents = sum(lines.filter(l => l.kind === "DEDUCTION" && l.origin === "AUTOMATIC").map(l => l.amountCents));
     manualDeductionsCents = sum(lines.filter(l => l.kind === "DEDUCTION" && l.origin === "ENTERED").map(l => l.amountCents));
@@ -205,7 +217,7 @@ export function calculateContractorSettlement(input: CalculationInput): Settleme
     const recent = historical.filter(h => h.contractorId === contractor.id && !h.reversesPayrollRunId).sort((a, b) => b.end.localeCompare(a.end))[0];
     if (recent && recent.netSettlementCents > 0 && (BigInt(netSettlementCents) > BigInt(recent.netSettlementCents) * two || BigInt(netSettlementCents) * two < BigInt(recent.netSettlementCents))) warn("VARIANCE", "This settlement differs substantially from the latest approved settlement.");
   } catch { block("SAFE_INTEGER", "Settlement exceeds safe integer limits."); }
-  return { contractorId: contractor.id, companyId: run.companyId, payrollRunId: run.id, payPeriodId: run.payPeriodId, start: run.start, end: run.end, compensationMethod: activeRules.length === 1 ? activeRules[0].method : "MULTIPLE_EFFECTIVE_RULES", compensationRateBasisPoints: activeRules.length === 1 ? activeRules[0].rateBasisPoints : undefined, grossEligibleRevenueCents: eligible, grossEarningsCents, automaticDeductionsCents, manualDeductionsCents, reimbursementsCents, adjustmentsCents, netSettlementCents, lines, blockers, warnings, sourceIds: sources, calculationSnapshot: structuredClone({ version: 1, contractor, compensationRules: rules, deductionRules: deductions, transactions, loads: allLoads }) };
+  return { contractorId: contractor.id, companyId: run.companyId, payrollRunId: run.id, payPeriodId: run.payPeriodId, start: run.start, end: run.end, compensationMethod: activeRules.length === 1 ? activeRules[0].method : "MULTIPLE_EFFECTIVE_RULES", compensationRateBasisPoints: activeRules.length === 1 ? activeRules[0].rateBasisPoints : undefined, grossEligibleRevenueCents: eligible, grossEarningsCents, automaticDeductionsCents, manualDeductionsCents, reimbursementsCents, adjustmentsCents, netSettlementCents, lines, blockers, warnings, sourceIds: sources, calculationSnapshot: structuredClone({ version: 1, ...(input.fuelReconciliation !== undefined ? { fuelReconciliation: input.fuelReconciliation } : {}), contractor, compensationRules: rules, deductionRules: deductions, transactions, loads: allLoads }) };
 }
 
 function freeze<T>(value: T): T {

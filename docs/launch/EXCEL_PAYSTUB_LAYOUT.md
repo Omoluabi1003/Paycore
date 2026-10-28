@@ -1,0 +1,17 @@
+# Client Excel paystub layout
+
+The client selected the original TATI Excel layout as the visual target, replacing the full-width stacked PayCore PDF arrangement. The private reference is a visual/business reference only: no private PDF, identities, contact details, account information or client amounts are committed.
+
+The Letter PDF now uses a centered green company card in a cyan banner, the existing PayCore vector logo, compact contractor/date panels with a blank middle column, stepped section headings and compact italic typography. Earnings sit on the left, with payment information on the lower right. Deductions retain current/YTD columns and the reference's adjacent empty panels. Totals, receipt details and load details follow the reference's order and geometry. Both supplied italic and bold italic fonts remain embedded unmodified.
+
+All values still derive from frozen settlements and approved history. Rates in load rows come from the exact applied compensation rule; they are not universal defaults or inferred from example amounts. Blank hours are not invented. Merchant/location columns remain dashes where no structured data was recorded; complete entered receipt descriptions are retained. Reimbursements, adjustments, excluded loads, installment balances and YTD remain present. Category totals and receipt-detail totals are explanatory views, not extra charges.
+
+Payment information explicitly says No real transfer, preserves the actual exhibit status and leaves bank/account Not configured. No real payment integration, bank account import or private reference account is added. Payment methods come from the saved contractor record. No financial snapshots or payroll calculations are changed.
+
+The isolated public /statement-preview.pdf route now exhibits five fictional loads and four fictional fuel receipts with the existing fictional agreement/advance. It reads no request, session, workspace or private file data and is not contractor auto-creation in a workspace. The specimen fits one Letter page; longer records paginate with repeated identity/table headings and footer evidence, without clipping descriptions or totals. Existing selected statement export numbering remains unchanged.
+
+Validation: all 21 test files pass, including a new geometry/one-page representative fixture, existing YTD/rate-change, font-byte, immutable-snapshot, selected-ID and long-description pagination regressions. Typecheck and production build pass. Rendered PDF comparison uses synthetic data and checks section alignment, totals and margins. No existing tests were weakened.
+
+Rollback: revert this increment to restore the preceding PDF layout and public synthetic specimen. No migrations, dependencies, environment variables, schema or storage-format changes. Original financial records are unchanged. This changes the exported PDF renderer; the responsive preparation preview remains a readable browser view rather than an exact PDF pagination view. Historical PDF byte archival remains outside exhibition mode.
+
+Production-route verification returned HTTP 200, application/pdf, inline disposition, no-store and nosniff. Its bytes exactly match the visually inspected one-page specimen. PDF inspection confirms both font faces are embedded. The richer specimen includes configured insurance/advance as well as five loads/four fuel receipts and preserves the correct net and remaining advance. Private source files remain outside the repository.

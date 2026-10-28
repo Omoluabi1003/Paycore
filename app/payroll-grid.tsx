@@ -3,25 +3,24 @@ import { useRef, useState } from "react";
 import { calculateGridRow, calculateGridRows, emptyGridRow, gridColumns, pasteGrid } from "../lib/payroll-grid";
 import type { GridRow } from "../lib/payroll-grid";
 import { calculateContractorSettlement } from "../lib/settlements";
-import type { CalculationInput } from "../lib/settlements";
+import type { CalculationInput, PayrollRun } from "../lib/settlements";
 const labels = ["Contractor name", "Reference", "Pay method", "Pay rate", "Revenue ($)", "Miles", "Recurring deduction ($)", "One-time deduction ($)", "Reimbursement ($)"];
 const money = (cents: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100);
-export default function PayrollGrid({ inputs, onChange, onValidityChange }: { inputs: CalculationInput[]; onChange: (next: CalculationInput[]) => void; onValidityChange: (valid: boolean) => void }) {
-  const [rows, setRows] = useState<GridRow[]>([]);
+export default function PayrollGrid({ inputs, onChange, onValidityChange, run, rows, onRowsChange }: { run: PayrollRun; rows: GridRow[]; onRowsChange: (rows: GridRow[]) => void; inputs: CalculationInput[]; onChange: (next: CalculationInput[]) => void; onValidityChange: (valid: boolean) => void }) {
   const [pasteError, setPasteError] = useState("");
   const table = useRef<HTMLTableElement>(null);
   const parsed = rows.map(row => {
-    try { return { input: calculateGridRow(row, inputs.filter(input => !rows.some(other => other.id === input.contractor.id && other.id !== row.id)), new Date().toISOString()), error: "" }; }
+    try { return { input: calculateGridRow(row, inputs.filter(input => !rows.some(other => other.id === input.contractor.id && other.id !== row.id)), new Date().toISOString(), run), error: "" }; }
     catch (error) { return { input: null, error: error instanceof Error ? error.message : "Check this row." }; }
   });
   function update(next: GridRow[]) {
-    setRows(next); setPasteError("");
+    onRowsChange(next); setPasteError("");
     try {
-      const candidates = calculateGridRows(next, rows, inputs, new Date().toISOString());
-      onValidityChange(true);
+      const candidates = calculateGridRows(next, rows, inputs, new Date().toISOString(), run);
+      onValidityChange(candidates.length > 0);
       onChange(candidates);
     } catch {
-      // Incomplete edits never replace the last valid payroll with partial amounts.
+      // Incomplete rows retain the last complete payroll and block review.
       onValidityChange(false);
     }
   }
@@ -33,7 +32,7 @@ export default function PayrollGrid({ inputs, onChange, onValidityChange }: { in
   }
   return <section className="panel payroll-sheet" aria-labelledby="sheet-title"><div className="section-heading"><div><h2 id="sheet-title">Your payroll desk</h2><p>Enter the facts. PayCore does the math.</p></div><button className="button button-primary" onClick={addRow}>Add contractor row</button></div>
     <p id="sheet-help">Tab moves across cells. Enter moves down. Paste cells copied from a spreadsheet into rows you have added. Pay rate is a percentage for % revenue, or dollars for other methods.</p>
-    <div className="table-scroll"><table ref={table} aria-describedby="sheet-help"><caption className="sr-only">Editable contractor payroll for October 5–18, 2026, in US dollars</caption><thead><tr><th scope="col">Row</th>{labels.map(label => <th key={label} scope="col">{label}</th>)}<th scope="col">Earnings</th><th scope="col">Net pay</th><th scope="col">Check</th><th scope="col">Action</th></tr></thead><tbody>{rows.map((row, rowIndex) => {
+    <div className="table-scroll"><table ref={table} aria-describedby="sheet-help"><caption className="sr-only">Editable contractor payroll for {run.start} through {run.end}, in US dollars</caption><thead><tr><th scope="col">Row</th>{labels.map(label => <th key={label} scope="col">{label}</th>)}<th scope="col">Earnings</th><th scope="col">Net pay</th><th scope="col">Check</th><th scope="col">Action</th></tr></thead><tbody>{rows.map((row, rowIndex) => {
       const entry = parsed[rowIndex];
       const detail = entry.input ? calculateContractorSettlement(entry.input) : null;
       const duplicate = rows.some(other => other.id !== row.id && other.reference.trim().toUpperCase() === row.reference.trim().toUpperCase());
@@ -46,6 +45,6 @@ export default function PayrollGrid({ inputs, onChange, onValidityChange }: { in
     {!rows.length && <p className="sheet-empty">No contractors added. Add a row to start.</p>}
     {pasteError && <p role="alert">{pasteError}</p>}
     <p className="guide-rail-note" role="status">{parsed.some(entry => entry.error) ? "Finish the highlighted rows to update payroll totals and continue review. Totals below retain the last complete entry." : "Earnings and net pay are calculated. Review all agreed deductions before finalizing."}</p>
-    <p className="guide-rail-note">Preview only · Use fictional details · Entries reset on refresh. Detailed activity is added on top of these period figures.</p>
+    <p className="guide-rail-note">Preview only · Use fictional details · Save a demo draft before refreshing to recover it in this tab. Detailed activity is added on top of these period figures.</p>
   </section>;
 }

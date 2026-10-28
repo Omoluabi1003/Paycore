@@ -1,0 +1,8 @@
+"use client";
+import { useState } from "react";
+import { configureDemoAdvance } from "../lib/demo-payroll";
+import type { CalculationInput } from "../lib/settlements";
+export default function DemoAdvance({inputs,onChange}:{inputs:CalculationInput[];onChange:(next:CalculationInput[])=>void}){
+ const [error,setError]=useState("");
+ return <details className="panel activity-entry"><summary>Configure a demo advance repayment</summary><form className="activity-form" onSubmit={event=>{event.preventDefault();const values=new FormData(event.currentTarget);try{const index=Number(values.get("contractor"));if(!inputs[index])throw new Error("Choose a contractor.");const next=configureDemoAdvance(inputs[index],String(values.get("balance")),String(values.get("installment")),new Date().toISOString());onChange(inputs.map((input,i)=>i===index?next:input));setError("");}catch(error){setError(error instanceof Error?error.message:"Check the repayment plan.");}}}><label>Contractor<select name="contractor">{inputs.map((input,index)=><option value={index} key={input.contractor.id}>{input.contractor.displayName}</option>)}</select></label><label>Outstanding demo advance ($)<input name="balance" inputMode="decimal" required /></label><label>Repayment per payroll ($)<input name="installment" inputMode="decimal" required /></label><p>PayCore caps the final repayment at the outstanding balance. This adds or replaces this contractor’s demo advance plan.</p>{error&&<p role="alert">{error}</p>}<button className="button button-secondary" type="submit">Apply demo repayment plan</button></form></details>;
+}
