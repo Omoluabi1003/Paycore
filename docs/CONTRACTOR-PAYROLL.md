@@ -10,6 +10,8 @@ The workspace starts with no contractors, loads, transactions or deduction rules
 
 Automatic deductions run only after the specialist configures the category, description, calculation method, amount/percentage, frequency and effective dates. Percentage deductions require an explicit revenue/earnings base; installment rules require an outstanding balance and never consume it during a preview. Duplicate contractor references and overlapping duplicate deduction descriptions are rejected. Any contractor, rule or activity entry invalidates previous preparation and review acknowledgements.
 
+The existing table editor remains available under Table entry (optional). It creates rows only on an explicit Add contractor row action. Table updates replace only their own managed contractors, preserve guided-entry contractors and separately configured deductions, and block review on incomplete edits. Clipboard data never creates additional rows. Do not enter the same work in the table and detailed load entry.
+
 This remains a tab-local preview: use fictional records only; refresh and sign-out clear entries. The PDF/CSV links are labeled example downloads and retain fixed fictional fixtures, separately from the specialist’s draft. They must not be presented as exports of entered records. Approval, persistent storage and production access remain disconnected.
 
 The user-supplied [Agency Agents](https://github.com/msitarzewski/agency-agents) UX Researcher and Evidence Collector guides were reviewed as design references: follow the operator’s task and pair screenshots with behavioral assertions. No third-party agent prompts, installers or runtime dependencies are installed in PayCore.
@@ -43,3 +45,6 @@ Compensation and deduction rule versions retain creator/time and effective dates
 Use Node 24, pnpm 10.34.7, `pnpm install --frozen-lockfile`, `pnpm test`, `pnpm typecheck`, `pnpm build`, then `pnpm start`. Existing tests remain intact. New regression tests cover distinct rates/methods, date changes, all deduction methods, schedules, one-time suppression, installment caps, draft nonmutation, frozen snapshots, validation, duplicates, manual amounts, negative settlement review and approved-only/reversal YTD. The retained environment browser smoke test for the empty-start flow is `/workspace/.tools/paycore-entry-smoke.cjs` and uses system Chromium; it is not a package dependency or CI requirement.
 
 Rollback the feature commit or redeploy PR #4 commit `5b8492878fda994fac1a3a207ea7c2aa9bafe7f4`. No database or external payroll state changes need rollback. Keep main and the existing Vercel production branch untouched until human review. Local builds do not prove a hosted Vercel deployment is healthy; inspect the branch preview and deployment checks before merging.
+
+
+To roll back just the guided-entry integration while retaining the earlier table implementation, deploy feature-branch commit `d2b221043e06863ab921cd149686d0a4fa644a24`. No database changes are involved.
