@@ -21,7 +21,7 @@ The core represents the individual contractor and the specialist's human judgmen
 
 ## Seven-second introduction
 
-`BrandIntro` displays the splash for 7,000 milliseconds after the root client component mounts. Background controls are inert while it is visible. Skip introduction allows deliberate early dismissal. It runs once per full document load and does not restart during client-side navigation. Reduced-motion users see the same static seven-second introduction without the animated progress line. The permanent `/welcome` preview remains available after the opening introduction.
+`BrandIntro` displays the splash for 7,000 milliseconds only on the first root (`/`) entry in the current tab session. A presentation-only sessionStorage flag is recorded when entry begins, including when the user skips. Direct links to Scan, the inbox, branding or other task routes open without the timed overlay. Background controls are inert while it is visible. Skip introduction allows deliberate early dismissal. With tab storage available, it does not restart on navigation, returning to the workspace or refreshing within the same tab session. If storage is blocked, task routes still bypass the intro and a document-local guard prevents client-navigation repeats; a fresh home document cannot retain that fallback state. This flag is not authentication. The mobile Scan links use Next navigation rather than forcing a document reload. Reduced-motion users see the same static seven-second introduction without the animated progress line. The permanent `/welcome` preview remains available after the opening introduction.
 
 ## Sharing
 
