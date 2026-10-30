@@ -2760,27 +2760,21 @@ body:has(.preview-workspace) .brand-splash-intro { display: none; }
 }
 
 /* Approved sculptural identity: dimensional artwork, with live accessible text. */
-.sculptural-splash { background: #07121e; }
-.sculptural-splash-content { width: min(100%, 1200px); padding: 64px 0 32px; text-align: center; }
-.sculptural-splash-art { display: block; width: 100%; height: auto; }
-.sculptural-eyebrow { color: #bfd7d3; font-size: 11px; letter-spacing: .22em; padding-inline: 24px; }
-.sculptural-tagline { color: #f6f8f0; font-size: clamp(16px, 2vw, 23px); line-height: 1.5; margin: 0 24px 18px; }
-.sculptural-credit { color: #b9cdce; font-size: 12px; line-height: 1.5; margin: 0 24px; }
+.sculptural-splash { background: #07121e; height: 100svh; min-height: 100svh; height: 100dvh; min-height: 100dvh; }
+.sculptural-splash-art { object-fit: cover; object-position: center; }
+.sculptural-splash-content { position: relative; z-index: 1; box-sizing: border-box; width: 100%; height: 100%; padding: 88px 24px max(40px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 12px; text-align: center; background: linear-gradient(180deg, #07121e55, transparent 25%, transparent 65%, #07121ee6); }
+.sculptural-eyebrow { position: absolute; top: 88px; margin: 0; color: #e1efed; font-size: 11px; letter-spacing: .22em; padding-inline: 24px; }
+.sculptural-tagline { color: #f6f8f0; font-size: clamp(17px, 2vw, 23px); line-height: 1.5; margin: 0; text-shadow: 0 2px 8px #000; }
+.sculptural-credit { color: #d5e4e4; font-size: 12px; line-height: 1.5; margin: 0; }
 .sculptural-credit strong { color: #f0e6d6; }
-.sculptural-splash.brand-splash-intro { animation-duration: 2.4s; }
 @media (max-width: 720px) {
-  .sculptural-splash-content { min-height: 100svh; box-sizing: border-box; padding: 76px 0 28px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; }
-  .sculptural-splash-art { display: block; width: 100%; height: auto; flex: none; }
-  .sculptural-eyebrow { margin: 0; }
-  .sculptural-tagline { margin: 8px 0 0; font-size: clamp(17px, 4.5vw, 22px); }
-  .sculptural-credit { margin: 0; }
   .sculptural-eyebrow { font-size: 9px; line-height: 1.7; letter-spacing: .16em; }
 }
 .paycore-logo img.paycore-logo-art { width: 160px; max-width: 100%; height: auto; border: 0; border-radius: 0; }
 .brand-symbol.access-emblem { background: transparent; border-radius: 0; width: 56px; height: 56px; object-fit: contain; }
 .paycore-app-content { display: contents; }
 .brand-intro-overlay { position: fixed; inset: 0; z-index: 10000; overflow: auto; background: #07121e; }
-.brand-intro-overlay .sculptural-splash { min-height: 100svh; }
+.brand-intro-overlay .sculptural-splash { min-height: 100svh; min-height: 100dvh; }
 .brand-intro-skip { position: fixed; top: max(20px, env(safe-area-inset-top)); right: 24px; z-index: 10001; padding: 10px 16px; border: 1px solid #9bbab7; border-radius: 24px; color: #f6f8f0; background: #102c3e; cursor: pointer; font: inherit; }
 .brand-intro-skip:focus-visible { outline: 3px solid #b4d4a3; outline-offset: 4px; }
 .brand-intro-progress { position: fixed; bottom: 0; left: 0; width: 100%; height: 3px; background: #b4d4a3; transform-origin: left; animation: brand-intro-progress 7s linear both; }

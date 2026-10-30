@@ -16,10 +16,10 @@ export function BrandLogo({ className = "" }: { className?: string }) {
 export function BrandSplash({ preview = false }: { preview?: boolean }) {
   return <section className={`brand-splash sculptural-splash ${preview ? "brand-splash-preview" : "brand-splash-onload"}`}
     aria-label={preview ? "Welcome to PayCore" : undefined} aria-hidden={preview ? undefined : true}>
+    <Image src={hero} alt={preview ? "PayCore — the approved dimensional studio artwork" : ""} fill sizes="(max-aspect-ratio: 2/1) 200vh, 100vw" priority={!preview} className="sculptural-splash-art" />
     {preview ? <a className="splash-enter" href="/">Enter workspace <span aria-hidden="true">↗</span></a> : null}
     <div className="sculptural-splash-content">
       <p className="sculptural-eyebrow">CONTRACTOR SETTLEMENTS &amp; PAYROLL</p>
-      <Image src={hero} alt={preview ? "PayCore — a sculpted teal P with a luminous core, beside a dimensional pearl and teal wordmark" : ""} sizes="(max-width: 720px) 100vw, 1200px" priority={!preview} className="sculptural-splash-art" />
       <p className="sculptural-tagline">Clarity at the core of every payday.</p>
       <p className="sculptural-credit">Developed by <strong>ETL GIS Consulting LLC</strong></p>
     </div>

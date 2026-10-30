@@ -19,7 +19,7 @@ The core represents the individual contractor and the specialist's human judgmen
 
 `BrandLogo` is shared by the workspace, access screen, document previews, mobile menu and scan headers. The sign-in emblem uses the same compact symbol. Next Image provides appropriately sized web delivery; source PNG masters are retained for downloads. The legacy flat PDF mark is replaced with the approved symbol, embedded once per document as RGB plus an alpha soft mask. Existing statement, invoice, report and sample-export calculations and layouts remain intact.
 
-The splash uses the approved studio hero on every screen size, preserving the sculpted P, dimensional wordmark, materials, lighting and scene as one artwork. Mobile displays the complete scene edge to edge without cropping or substituting a standalone symbol and plain-text name. The seven-second intro and sharing artwork use the same approved identity.
+The splash uses the approved studio hero on every screen size, preserving the sculpted P, dimensional wordmark, materials, lighting and scene as one artwork. The image fills the entire mobile and desktop viewport using `object-fit: cover`, without distortion or a substitute symbol/plain-text name. Portrait screens crop the landscape scene horizontally; screen-filling coverage takes priority over keeping all embedded lettering in frame. Live tagline and attribution remain readable over a bottom gradient. Dynamic viewport units track mobile browser chrome. The seven-second intro and sharing artwork use the same approved identity.
 
 ## Seven-second introduction
 
