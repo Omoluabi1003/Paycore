@@ -1,4 +1,5 @@
-import Image from "next/image";
+import Image, { getImageProps } from "next/image";
+import mobileSplash from "../public/brand/paycore-splash-mobile.png";
 import hero from "../public/brand/paycore-hero-3d.png";
 import symbol from "../public/brand/paycore-symbol-3d.png";
 import logo from "../public/brand/paycore-logo-3d.png";
@@ -14,16 +15,16 @@ export function BrandLogo({ className = "" }: { className?: string }) {
 }
 
 export function BrandSplash({ preview = false }: { preview?: boolean }) {
+  const { props: mobile } = getImageProps({ src: mobileSplash, alt: "", fill: true, sizes: "(max-aspect-ratio: 1/2) 50vh, 100vw" });
   return <section className={`brand-splash sculptural-splash ${preview ? "brand-splash-preview" : "brand-splash-onload"}`}
     aria-label={preview ? "Welcome to PayCore" : undefined} aria-hidden={preview ? undefined : true}>
+    <picture className="sculptural-splash-picture">
+      <source media="(orientation: portrait)" srcSet={mobile.srcSet} sizes={mobile.sizes} />
+      <Image src={hero} alt={preview ? "PayCore — the approved dimensional studio artwork" : ""} fill sizes="(max-aspect-ratio: 2/1) 200vh, 100vw" priority={!preview} className="sculptural-splash-art" />
+    </picture>
     {preview ? <a className="splash-enter" href="/">Enter workspace <span aria-hidden="true">↗</span></a> : null}
     <div className="sculptural-splash-content">
       <p className="sculptural-eyebrow">CONTRACTOR SETTLEMENTS &amp; PAYROLL</p>
-      <Image src={hero} alt={preview ? "PayCore — a sculpted teal P with a luminous core, beside a dimensional pearl and teal wordmark" : ""} sizes="(max-width: 720px) 100vw, 1200px" priority={!preview} className="sculptural-splash-art" />
-      <div className="sculptural-mobile-identity">
-        <Image src={symbol} alt="" sizes="(max-width: 720px) 78vw, 1px" priority={!preview} className="sculptural-mobile-symbol" />
-        <p className="sculptural-mobile-name">Pay<span>Core</span></p>
-      </div>
       <p className="sculptural-tagline">Clarity at the core of every payday.</p>
       <p className="sculptural-credit">Developed by <strong>ETL GIS Consulting LLC</strong></p>
     </div>
