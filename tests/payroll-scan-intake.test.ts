@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { documentFingerprint, MAX_SCAN_FILE_BYTES, normalizeScanFileName, validateScanUpload } from "../lib/payroll-scan-intake";
+import { documentFingerprint, MAX_SCAN_FILE_BYTES, normalizeScanFileName, validateScanUpload } from "../lib/payroll-scan-intake.ts";
 
 const SHA = "a".repeat(64);
 

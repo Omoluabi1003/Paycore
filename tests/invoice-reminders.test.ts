@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {dueReminderStages,reminderDate,reminderId} from "../lib/invoice-reminders";
+import {dueReminderStages,reminderDate,reminderId} from "../lib/invoice-reminders.ts";
 const invoice={id:"inv-1",number:"PC-1048",customer:"Acme",customerEmail:"billing@acme.test",dueOn:"2026-11-06",status:"ISSUED",balanceCents:125000};
 test("computes reminder dates deterministically",()=>{assert.equal(reminderDate(invoice.dueOn,-3),"2026-11-03");assert.equal(reminderDate(invoice.dueOn,14),"2026-11-20");});
 test("returns only stages reached as of today",()=>{assert.deepEqual(dueReminderStages(invoice,"2026-11-09").map(x=>x.stage),["BEFORE_DUE","DUE_TODAY","OVERDUE_3"]);});
