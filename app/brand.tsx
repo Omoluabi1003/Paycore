@@ -20,13 +20,11 @@ export function BrandSplash({ preview = false }: { preview?: boolean }) {
     aria-label={preview ? "Welcome to PayCore" : undefined} aria-hidden={preview ? undefined : true}>
     <picture className="sculptural-splash-picture">
       <source media="(orientation: portrait)" srcSet={mobile.srcSet} sizes={mobile.sizes} />
-      <Image src={desktopSplash} alt={preview ? "PayCore — the approved dimensional studio artwork" : ""} fill sizes="(max-aspect-ratio: 4/3) 134vh, 100vw" priority={!preview} className="sculptural-splash-art" />
+      <Image src={desktopSplash} alt={preview ? "PayCore — dimensional studio artwork. Developed by ETL GIS Consulting LLC." : ""} fill sizes="(max-aspect-ratio: 4/3) 134vh, 100vw" priority={!preview} className="sculptural-splash-art" />
     </picture>
     {preview ? <a className="splash-enter" href="/">Enter workspace <span aria-hidden="true">↗</span></a> : null}
     <div className="sculptural-splash-content">
       <p className="sculptural-eyebrow">CONTRACTOR SETTLEMENTS &amp; PAYROLL</p>
-      <p className="sculptural-tagline">Clarity at the core of every payday.</p>
-      <p className="sculptural-credit">Developed by <strong>ETL GIS Consulting LLC</strong></p>
     </div>
   </section>;
 }
