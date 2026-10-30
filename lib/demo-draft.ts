@@ -22,7 +22,7 @@ const schema = z.object({ statementHeader: StatementHeaderSchema.optional(), ver
 export type DemoDraft = { statementHeader?: StatementHeader; inputs: CalculationInput[]; rows: GridRow[]; corrections?: DraftCorrection[] };
 export const draftKey = (scope: string, run: PayrollRun) => `paycore-demo-draft-v1:${encodeURIComponent(scope)}:${run.payPeriodId}`;
 export function decodeDraft(value: string, scope: string, run: PayrollRun) {
-  if (value.length > 2_000_000) throw new Error("This demo draft is too large to restore.");
+  if (value.length > 2_000_000) throw new Error("This local draft is too large to restore.");
   const result = schema.parse(JSON.parse(value));
   const sameRun = (candidate: PayrollRun) => ["id", "companyId", "payPeriodId", "start", "end"].every(key => candidate[key as keyof PayrollRun] === run[key as keyof PayrollRun]);
   if (result.scope !== scope || !sameRun(result.run)) throw new Error("This draft belongs to another workspace or pay period.");
@@ -36,7 +36,7 @@ export function decodeDraft(value: string, scope: string, run: PayrollRun) {
     const ids = new Set<string>();
     for (const snapshot of input.history) {
       const key = `${snapshot.companyId}:${snapshot.contractorId}:${snapshot.payrollRunId}`;
-      if (ids.has(key) || snapshot.companyId !== run.companyId || snapshot.contractorId !== input.contractor.id || snapshot.end >= run.start || snapshot.calculationSnapshot.contractor.id !== snapshot.contractorId || snapshot.calculationSnapshot.contractor.companyId !== run.companyId) throw new Error("This draft contains mismatched exhibit history.");
+      if (ids.has(key) || snapshot.companyId !== run.companyId || snapshot.contractorId !== input.contractor.id || snapshot.end >= run.start || snapshot.calculationSnapshot.contractor.id !== snapshot.contractorId || snapshot.calculationSnapshot.contractor.companyId !== run.companyId) throw new Error("This draft contains mismatched workspace history.");
       ids.add(key);
     }
   }

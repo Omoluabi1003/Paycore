@@ -45,6 +45,6 @@ export default function PayrollGrid({ inputs, onChange, onValidityChange, run, r
     {!rows.length && <p className="sheet-empty">No contractors added. Add a row to start.</p>}
     {pasteError && <p role="alert">{pasteError}</p>}
     <p className="guide-rail-note" role="status">{parsed.some(entry => entry.error) ? "Finish the highlighted rows to update payroll totals and continue review. Totals below retain the last complete entry." : "Earnings and net pay are calculated. Review all agreed deductions before finalizing."}</p>
-    <p className="guide-rail-note">Preview only · Use fictional details · Save a demo draft before refreshing to recover it in this tab. Detailed activity is added on top of these period figures.</p>
+    <p className="guide-rail-note">Preview only · Use details · Save a local draft before refreshing to recover it in this tab. Detailed activity is added on top of these period figures.</p>
   </section>;
 }

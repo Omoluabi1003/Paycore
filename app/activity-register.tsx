@@ -18,7 +18,7 @@ export default function ActivityRegister({ inputs, frozen, onEntry, onCorrect, c
     {!matches.length && <p className="ops-empty">{entries.length ? "No activity matches these filters." : "Add a contractor and record the work performed."}</p>}
     <div className="activity-pagination"><button className="button button-secondary" disabled={current === 0} onClick={() => setPage(current - 1)}>Previous entries</button><span>Page {current + 1} of {lastPage + 1}</span><button className="button button-secondary" disabled={current === lastPage} onClick={() => setPage(current + 1)}>Next entries</button></div>
     {selected && !frozen && <DraftCorrectionForm key={editing} inputs={inputs} contractorId={selected.contractorId} sourceId={selected.id} onCancel={() => setEditing("")} onCorrect={(next, correction) => { onCorrect(next, correction); setEditing(""); }} />}
-    {!!corrections.length && <details><summary>Demo draft correction history · {corrections.length}</summary>{corrections.map((change, index) => <p key={index}>{change.at} · {change.before.referenceNumber} · ${exactDollars(change.before.amountCents)} → ${exactDollars(change.after.amountCents)} · {change.reason}</p>)}</details>}
-    <p className="guide-rail-note">Grid totals and detailed activity are additive; enter each fact once. Corrections require a reason and reset payroll review. Approved exhibit figures cannot be edited.</p>
+    {!!corrections.length && <details><summary>Local draft correction history · {corrections.length}</summary>{corrections.map((change, index) => <p key={index}>{change.at} · {change.before.referenceNumber} · ${exactDollars(change.before.amountCents)} → ${exactDollars(change.after.amountCents)} · {change.reason}</p>)}</details>}
+    <p className="guide-rail-note">Grid totals and detailed activity are additive; enter each fact once. Corrections require a reason and reset payroll review. Approved workspace figures cannot be edited.</p>
   </section>;
 }

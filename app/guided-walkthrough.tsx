@@ -2,11 +2,11 @@
 import { useEffect, useRef, useState } from "react";
 
 export const walkthroughSteps = [
-  { title: "Start with the agreement", target: ".exhibit-onboarding", text: "Enter fictional identity, agreed compensation and described deductions. Activate the contractor yourself; PayCore supplies no names or rates." },
+  { title: "Start with the agreement", target: ".exhibit-onboarding", text: "Enter identity, agreed compensation and described deductions. Activate the contractor yourself; PayCore supplies no names or rates." },
   { title: "Enter what happened", target: ".payroll-sheet", text: "Enter revenue or miles here. Expand detailed activity for individual loads and receipts. Give each deduction a description, date and reference." },
   { title: "Check what needs attention", target: ".exception-workbench", text: "Read each exception and inspect its source. Correct errors with a reason. An empty queue means there are no detected exceptions, not that payroll is approved." },
   { title: "Understand every amount", target: ".exhibit-statement", text: "Follow the agreement, earnings, described deductions and reimbursements to the net settlement. Compare prior approved periods when available." },
-  { title: "Make the human decision", target: ".demo-completion", text: "Complete preparation checks and acknowledge your statement review. Only you can choose Simulate approval. Downloads appear after that decision. No real payment occurs." },
+  { title: "Make the human decision", target: ".demo-completion", text: "Complete preparation checks and acknowledge your statement review. Only you can choose Record local approval. Downloads appear after that decision. No real payment occurs." },
 ] as const;
 
 /** Nonmodal coaching: highlighted controls remain usable; no financial actions are triggered. */

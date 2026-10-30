@@ -45,7 +45,7 @@ test('grid edits preserve configured demo advance and still update period totals
 test('entered snapshot exports use actual dates, identity, totals and safe CSV cells',()=>{
  const draft=input();draft.contractor.displayName='=SUM(1,2)';draft.run={...draft.run,start:'2026-10-05',end:'2026-10-16'};
  const approved=simulateApproval([draft],{...options,companyName:'@Synthetic'}),csv=demoCsv(approved),pdf=new TextDecoder().decode(demoPdf(approved));
- assert.match(csv,/'=SUM\(1,2\)/);assert.match(csv,/'@Synthetic/);assert.match(csv,/DEMO APPROVED - NO REAL PAYMENT/);assert.match(csv,/2026-10-16/);
+ assert.match(csv,/'=SUM\(1,2\)/);assert.match(csv,/'@Synthetic/);assert.match(csv,/LOCAL APPROVED - NO REAL PAYMENT/);assert.match(csv,/2026-10-16/);
  assert.match(csv,/"68500","685.00"/);assert.match(pdf,/NET SETTLEMENT: USD 685.00/);assert.match(pdf,/2026-10-05 to 2026-10-16/);
  assert.doesNotMatch(pdf,/Avery|Jordan|October 5-18/);
  assert.match(pdf,/%PDF-1.4/);assert.match(pdf,/%%EOF/);
