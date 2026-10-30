@@ -9,7 +9,7 @@ const text = z.string().max(128);
 const runSchema = z.object({ id: text, companyId: text, payPeriodId: text, start: text, end: text, status: z.enum(["DRAFT", "REVIEW"]) });
 const integer = z.number().int().safe();
 const historySchema = z.object({
-  status: z.literal("APPROVED"), approvedAt: text, approvedBy: text, reviewReasons: z.record(z.string()), reversesPayrollRunId: text.optional(),
+  status: z.literal("APPROVED"), approvedAt: text, approvedBy: text, reviewReasons: z.record(z.string(), z.string()), reversesPayrollRunId: text.optional(),
   contractorId: text, companyId: text, payrollRunId: text, payPeriodId: text, start: text, end: text, compensationMethod: text, compensationRateBasisPoints: integer.optional(),
   grossEligibleRevenueCents: integer, grossEarningsCents: integer, automaticDeductionsCents: integer, manualDeductionsCents: integer, reimbursementsCents: integer, adjustmentsCents: integer, netSettlementCents: integer,
   lines: z.array(z.object({ id: text, kind: z.enum(["EARNING", "DEDUCTION", "REIMBURSEMENT", "ADJUSTMENT"]), category: text, description: z.string().max(1000), amountCents: integer, origin: z.enum(["AUTOMATIC", "ENTERED"]), ruleId: text.optional(), sourceId: z.string().max(256).optional(), occurrenceKey: z.string().max(256).optional() })).max(10000),

@@ -8,6 +8,7 @@ Use Node.js 24 and pnpm 10.34.7 (the version pinned in `package.json`).
 
 ```sh
 pnpm install --frozen-lockfile
+pnpm audit --prod --audit-level=moderate
 pnpm test
 pnpm typecheck
 pnpm build
@@ -21,6 +22,10 @@ and the default Next.js output directory. The `build` script runs `next build`;
 no custom output directory, static export, or environment variables are required
 for the account setup entry page. Live identity and database services are not connected yet. Git pushes to the PR branch should create preview deployments.
 Keep the production branch set to `main` and review the preview before merging.
+
+`pnpm test` runs both `.test.mjs` and `.test.ts` files with Node 24. TypeScript tests use explicit `.ts` imports for the native runner. CI also checks production dependencies for moderate-or-higher advisories before testing and building.
+
+Security maintenance pins Zod 4.6.7 and scopes patched PostCSS 8.5.32 / Sharp 0.35.5 overrides to Next 15.5.28 in `pnpm-workspace.yaml`. Keep the overrides until Next's upstream dependency floors include these fixes; regenerate the lockfile and rerun the audit when changing Next. Zod's history review-reason record uses explicit string keys and values; the saved draft format is unchanged.
 
 `pnpm-lock.yaml` locks the dependency graph. The workspace configuration explicitly
 disables Sharp's optional install script; the platform package supplies its binary.
