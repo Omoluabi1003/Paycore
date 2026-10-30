@@ -8,7 +8,8 @@ The core represents the individual contractor and the specialist's human judgmen
 
 | Asset | Use |
 | --- | --- |
-| `public/brand/paycore-hero-3d.png` | Landscape desktop splash and social hero |
+| `public/brand/paycore-hero-3d.png` | Original landscape social hero |
+| `public/brand/paycore-splash-desktop.png` | Desktop splash with safe studio framing |
 | `public/brand/paycore-splash-mobile.png` | Full-height portrait mobile splash |
 | `public/brand/paycore-logo-3d.png` | Transparent dimensional wordmark |
 | `public/brand/paycore-symbol-3d.png` | Compact sculptural P for icons and documents |
@@ -20,7 +21,7 @@ The core represents the individual contractor and the specialist's human judgmen
 
 `BrandLogo` is shared by the workspace, access screen, document previews, mobile menu and scan headers. The sign-in emblem uses the same compact symbol. Next Image provides appropriately sized web delivery; source PNG masters are retained for downloads. The legacy flat PDF mark is replaced with the approved symbol, embedded once per document as RGB plus an alpha soft mask. Existing statement, invoice, report and sample-export calculations and layouts remain intact.
 
-The splash uses a full-screen studio scene with the complete sculptural crest and dimensional PayCore wordmark visible. Landscape displays use the approved original `paycore-hero-3d.png`; portrait displays use `paycore-splash-mobile.png`, an image-tool extension of that scene with more studio wall and floor above/below the complete brand group. A picture source selects by viewport orientation. Both fill the viewport without stretching. Portrait cover crops only the surrounding studio at the tested phone/tablet ratios rather than zooming into the landscape lettering. Live tagline and attribution remain readable over a bottom gradient. Dynamic viewport units track mobile browser chrome. The seven-second intro behavior and original social sharing artwork are unchanged.
+The splash uses a full-screen studio scene with the complete sculptural crest and dimensional PayCore wordmark visible. Landscape displays use `paycore-splash-desktop.png`, a 4:3 studio extension with more surrounding space to keep the entire brand group visible at common desktop ratios; portrait displays use `paycore-splash-mobile.png`, an image-tool extension of that scene with more studio wall and floor above/below the complete brand group. A picture source selects by viewport orientation. Both fill the viewport without stretching. Portrait cover crops only the surrounding studio at the tested phone/tablet ratios rather than zooming into the landscape lettering. Live tagline and attribution remain readable over a bottom gradient. Dynamic viewport units track mobile browser chrome. The seven-second intro behavior and original social sharing artwork are unchanged.
 
 ## Seven-second introduction
 

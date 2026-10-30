@@ -1,6 +1,6 @@
 import Image, { getImageProps } from "next/image";
 import mobileSplash from "../public/brand/paycore-splash-mobile.png";
-import hero from "../public/brand/paycore-hero-3d.png";
+import desktopSplash from "../public/brand/paycore-splash-desktop.png";
 import symbol from "../public/brand/paycore-symbol-3d.png";
 import logo from "../public/brand/paycore-logo-3d.png";
 
@@ -20,7 +20,7 @@ export function BrandSplash({ preview = false }: { preview?: boolean }) {
     aria-label={preview ? "Welcome to PayCore" : undefined} aria-hidden={preview ? undefined : true}>
     <picture className="sculptural-splash-picture">
       <source media="(orientation: portrait)" srcSet={mobile.srcSet} sizes={mobile.sizes} />
-      <Image src={hero} alt={preview ? "PayCore — the approved dimensional studio artwork" : ""} fill sizes="(max-aspect-ratio: 2/1) 200vh, 100vw" priority={!preview} className="sculptural-splash-art" />
+      <Image src={desktopSplash} alt={preview ? "PayCore — the approved dimensional studio artwork" : ""} fill sizes="(max-aspect-ratio: 4/3) 134vh, 100vw" priority={!preview} className="sculptural-splash-art" />
     </picture>
     {preview ? <a className="splash-enter" href="/">Enter workspace <span aria-hidden="true">↗</span></a> : null}
     <div className="sculptural-splash-content">
