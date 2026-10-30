@@ -1,13 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { copyPayCoreLink, sharePayCoreLink } from '../lib/brand-sharing.ts';
-import { PAYCORE_PUBLIC_URL } from '../lib/brand-identity.ts';
+import { PAYCORE_PUBLIC_URL, resolvePublicUrl } from '../lib/brand-identity.ts';
 
 test('native sharing uses the confirmed public URL with no payroll or session data', async () => {
   const payloads = [];
   const status = await sharePayCoreLink({ share: async payload => payloads.push(payload), copy: async () => assert.fail('No clipboard write after native sharing succeeds') });
   assert.equal(status, 'shared'); assert.equal(payloads.length, 1);
-  assert.equal(payloads[0].url, 'https://paycore-1.vercel.app/');
+  assert.equal(payloads[0].url, PAYCORE_PUBLIC_URL);
   assert.deepEqual(Object.keys(payloads[0]).sort(), ['text', 'title', 'url']);
   assert.equal(new URL(payloads[0].url).search, '');
 });
@@ -30,4 +30,11 @@ test('copy status never reports success before a clipboard operation completes',
   const pending = copyPayCoreLink(() => new Promise((_, reject) => { fail = reject; }));
   fail(new Error('Clipboard denied'));
   assert.equal(await pending, 'manual');
+});
+
+test('public destination can change domains without sharing private URL components', () => {
+  assert.equal(resolvePublicUrl('https://paycore.example/payroll?contractor=fictional#review'), 'https://paycore.example/');
+  assert.equal(resolvePublicUrl(), 'https://paycore-1.vercel.app/');
+  assert.throws(() => resolvePublicUrl('https://user:password@paycore.example'));
+  assert.throws(() => resolvePublicUrl('http://paycore.example'));
 });
