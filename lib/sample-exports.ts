@@ -1,3 +1,4 @@
+import { brandPdfImageObject, brandPdfMaskObject, drawBrandMark } from "./brand-pdf-image.ts";
 import type { Settlement } from "./settlements";
 
 export type Statement = {
@@ -10,6 +11,7 @@ const escapePdf = (value: string) => value.replace(/[^\x20-\x7E]/g, "?").replace
 
 // Minimal fixed-layout, public sample statements. No user-supplied data or fonts.
 export function samplePdf(people: Statement[]): Uint8Array {
+  const brandObject = 4 + people.length * 2;
   const objects: string[] = [];
   objects[0] = "<< /Type /Catalog /Pages 2 0 R >>";
   objects[1] = `<< /Type /Pages /Count ${people.length} /Kids [${people.map((_, i) => `${4 + i * 2} 0 R`).join(" ")}] >>`;
@@ -17,10 +19,11 @@ export function samplePdf(people: Statement[]): Uint8Array {
   people.forEach((person, index) => {
     const text = (x: number, y: number, size: number, value: string) => `BT /F1 ${size} Tf ${x} ${y} Td (${escapePdf(value)}) Tj ET`;
     const rows: [string, number][] = person.detail ? [["Gross eligible revenue", person.gross], ...person.detail.lines.map((line): [string, number] => [`${line.origin === "AUTOMATIC" ? "Auto" : "Entered"}: ${line.category.replaceAll("_", " ")} ${line.ruleId ? `[${line.ruleId}]` : ""}`, (line.kind === "DEDUCTION" ? -line.amountCents : line.amountCents) / 100])] : [["Gross revenue", person.gross], [`Contractor earnings (${person.rate}%)`, person.settlement.contractorEarnings], ["Configured factoring charge", -person.settlement.factoringCharge], ["Other deductions", -(person.settlement.totalDeductions - person.settlement.factoringCharge)], ["Reimbursements", person.settlement.totalReimbursements]];
-    const content = ["0.06 0.17 0.24 rg 0 664 612 128 re f", "1 1 1 rg", text(48, 733, 30, "PayCore"), text(48, 704, 12, "SAMPLE PAY STATEMENT - NOT APPROVED"), "0.09 0.20 0.28 rg", text(48, 620, 22, person.name), text(48, 594, 11, `${person.reference} | October 5-18, 2026 | USD`), text(48, 570, 11, person.methodLabel ?? `${person.rate}% of eligible revenue`), ...rows.flatMap(([label, value], i) => [text(48, 530 - i * 30, 12, label), text(430, 530 - i * 30, 12, amount(value))]), "0.85 0.93 0.90 rg 40 250 532 62 re f", "0.09 0.20 0.28 rg", text(48, 274, 16, "Estimated net pay (USD)"), text(430, 274, 16, amount(person.settlement.netPay)), text(48, 200, 11, "Fictional presentation data. No payroll has been approved or paid."), text(48, 180, 11, "Sample rates only; not a production payroll policy."), text(48, 64, 11, "Developed by ETL GIS Consulting LLC"), text(48, 44, 10, `Sample statement ${index + 1} of ${people.length}`)].join("\n");
-    objects[3 + index * 2] = `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents ${5 + index * 2} 0 R >>`;
+    const content = ["0.06 0.17 0.24 rg 0 664 612 128 re f", "1 1 1 rg", drawBrandMark(48, 720, 44), text(106, 733, 30, "PayCore"), text(48, 704, 12, "SAMPLE PAY STATEMENT - NOT APPROVED"), "0.09 0.20 0.28 rg", text(48, 620, 22, person.name), text(48, 594, 11, `${person.reference} | October 5-18, 2026 | USD`), text(48, 570, 11, person.methodLabel ?? `${person.rate}% of eligible revenue`), ...rows.flatMap(([label, value], i) => [text(48, 530 - i * 30, 12, label), text(430, 530 - i * 30, 12, amount(value))]), "0.85 0.93 0.90 rg 40 250 532 62 re f", "0.09 0.20 0.28 rg", text(48, 274, 16, "Estimated net pay (USD)"), text(430, 274, 16, amount(person.settlement.netPay)), text(48, 200, 11, "Fictional presentation data. No payroll has been approved or paid."), text(48, 180, 11, "Sample rates only; not a production payroll policy."), text(48, 64, 11, "Developed by ETL GIS Consulting LLC"), text(48, 44, 10, `Sample statement ${index + 1} of ${people.length}`)].join("\n");
+    objects[3 + index * 2] = `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /XObject << /PayCoreMark ${brandObject} 0 R >> /Font << /F1 3 0 R >> >> /Contents ${5 + index * 2} 0 R >>`;
     objects[4 + index * 2] = `<< /Length ${Buffer.byteLength(content, "ascii")} >>\nstream\n${content}\nendstream`;
   });
+  objects.push(brandPdfImageObject(brandObject + 1), brandPdfMaskObject());
   let pdf = "%PDF-1.4\n";
   const offsets = [0];
   objects.forEach((object, index) => { offsets.push(Buffer.byteLength(pdf, "ascii")); pdf += `${index + 1} 0 obj\n${object}\nendobj\n`; });

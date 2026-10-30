@@ -1,23 +1,27 @@
+import Image from "next/image";
+import hero from "../public/brand/paycore-hero-3d.png";
+import symbol from "../public/brand/paycore-symbol-3d.png";
+import logo from "../public/brand/paycore-logo-3d.png";
+
+export function BrandMark({ className = "" }: { className?: string }) {
+  return <Image src={symbol} className={`brand-symbol ${className}`} width={48} height={48} sizes="48px" alt="" />;
+}
+
 export function BrandLogo({ className = "" }: { className?: string }) {
   return <span className={`paycore-logo ${className}`}>
-    {/* A local SVG keeps the wordmark sharp without a remote font or image service. */}
-    <img src="/paycore-mark.svg" width="40" height="40" alt="" />
-    <span>PayCore</span>
+    <Image src={logo} className="paycore-logo-art" width={160} height={53} sizes="(max-width: 720px) 140px, 160px" alt="PayCore" />
   </span>;
 }
 
 export function BrandSplash({ preview = false }: { preview?: boolean }) {
-  return <section className={`brand-splash ${preview ? "brand-splash-preview" : "brand-splash-intro"}`}
+  return <section className={`brand-splash sculptural-splash ${preview ? "brand-splash-preview" : "brand-splash-onload"}`}
     aria-label={preview ? "Welcome to PayCore" : undefined} aria-hidden={preview ? undefined : true}>
-    <div className="splash-orbit splash-orbit-outer" />
-    <div className="splash-orbit splash-orbit-inner" />
     {preview ? <a className="splash-enter" href="/">Enter workspace <span aria-hidden="true">↗</span></a> : null}
-    <div className="splash-center">
-      <span className="splash-eyebrow">PAYROLL OPERATIONS</span>
-      <BrandLogo className="splash-logo" />
-      <p>Clarity at the core of every payday.</p>
-      <span className="splash-rule" />
+    <div className="sculptural-splash-content">
+      <p className="sculptural-eyebrow">CONTRACTOR SETTLEMENTS &amp; PAYROLL</p>
+      <Image src={hero} alt={preview ? "PayCore — a sculpted teal P with a luminous core, beside a dimensional pearl and teal wordmark" : ""} sizes="(max-width: 720px) 100vw, 1200px" priority={!preview} className="sculptural-splash-art" />
+      <p className="sculptural-tagline">Clarity at the core of every payday.</p>
+      <p className="sculptural-credit">Developed by <strong>ETL GIS Consulting LLC</strong></p>
     </div>
-    <div className="splash-attribution"><span>Developed by</span><strong>ETL GIS Consulting LLC</strong></div>
   </section>;
 }

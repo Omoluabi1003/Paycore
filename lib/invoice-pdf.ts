@@ -1,3 +1,4 @@
+import { brandPdfImageObject, brandPdfMaskObject, drawBrandMark } from "./brand-pdf-image.ts";
 import {statementFont,statementFontBase64} from "./pdf-fonts/tr-century-gothic-italic.ts";
 import {statementBoldFont,statementBoldFontBase64} from "./pdf-fonts/century-gothic-bold-italic.ts";
 import {invoiceBalance,invoiceMoney,invoiceStatus,lineAmount,decimalAmount,validateInvoiceBook} from "./invoices.ts";
@@ -24,7 +25,7 @@ function renderInvoices(invoices:Invoice[],today:string):Uint8Array{
   page.push(`0.96 0.98 0.99 rg 28 ${bottom} 556 ${height} re f`, `0.86 0.92 0.97 rg 30 ${bottom+6} 220 ${height-12} re f 0.45 0.58 0.65 RG 30 ${bottom+6} 220 ${height-12} re S 0 0 0 rg`);
   let cy=743;for(const line of heading){page.push(text(38,cy,12,line,true));cy-=15;}for(const line of contact){page.push(text(38,cy,9,line));cy-=12;}
   page.push("0.05 0.48 0.62 RG 1.5 w",`28 760 m 584 760 l S 28 ${bottom} m 584 ${bottom} l S 0 0 0 rg`);
-  page.push("q 0.65 0 0 -0.65 450 746 cm", "0.706 0.831 0.639 rg 19 0 m 45 0 l 55.49 0 64 8.51 64 19 c 64 45 l 64 55.49 55.49 64 45 64 c 19 64 l 8.51 64 0 55.49 0 45 c 0 19 l 0 8.51 8.51 0 19 0 c f", "0.086 0.349 0.306 rg 20 16 m 35 16 l 44 16 50 21.7 50 30 c 50 38.3 44 44 35 44 c 29 44 l 29 53 l 20 53 l h 29 25 m 29 35 l 35 35 l 38.9 35 41 33.2 41 30 c 41 26.8 38.9 25 35 25 c h f*", "0.086 0.349 0.306 rg 50 49 m 50 51.761 47.761 54 45 54 c 42.239 54 40 51.761 40 49 c 40 46.239 42.239 44 45 44 c 47.761 44 50 46.239 50 49 c f Q");
+  page.push(drawBrandMark(450,704,42));
   page.push(text(499,716,15,"PayCore",true));
   y=bottom-25;
   for(const part of wrap(`INVOICE # : ${invoice.number}`,548,12,true)){page.push(text(30,y,12,part,true));y-=16;}y-=4;
@@ -62,9 +63,11 @@ function renderInvoices(invoices:Invoice[],today:string):Uint8Array{
  row("THANK YOU FOR YOUR BUSINESS!");row(`Invoice ${invoice.number} | ${invoiceStatus(invoice,today)} | USD`);if(invoice.status==="VOID")row("VOID - DO NOT PAY","",true);row("INVOICE - DEMO | FICTIONAL EXHIBITION. No email sent or payment processed by PayCore.");
  }
  const descriptor=5+pages.length*2;
+ const brandObject=descriptor+4;
  const fontObject=(font:typeof statementFont,id:number)=>`<< /Type /Font /Subtype /TrueType /BaseFont /${font.postscriptName} /FirstChar 32 /LastChar 126 /Widths [${Array.from({length:95},(_,i)=>font.widths[String.fromCharCode(i+32) as keyof typeof font.widths]).join(" ")}] /Encoding /WinAnsiEncoding /FontDescriptor ${id} 0 R >>`;
  const objects=["<< /Type /Catalog /Pages 2 0 R >>",`<< /Type /Pages /Count ${pages.length} /Kids [${pages.map((_,i)=>`${5+i*2} 0 R`).join(" ")}] >>`,fontObject(statementFont,descriptor),fontObject(statementBoldFont,descriptor+2)];
- for(const [i,content] of pages.entries()){content.push(text(28,34,8,"Developed by ETL GIS Consulting LLC",true),text(28,22,7,`Synthetic demo only | Page ${i+1} of ${pages.length}`));const stream=content.join("\n");objects.push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${6+i*2} 0 R >>`,`<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`);}
+ for(const [i,content] of pages.entries()){content.push(text(28,34,8,"Developed by ETL GIS Consulting LLC",true),text(28,22,7,`Synthetic demo only | Page ${i+1} of ${pages.length}`));const stream=content.join("\n");objects.push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /XObject << /PayCoreMark ${brandObject} 0 R >> /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${6+i*2} 0 R >>`,`<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`);}
  for(const [font,data] of [[statementFont,statementFontBase64],[statementBoldFont,statementBoldFontBase64]] as const){const hex=[...atob(data)].map(c=>c.charCodeAt(0).toString(16).padStart(2,"0")).join("")+">";objects.push(`<< /Type /FontDescriptor /FontName /${font.postscriptName} /Flags 96 /FontBBox [${font.bbox.join(" ")}] /ItalicAngle ${font.italicAngle} /Ascent ${font.ascent} /Descent ${font.descent} /CapHeight ${font.capHeight} /StemV 80 /FontFile2 ${objects.length+2} 0 R >>`,`<< /Length ${hex.length} /Length1 ${font.byteLength} /Filter /ASCIIHexDecode >>\nstream\n${hex}\nendstream`);}
+ objects.push(brandPdfImageObject(brandObject + 1), brandPdfMaskObject());
  let pdf="%PDF-1.4\n";const offsets:number[]=[];objects.forEach((object,i)=>{offsets.push(pdf.length);pdf+=`${i+1} 0 obj\n${object}\nendobj\n`;});const xref=pdf.length;pdf+=`xref\n0 ${objects.length+1}\n0000000000 65535 f \n${offsets.map(n=>`${String(n).padStart(10,"0")} 00000 n \n`).join("")}trailer\n<< /Size ${objects.length+1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`;return new TextEncoder().encode(pdf);
 }

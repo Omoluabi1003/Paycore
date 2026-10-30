@@ -1,3 +1,4 @@
+import { brandPdfImageObject, brandPdfMaskObject, drawBrandMark } from "./brand-pdf-image.ts";
 import { StatementHeaderSchema } from "./statement-header.ts";
 import { statementBoldFont, statementBoldFontBase64 } from "./pdf-fonts/century-gothic-bold-italic.ts";
 import { statementFont, statementFontBase64 } from "./pdf-fonts/tr-century-gothic-italic.ts";
@@ -63,8 +64,7 @@ export function renderDemoPdf(state: DemoApproval, dollars: (cents: number) => s
       companyLines.forEach((line,i)=>content.push(text(104.5-width(line,8,true)/2,748-i*10,8,line,true)));
       companyInfo.forEach((line,i)=>content.push(text(104.5-width(line,5.5)/2,748-companyLines.length*10-i*7,5.5,line)));
       content.push(text(236,735,13,"CONTRACTOR PAYROLL",true));
-      // Existing PayCore vector mark; never reuse the private logo from the reference.
-      content.push("q 0.4 0 0 -0.4 488 752 cm", "0.086 0.349 0.306 rg 19 0 m 45 0 l 55.49 0 64 8.51 64 19 c 64 45 l 64 55.49 55.49 64 45 64 c 19 64 l 8.51 64 0 55.49 0 45 c 0 19 l 0 8.51 8.51 0 19 0 c f", "0.965 0.973 0.941 rg 20 16 m 35 16 l 44 16 50 21.7 50 30 c 50 38.3 44 44 35 44 c 29 44 l 29 53 l 20 53 l h 29 25 m 29 35 l 35 35 l 38.9 35 41 33.2 41 30 c 41 26.8 38.9 25 35 25 c h f*", "0.706 0.831 0.639 rg 50 49 m 50 51.761 47.761 54 45 54 c 42.239 54 40 51.761 40 49 c 40 46.239 42.239 44 45 44 c 47.761 44 50 46.239 50 49 c f Q");
+      content.push(drawBrandMark(488, 726, 28));
       content.push("0.086 0.349 0.306 rg", text(520, 733, 11, "PayCore", true), "0 0 0 rg");
       const identityTop=760-bannerHeight;
       const names=wrap(`CONTRACTOR NAME: ${contractor.displayName}`,544,6,true),identityHeight=names.length*8+3;
@@ -170,17 +170,19 @@ export function renderDemoPdf(state: DemoApproval, dollars: (cents: number) => s
 
   }
   const fontObject = (font: typeof statementFont, descriptorId: number) => `<< /Type /Font /Subtype /TrueType /BaseFont /${font.postscriptName} /FirstChar 32 /LastChar 126 /Widths [${Array.from({ length: 95 }, (_, i) => font.widths[String.fromCharCode(i + 32) as keyof typeof font.widths]).join(" ")}] /Encoding /WinAnsiEncoding /FontDescriptor ${descriptorId} 0 R >>`;
+  const brandObject = 9 + pages.length * 2;
   const objects = ["<< /Type /Catalog /Pages 2 0 R >>", `<< /Type /Pages /Count ${pages.length} /Kids [${pages.map((_, index) => `${5 + index * 2} 0 R`).join(" ")}] >>`, fontObject(statementFont, 5 + pages.length * 2), fontObject(statementBoldFont, 7 + pages.length * 2)];
   for (const [index, content] of pages.entries()) {
     wrap(`Approved in demo by ${state.actorName} at ${state.approvedAt}`,450,6).forEach((line,i)=>content.push(text(28,51-i*7,6,line)));
     content.push("0 0 0 rg", text(28, 34, 7, "Developed by ETL GIS Consulting LLC", true), text(493,34,7,"PayCore",true), text(28, 23, 6.5, "SIMULATION ONLY - no live payroll approval or real payment."), text(493, 23, 6.5, `Page ${index + 1} of ${pages.length}`));
     const stream = content.join("\n");
-    objects.push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${6 + index * 2} 0 R >>`, `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`);
+    objects.push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /XObject << /PayCoreMark ${brandObject} 0 R >> /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${6 + index * 2} 0 R >>`, `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`);
   }
   for (const [font, base64] of [[statementFont, statementFontBase64], [statementBoldFont, statementBoldFontBase64]] as const) {
     const fontHex = [...atob(base64)].map(char => char.charCodeAt(0).toString(16).padStart(2, "0")).join("") + ">";
     objects.push(`<< /Type /FontDescriptor /FontName /${font.postscriptName} /Flags 96 /FontBBox [${font.bbox.join(" ")}] /ItalicAngle ${font.italicAngle} /Ascent ${font.ascent} /Descent ${font.descent} /CapHeight ${font.capHeight} /StemV 80 /FontFile2 ${objects.length + 2} 0 R >>`, `<< /Length ${fontHex.length} /Length1 ${font.byteLength} /Filter /ASCIIHexDecode >>\nstream\n${fontHex}\nendstream`);
   }
+  objects.push(brandPdfImageObject(brandObject + 1), brandPdfMaskObject());
   let pdf = "%PDF-1.4\n"; const offsets = [0];
   objects.forEach((object, index) => { offsets.push(pdf.length); pdf += `${index + 1} 0 obj\n${object}\nendobj\n`; });
   const start = pdf.length;
