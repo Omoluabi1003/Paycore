@@ -11,22 +11,22 @@ export function simulateApproval(inputs: CalculationInput[], options: { statemen
   const first=inputs[0].run, contractors=new Set<string>(), sources=new Set<string>();
   const snapshots: ApprovedSettlement[]=[], balances: DemoApproval["balances"]=[];
   for(const input of inputs){
-    if(input.run.id!==first.id || input.run.companyId!==first.companyId || input.run.start!==first.start || input.run.end!==first.end || input.run.payPeriodId!==first.payPeriodId || contractors.has(input.contractor.id)) throw new Error("Each contractor must belong to this demo payroll exactly once.");
+    if(input.run.id!==first.id || input.run.companyId!==first.companyId || input.run.start!==first.start || input.run.end!==first.end || input.run.payPeriodId!==first.payPeriodId || contractors.has(input.contractor.id)) throw new Error("Each contractor must belong to this local payroll exactly once.");
     contractors.add(input.contractor.id);
     const prepared=prepareApproval(input,actor,options.at,options.reviewReasons[input.contractor.id]??{});
     for(const source of prepared.settlement.sourceIds){ if(sources.has(source)) throw new Error("An activity appears more than once in this payroll.");sources.add(source); }
     snapshots.push(prepared.settlement);balances.push(...prepared.balanceUpdates.map(update=>({...update,contractorId:input.contractor.id})));
   }
   const history = [...new Map(inputs.flatMap(input => input.history ?? []).map(snapshot => [`${snapshot.companyId}:${snapshot.contractorId}:${snapshot.payrollRunId}`, snapshot])).values()];
-  return freeze({version:1,statementHeader:structuredClone(StatementHeaderSchema.parse(options.statementHeader ?? {})),history:structuredClone(history),companyName,actorName:actor,companyId:first.companyId,payrollRunId:first.id,start:first.start,end:first.end,status:"APPROVED",approvedAt:options.at,snapshots:structuredClone(snapshots),balances,audit:[{action:"Simulated approval; financial snapshot frozen",at:options.at,actor}]});
+  return freeze({version:1,statementHeader:structuredClone(StatementHeaderSchema.parse(options.statementHeader ?? {})),history:structuredClone(history),companyName,actorName:actor,companyId:first.companyId,payrollRunId:first.id,start:first.start,end:first.end,status:"APPROVED",approvedAt:options.at,snapshots:structuredClone(snapshots),balances,audit:[{action:"Local approval; financial snapshot frozen",at:options.at,actor}]});
 }
 export function transitionDemo(state: DemoApproval, action: "MARK_PAID" | "LOCK", actorName: string, at: string): DemoApproval {
   const actor=identity(actorName), timestamp=Date.parse(at);
   const previous=state.audit[state.audit.length-1];
-  if(!Number.isFinite(timestamp)||timestamp<Date.parse(previous.at)) throw new Error("Choose a valid event time after the previous demo event.");
-  if(state.status==="LOCKED") throw new Error("This demo payroll is locked.");
-  if(action==="MARK_PAID" && state.status!=="APPROVED") throw new Error("This demo payroll has already been marked paid.");
-  return freeze({...structuredClone(state),status:action==="LOCK"?"LOCKED":"PAID",...(action==="LOCK"?{lockedAt:at}:{paidAt:at}),audit:[...state.audit,{action:action==="LOCK"?"Locked in demo":"Marked paid in demo; no funds moved",at,actor}]});
+  if(!Number.isFinite(timestamp)||timestamp<Date.parse(previous.at)) throw new Error("Choose a valid event time after the previous local event.");
+  if(state.status==="LOCKED") throw new Error("This local payroll is locked.");
+  if(action==="MARK_PAID" && state.status!=="APPROVED") throw new Error("This local payroll has already been marked paid.");
+  return freeze({...structuredClone(state),status:action==="LOCK"?"LOCKED":"PAID",...(action==="LOCK"?{lockedAt:at}:{paidAt:at}),audit:[...state.audit,{action:action==="LOCK"?"Payroll locked locally":"Payment status recorded locally; no funds moved",at,actor}]});
 }
 export function demoCents(value: string): number {
   if(!/^\d+(\.\d{1,2})?$/.test(value))throw new Error("Enter a positive dollar amount with up to two decimal places.");
@@ -35,7 +35,7 @@ export function demoCents(value: string): number {
   return Number(cents);
 }
 export function configureDemoAdvance(input: CalculationInput, balance: string, installment: string, at: string): CalculationInput {
-  if(!["DRAFT","REVIEW"].includes(input.run.status))throw new Error("Only draft demo payroll can be edited.");
+  if(!["DRAFT","REVIEW"].includes(input.run.status))throw new Error("Only draft local payroll can be edited.");
   const id=`demo-advance-${input.contractor.id}`;
-  return {...input,deductionRules:[...input.deductionRules.filter(rule=>rule.id!==id),{id,contractorId:input.contractor.id,active:true,effectiveFrom:input.run.start,effectiveTo:null,createdBy:"demo-specialist",createdAt:at,category:"CASH_ADVANCE",description:"Demo advance installment",calculationMethod:"INSTALLMENT",amountCents:demoCents(installment),remainingBalanceCents:demoCents(balance),frequency:"UNTIL_BALANCE_PAID"}]};
+  return {...input,deductionRules:[...input.deductionRules.filter(rule=>rule.id!==id),{id,contractorId:input.contractor.id,active:true,effectiveFrom:input.run.start,effectiveTo:null,createdBy:"demo-specialist",createdAt:at,category:"CASH_ADVANCE",description:"Local advance installment",calculationMethod:"INSTALLMENT",amountCents:demoCents(installment),remainingBalanceCents:demoCents(balance),frequency:"UNTIL_BALANCE_PAID"}]};
 }

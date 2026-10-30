@@ -59,7 +59,7 @@ test('saved invoices are profile/company scoped and reject altered totals or reo
 });
 test('invoice PDF is deterministic, branded and derives every amount from stored facts',()=>{
  const invoice=recordInvoicePayment(issued(),'invoice-1',payment(),actor,at).invoices[0],before=JSON.stringify(invoice),bytes=invoicePdf(invoice,'2026-10-18'),pdf=new TextDecoder().decode(bytes);
- for(const text of ['PayCore','INVOICE - DEMO','Synthetic Customer','$199.50','$149.50','SYN-RECEIPT-1','Developed by ETL GIS Consulting LLC','TRCenturyGothicItalic','CenturyGothic-BoldItalic'])assert.ok(pdf.includes(text),text);
+ for(const text of ['PayCore','INVOICE | No email sent or payment processed by PayCore.','Synthetic Customer','$199.50','$149.50','SYN-RECEIPT-1','Developed by ETL GIS Consulting LLC','TRCenturyGothicItalic','CenturyGothic-BoldItalic'])assert.ok(pdf.includes(text),text);
  assert.equal(JSON.stringify(invoice),before);assert.deepEqual(invoicePdf(invoice,'2026-10-18'),bytes);const xref=Number(pdf.match(/startxref\n(\d+)/)[1]);assert.equal(pdf.slice(xref,xref+4),'xref');
  const long={...draft(),notes:'W'.repeat(1000),lines:Array.from({length:100},(_,i)=>({id:'line-'+i,description:`Synthetic invoice line ${i} `+'W'.repeat(180),quantityMillis:1000,unitPriceCents:1000}))};const longInvoice=issueInvoice(saveInvoiceDraft(emptyInvoiceBook('company-1'),long,actor,at),'invoice-1',actor,at).invoices[0],longPdf=new TextDecoder().decode(invoicePdf(longInvoice,'2026-10-18'));
  assert.ok(Number(longPdf.match(/\/Count (\d+)/)[1])>1);assert.ok(longPdf.includes('Synthetic invoice line 99'));assert.equal([...longPdf.matchAll(/Developed by ETL GIS Consulting LLC/g)].length,Number(longPdf.match(/\/Count (\d+)/)[1]));

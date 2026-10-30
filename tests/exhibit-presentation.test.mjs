@@ -12,7 +12,7 @@ test('reset key selection keeps other profiles, similarly named companies and un
  const scope=JSON.stringify(['Synthetic presenter','Synthetic company']),other=JSON.stringify(['Synthetic presenter','Synthetic company 2']);
  const prefix=`paycore-demo-draft-v1:${encodeURIComponent(scope)}:`;
  const keys=[prefix+'period-one',prefix+'period-two',`paycore-demo-draft-v1:${encodeURIComponent(other)}:period-one`,'paycore-preview-pay-schedule-v1','unrelated'];
- assert.deepEqual(demoDraftKeys(keys,scope),keys.slice(0,2));assert.equal(presentationSteps.length,7);assert.match(presentationSteps[4].text,/explicit simulated approval/);
+ assert.deepEqual(demoDraftKeys(keys,scope),keys.slice(0,2));assert.equal(presentationSteps.length,7);assert.match(presentationSteps[4].text,/explicit local approval/);
 });
 test('styled PDF uses frozen financial facts, described deductions, balances, YTD and attribution deterministically',()=>{
  const setup=fixture(),approved=simulateApproval([setup.input],{actor:'Synthetic presenter',companyName:'Synthetic company',at,reviewed:true,reviewReasons:{}}),before=JSON.stringify(approved);

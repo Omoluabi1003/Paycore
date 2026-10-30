@@ -7,7 +7,7 @@ export function comparePeriods(current: Settlement, history: History) {
   const candidates = scoped.filter(item => !item.reversesPayrollRunId && !reversed.has(item.payrollRunId)).sort((a, b) => b.end.localeCompare(a.end) || b.start.localeCompare(a.start));
   const previous = candidates[0];
   if (!previous) return null;
-  if (candidates.some((item, index) => index > 0 && item.end === previous.end)) throw new Error("More than one previous statement matches. Review exhibit history before comparing.");
+  if (candidates.some((item, index) => index > 0 && item.end === previous.end)) throw new Error("More than one previous statement matches. Review workspace history before comparing.");
   const delta = (after: number, before: number) => safeCents(BigInt(after) - BigInt(before));
   const deductions = (item: Settlement) => safeCents(BigInt(item.automaticDeductionsCents) + BigInt(item.manualDeductionsCents));
   const rows = [
@@ -26,7 +26,7 @@ export function comparePeriods(current: Settlement, history: History) {
     { label: "Adjustments", change: delta(current.adjustmentsCents, previous.adjustmentsCents), netEffect: delta(current.adjustmentsCents, previous.adjustmentsCents) },
   ].filter(item => item.change !== 0);
   const netChange = delta(current.netSettlementCents, previous.netSettlementCents);
-  if (safeCents(reasons.reduce((sum, reason) => sum + BigInt(reason.netEffect), BigInt(0))) !== netChange) throw new Error("The statement totals and settlement lines do not reconcile. Review the exhibit before comparing.");
+  if (safeCents(reasons.reduce((sum, reason) => sum + BigInt(reason.netEffect), BigInt(0))) !== netChange) throw new Error("The statement totals and settlement lines do not reconcile. Review the workspace before comparing.");
   const agreement = (statement: Settlement) => JSON.stringify(statement.calculationSnapshot.compensationRules.map(rule => ({ method: rule.method, basis: rule.rateBasisPoints, perMile: rule.perMileCents, fixed: rule.flatAmountCents })).sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b))));
   return { previous, rows, reasons, netChange, agreementChanged: agreement(previous) !== agreement(current), differentLength: Date.parse(previous.end) - Date.parse(previous.start) !== Date.parse(current.end) - Date.parse(current.start) };
 }

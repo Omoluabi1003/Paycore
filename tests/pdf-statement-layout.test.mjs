@@ -39,7 +39,7 @@ test('compact reference-style statement fits one Letter page and escapes entered
  const input=fixture('2026-10-08','2026-10-14');input.contractor.displayName='Synthetic (PDF) \\ Person';
  const pdf=new TextDecoder().decode(demoPdf(approve(input)));
  assert.match(pdf,/\/MediaBox \[0 0 612 792\]/);assert.match(pdf,/\/Count 1\b/);
- assert.ok(pdf.includes('Synthetic \\(PDF\\) \\\\ Person'));assert.ok(pdf.includes('SIMULATION ONLY'));
+ assert.ok(pdf.includes('Synthetic \\(PDF\\) \\\\ Person'));assert.ok(pdf.includes('LOCAL RECORD - not submitted for payroll processing; no funds transferred.'));
 });
 
 test('PDF embeds the supplied unmodified TrueType font and uses character-ordered metrics',()=>{

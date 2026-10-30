@@ -80,7 +80,7 @@ export function renderDemoPdf(state: DemoApproval, dollars: (cents: number) => s
       }
       rect(28,contactTop,556,contactTop-y);rect(28,contactTop,174,contactTop-y);rect(372,contactTop,212,contactTop-y);
       y-=4;
-      const metadata=`Pay period: ${snapshot.start} to ${snapshot.end} | Statement DEMO-${state.payrollRunId}-${index+1} | DEMO ${state.status} | ${state.paidAt?"Marked paid in demo; no funds moved":"Not marked paid"}`;
+      const metadata=`Pay period: ${snapshot.start} to ${snapshot.end} | Statement DEMO-${state.payrollRunId}-${index+1} | LOCAL ${state.status} | ${state.paidAt?"Payment status recorded locally; no funds moved":"Not marked paid"}`;
       for(const line of wrap(metadata,550,5.5)){content.push(text(28,y-7,5.5,line));y-=8;}y-=6;
     }
     function ensure(height: number) { if (y - height < 58) newPage(); }
@@ -123,7 +123,7 @@ export function renderDemoPdf(state: DemoApproval, dollars: (cents: number) => s
     ],28,100);
     const earningsEnd=y;if(pages.length===sidePage){rect(372,sideTop,212,40);y=sideTop-40;}
     table("PAYMENT DETAILS",[{label:"Method",width:72},{label:"Status",width:70},{label:"Amount",width:70,right:true}],[
-      {cells:[contractor.paymentMethod.replaceAll("_"," "),state.paidAt?"Marked paid in demo":"Not marked paid","-"]},
+      {cells:[contractor.paymentMethod.replaceAll("_"," "),state.paidAt?"Payment status recorded locally":"Not marked paid","-"]},
       {cells:["Bank / account","Not configured","-"]},
       {cells:["Net settlement","No real transfer",money(snapshot.netSettlementCents)],total:true,highlight:true},
     ],372,60);
@@ -162,7 +162,7 @@ export function renderDemoPdf(state: DemoApproval, dollars: (cents: number) => s
     table("LOAD DETAIL - LOADS AND ELIGIBLE REVENUE",[{label:"Date",width:50},{label:"Load / pro no.",width:95},{label:"Description / route",width:175},{label:"Loaded",width:35,right:true},{label:"Empty",width:35,right:true},{label:"Gross",width:60,right:true},{label:"Rate",width:36},{label:"Driver gross",width:70,right:true}],loadRows.length?loadRows:[{cells:["-","-","No loads in this period.","-","-","-","-","-"]}],28,80);
     note(`NET SETTLEMENT: USD ${dollars(snapshot.netSettlementCents)}`,true);
     note(`Agreed pay terms: ${terms}. Eligible revenue: ${money(snapshot.grossEligibleRevenueCents)}. Draft excluded from approved-history YTD.`);
-    note(`Category totals are not additional charges. Demo YTD: earnings ${dollars(ytd.earningsCents)} / deductions ${dollars(ytd.deductionsCents)} / net ${dollars(ytd.netCents)}`);
+    note(`Category totals are not additional charges. Local YTD: earnings ${dollars(ytd.earningsCents)} / deductions ${dollars(ytd.deductionsCents)} / net ${dollars(ytd.netCents)}`);
     for (const rule of frozen.deductionRules.filter(rule => rule.remainingBalanceCents !== undefined)) {
       const deducted = sum(snapshot.lines.filter(line => line.kind === "DEDUCTION" && line.ruleId === rule.id).map(line => line.amountCents));
       note(`${rule.description}: Opening USD ${dollars(rule.remainingBalanceCents!)} | Deducted USD ${dollars(deducted)} | Remaining USD ${dollars(safeCents(BigInt(rule.remainingBalanceCents!) - BigInt(deducted)))}`);
@@ -173,8 +173,8 @@ export function renderDemoPdf(state: DemoApproval, dollars: (cents: number) => s
   const brandObject = 9 + pages.length * 2;
   const objects = ["<< /Type /Catalog /Pages 2 0 R >>", `<< /Type /Pages /Count ${pages.length} /Kids [${pages.map((_, index) => `${5 + index * 2} 0 R`).join(" ")}] >>`, fontObject(statementFont, 5 + pages.length * 2), fontObject(statementBoldFont, 7 + pages.length * 2)];
   for (const [index, content] of pages.entries()) {
-    wrap(`Approved in demo by ${state.actorName} at ${state.approvedAt}`,450,6).forEach((line,i)=>content.push(text(28,51-i*7,6,line)));
-    content.push("0 0 0 rg", text(28, 34, 7, "Developed by ETL GIS Consulting LLC", true), text(493,34,7,"PayCore",true), text(28, 23, 6.5, "SIMULATION ONLY - no live payroll approval or real payment."), text(493, 23, 6.5, `Page ${index + 1} of ${pages.length}`));
+    wrap(`Approval recorded locally by ${state.actorName} at ${state.approvedAt}`,450,6).forEach((line,i)=>content.push(text(28,51-i*7,6,line)));
+    content.push("0 0 0 rg", text(28, 34, 7, "Developed by ETL GIS Consulting LLC", true), text(493,34,7,"PayCore",true), text(28, 23, 6.5, "LOCAL RECORD - not submitted for payroll processing; no funds transferred."), text(493, 23, 6.5, `Page ${index + 1} of ${pages.length}`));
     const stream = content.join("\n");
     objects.push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /XObject << /PayCoreMark ${brandObject} 0 R >> /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${6 + index * 2} 0 R >>`, `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`);
   }

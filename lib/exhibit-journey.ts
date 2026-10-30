@@ -25,7 +25,7 @@ export function continueExhibit(inputs: CalculationInput[], rows: GridRow[], app
   if (!approval.snapshots.length || inputs.length !== approval.snapshots.length || rows.length !== inputs.length || new Set(rows.map(row => row.id)).size !== rows.length) throw new Error("Check the approved contractor list before continuing.");
   const nextInputs = approval.snapshots.map(snapshot => {
     const previous = inputs.find(input => input.contractor.id === snapshot.contractorId);
-    if (!previous || !rows.some(row => row.id === snapshot.contractorId) || snapshot.payrollRunId !== approval.payrollRunId || snapshot.companyId !== next.companyId) throw new Error("The prior statement does not match this exhibit.");
+    if (!previous || !rows.some(row => row.id === snapshot.contractorId) || snapshot.payrollRunId !== approval.payrollRunId || snapshot.companyId !== next.companyId) throw new Error("The prior statement does not match this workspace.");
     const history = [...(previous.history ?? []), snapshot];
     const rules = snapshot.calculationSnapshot.deductionRules.filter(rule => rule.frequency !== "MANUAL" && (rule.frequency !== "ONE_TIME" || rule.effectiveFrom > approval.end) && rule.percentageBase !== "SELECTED_LOAD_REVENUE").map(rule => {
       const balance = approval.balances.find(item => item.contractorId === snapshot.contractorId && item.ruleId === rule.id);
