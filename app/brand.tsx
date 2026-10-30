@@ -20,10 +20,6 @@ export function BrandSplash({ preview = false }: { preview?: boolean }) {
     <div className="sculptural-splash-content">
       <p className="sculptural-eyebrow">CONTRACTOR SETTLEMENTS &amp; PAYROLL</p>
       <Image src={hero} alt={preview ? "PayCore — a sculpted teal P with a luminous core, beside a dimensional pearl and teal wordmark" : ""} sizes="(max-width: 720px) 100vw, 1200px" priority={!preview} className="sculptural-splash-art" />
-      <div className="sculptural-mobile-identity">
-        <Image src={symbol} alt="" sizes="(max-width: 720px) 78vw, 1px" priority={!preview} className="sculptural-mobile-symbol" />
-        <p className="sculptural-mobile-name">Pay<span>Core</span></p>
-      </div>
       <p className="sculptural-tagline">Clarity at the core of every payday.</p>
       <p className="sculptural-credit">Developed by <strong>ETL GIS Consulting LLC</strong></p>
     </div>

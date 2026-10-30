@@ -2762,7 +2762,6 @@ body:has(.preview-workspace) .brand-splash-intro { display: none; }
 /* Approved sculptural identity: dimensional artwork, with live accessible text. */
 .sculptural-splash { background: #07121e; }
 .sculptural-splash-content { width: min(100%, 1200px); padding: 64px 0 32px; text-align: center; }
-.sculptural-mobile-identity { display: none; }
 .sculptural-splash-art { display: block; width: 100%; height: auto; }
 .sculptural-eyebrow { color: #bfd7d3; font-size: 11px; letter-spacing: .22em; padding-inline: 24px; }
 .sculptural-tagline { color: #f6f8f0; font-size: clamp(16px, 2vw, 23px); line-height: 1.5; margin: 0 24px 18px; }
@@ -2770,12 +2769,8 @@ body:has(.preview-workspace) .brand-splash-intro { display: none; }
 .sculptural-credit strong { color: #f0e6d6; }
 .sculptural-splash.brand-splash-intro { animation-duration: 2.4s; }
 @media (max-width: 720px) {
-  .sculptural-splash-content { min-height: 100svh; box-sizing: border-box; padding: 88px 20px 40px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; }
-  .sculptural-splash-art { display: none; }
-  .sculptural-mobile-identity { display: flex; flex-direction: column; align-items: center; width: 100%; }
-  .sculptural-mobile-symbol { width: min(78vw, 38svh, 360px); height: auto; filter: drop-shadow(0 18px 30px #0008); }
-  .sculptural-mobile-name { margin: 0; color: #f0e6d6; font-size: clamp(44px, 13vw, 72px); font-weight: 750; letter-spacing: -.055em; line-height: 1.1; }
-  .sculptural-mobile-name span { color: #7bbdb4; }
+  .sculptural-splash-content { min-height: 100svh; box-sizing: border-box; padding: 76px 0 28px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; }
+  .sculptural-splash-art { display: block; width: 100%; height: auto; flex: none; }
   .sculptural-eyebrow { margin: 0; }
   .sculptural-tagline { margin: 8px 0 0; font-size: clamp(17px, 4.5vw, 22px); }
   .sculptural-credit { margin: 0; }
