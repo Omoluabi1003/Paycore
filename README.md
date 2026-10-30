@@ -148,3 +148,8 @@ A locally hosted, AI-generated accounting desk image decorates only the sign-in 
 ## Keep the selected payroll period
 
 Setup opens the exact inclusive range entered, even when today is in a later cycle. The working-period start is remembered alongside the browser-local schedule and restored on refresh. Existing schedules without a working selection open their original first range. Date/visibility refreshes update the current-by-date suggestion only; they never change the selected working period. Open next period explicitly advances by one cycle, while the period selector can reopen retained in-tab drafts. No completion, approval, or payment is implied by changing periods. Payroll figures still reset on refresh. Regression coverage includes October 5–16 entered on October 17, restored selections, invalid selection alignment, and consecutive 12-day periods. Rollback by reverting these selection changes; old schedule validation ignores the optional workingStart property.
+
+
+## Brand and sharing
+
+The sculptural PayCore identity uses a seven-second opening splash, matching logo and device icons, coordinated PDF marks and a social sharing card. The public sharing destination is https://paycore-1.vercel.app/. Asset downloads are available at `/brand` after deployment. See [brand usage and validation](docs/BRAND.md).
