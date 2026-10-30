@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import SharePayCore from "../share-paycore";
 import { BrandLogo } from "../brand";
+import desktopSplash from "../../public/brand/paycore-splash-desktop.png";
 import mobileSplash from "../../public/brand/paycore-splash-mobile.png";
 import hero from "../../public/brand/paycore-hero-3d.png";
 import logo from "../../public/brand/paycore-logo-3d.png";
@@ -21,7 +22,7 @@ export default function BrandLibrary() {
     <section className="brand-library-assets" aria-label="Brand downloads">
       <article><h2>Primary logo</h2><div className="brand-library-preview"><Image src={logo} alt="PayCore dimensional logo" sizes="600px" /></div><a href="/brand/paycore-logo-3d.png" download="paycore-logo-3d.png">Download transparent logo</a></article>
       <article><h2>Compact emblem</h2><div className="brand-library-preview brand-library-symbol"><Image src={symbol} alt="PayCore sculptural P and luminous core" sizes="300px" /></div><a href="/brand/paycore-symbol-3d.png" download="paycore-symbol-3d.png">Download transparent emblem</a></article>
-      <article><h2>Desktop splash &amp; sharing artwork</h2><div className="brand-library-preview"><Image src={hero} alt="PayCore landscape studio artwork" sizes="600px" /></div><a href="/brand/paycore-hero-3d.png" download="paycore-hero-3d.png">Download desktop splash</a><a href="/opengraph-image" download="paycore-sharing-card.png">Download sharing card</a></article>
+      <article><h2>Desktop splash</h2><div className="brand-library-preview"><Image src={desktopSplash} alt="PayCore desktop studio splash" sizes="600px" /></div><a href="/brand/paycore-splash-desktop.png" download="paycore-splash-desktop.png">Download desktop splash</a><a href="/opengraph-image" download="paycore-sharing-card.png">Download sharing card</a></article>
       <article><h2>Mobile splash</h2><div className="brand-library-preview"><Image src={mobileSplash} alt="PayCore portrait splash with a full-height studio scene and complete crest and name" sizes="(max-width: 800px) 100vw, 600px" /></div><a href="/brand/paycore-splash-mobile.png" download="paycore-splash-mobile.png">Download mobile splash</a></article>
       <article><h2>Device icons</h2><div className="brand-library-device-icons"><img src="/icon" width="64" height="64" alt="PayCore browser icon" /><img src="/apple-icon" width="100" height="100" alt="PayCore Apple touch icon" /></div><a href="/icon" download="paycore-icon-64.png">Download browser icon</a><a href="/apple-icon" download="paycore-apple-icon-180.png">Download touch icon</a></article>
     </section>
