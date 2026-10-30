@@ -8,7 +8,8 @@ The core represents the individual contractor and the specialist's human judgmen
 
 | Asset | Use |
 | --- | --- |
-| `public/brand/paycore-hero-3d.png` | Approved splash and social hero |
+| `public/brand/paycore-hero-3d.png` | Landscape desktop splash and social hero |
+| `public/brand/paycore-splash-mobile.png` | Full-height portrait mobile splash |
 | `public/brand/paycore-logo-3d.png` | Transparent dimensional wordmark |
 | `public/brand/paycore-symbol-3d.png` | Compact sculptural P for icons and documents |
 | `/icon` | Generated 64×64 transparent browser icon |
