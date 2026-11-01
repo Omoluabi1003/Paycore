@@ -139,8 +139,8 @@ export function renderDemoPdf(state: DemoApproval, dollars: (cents: number) => s
       {cells:["YTD",money(ytd.earningsCents),money(ytd.deductionsCents),"Included in YTD net",money(ytd.netCents)]},
     ]);
     const details: ReportRow[] = [
-      ...view.deductionDetails.map(line => ({ cells: [line.date ?? "Configured", line.reference ? `Reference: ${line.reference}` : "Agreement", line.description, "-", "-", money(line.amountCents)] })),
-      ...snapshot.lines.filter(line => line.kind === "REIMBURSEMENT" || line.kind === "ADJUSTMENT").map(line => { const tx = frozen.transactions.find(tx => line.sourceId === `transaction:${tx.id}`); return { cells: [tx?.transactionDate ?? snapshot.end, tx?.referenceNumber ?? "-", `${line.kind === "ADJUSTMENT" ? "Adjustment" : "Reimbursement"}: ${line.description}`, "-", "-", money(line.amountCents)] }; }),
+      ...view.deductionDetails.map(line => ({ cells: [line.date ?? "Configured", line.reference ? `Reference: ${line.reference}` : "Agreement", line.description, line.place||"-", line.cityState||"-", money(line.amountCents)] })),
+      ...snapshot.lines.filter(line => line.kind === "REIMBURSEMENT" || line.kind === "ADJUSTMENT").map(line => { const tx = frozen.transactions.find(tx => line.sourceId === `transaction:${tx.id}`); return { cells: [tx?.transactionDate ?? snapshot.end, tx?.referenceNumber ?? "-", `${line.kind === "ADJUSTMENT" ? "Adjustment" : "Reimbursement"}: ${line.description}`, tx?.place||"-", tx?.cityState||"-", money(line.amountCents)] }; }),
     ];
     if(details.length)details.push({cells:["TOTALS","","Listed entries","","",money(sum([...view.deductionDetails.map(line=>line.amountCents),...snapshot.lines.filter(line=>line.kind==="REIMBURSEMENT"||line.kind==="ADJUSTMENT").map(line=>line.amountCents)]))],total:true});
     table("ADVANCES, DEDUCTIONS AND REIMBURSEMENT DETAILS",[{label:"Date",width:54},{label:"Document no.",width:85},{label:"Description",width:227},{label:"Place",width:64},{label:"City, state",width:56},{label:"Amount",width:70,right:true}],details.length?details:[{cells:["-","-","No deductions, reimbursements or adjustments.","-","-","-"]}],28,86);

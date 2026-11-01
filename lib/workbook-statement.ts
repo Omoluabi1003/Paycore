@@ -20,7 +20,7 @@ export function workbookStatement(settlement:Settlement,history:History=[]){
  const deductionDetails=deductions.map(line=>{
   const transaction=settlement.calculationSnapshot.transactions.find(tx=>line.sourceId===`transaction:${tx.id}`);
   const rule=settlement.calculationSnapshot.deductionRules.find(rule=>rule.id===line.ruleId);
-  return {...line,description:transaction?.description??rule?.description??line.description,explanation:line.origin==="AUTOMATIC"?line.description:undefined,date:transaction?.transactionDate,reference:transaction?.referenceNumber};
+  return {...line,description:transaction?.description??rule?.description??line.description,explanation:line.origin==="AUTOMATIC"?line.description:undefined,date:transaction?.transactionDate,reference:transaction?.referenceNumber,place:transaction?.place,cityState:transaction?.cityState};
  });
  const groups=[...workbookDeductionGroups.map(group=>({label:group.label,amountCents:sum(deductions.filter(line=>(group.categories as readonly string[]).includes(line.category)).map(line=>line.amountCents))})),{label:"Other deductions",amountCents:sum(deductions.filter(line=>!known.has(line.category)).map(line=>line.amountCents))}];
  const fuelEntries=settlement.calculationSnapshot.transactions.filter(tx=>tx.transactionType==="FUEL_DEDUCTION");
