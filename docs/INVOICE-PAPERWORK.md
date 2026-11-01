@@ -43,3 +43,7 @@ Freight invoices with missing company address or factoring name/address cannot b
 Validation: 213 unit tests, typecheck, production build, and Chromium workflow covering import-before-save, draft synchronization, blocked incomplete output, issued repair, payment/history preservation, refresh and narrow mobile widths. A generated PDF was visually inspected with fictional data. Physical mobile browsers and remote persistence are not verified; settings and invoices remain local to their existing browser/profile storage.
 
 Rollback: revert this change after exporting local invoice records. The legal name is optional; repaired invoice revisions retain their earlier snapshots. Reverting removes the incomplete-paperwork guards and repair/import UI, so review outgoing paperwork manually during rollback. No database migration, authentication provider or live email delivery is introduced.
+
+### Concise outgoing invoice footer
+
+Outgoing PDFs keep totals, any recorded payment summary/balance due, one payment instruction and a short thank-you. Individual receipt references/notes, reversal reasons, revision-history explanations, repeated invoice/status/currency, local-operation notices, and repeated freight contact footers stay off the customer paperwork. Their underlying data and workspace history are unchanged. Generic service invoices retain their configured footer; historical-copy and void warnings remain visible. Page numbering and ETL GIS attribution remain.

@@ -12,7 +12,7 @@ test('correcting a finalized invoice preserves its prior snapshot, number and or
  assert.equal(invoice.status,'ISSUED');assert.equal(invoice.number,original.number);assert.equal(invoice.id,original.id);assert.equal(invoiceBalance(invoice).total.totalCents,150000);
  assert.deepEqual(invoice.revisions[0].snapshot,original);assert.equal(invoice.revisions[0].reason,'Corrected source price and destination');assert.equal(invoice.revisions[0].actor,actor);assert.equal(invoice.revisions[0].at,later);assert.ok(Object.isFrozen(invoice.revisions[0].snapshot));
  const email=decodeURIComponent(invoiceEmail(invoice,'factor@example.test'));assert.match(email,/Corrected invoice SYN-INV-1 \(revision 1\)/);assert.match(email,/replaces the earlier version/);assert.ok(!email.includes('customer@example.test'));
- assert.equal(JSON.stringify(book),before);assert.deepEqual(invoicePdf(invoice.revisions[0].snapshot,'2026-11-01'),pdf);assert.match(new TextDecoder().decode(invoicePdf(invoice,'2026-11-01')),/Revision 1/);
+ assert.equal(JSON.stringify(book),before);assert.deepEqual(invoicePdf(invoice.revisions[0].snapshot,'2026-11-01'),pdf);assert.doesNotMatch(new TextDecoder().decode(invoicePdf(invoice,'2026-11-01')),/Earlier versions retained in invoice history/);
 });
 test('successive corrections retain independent prior versions across storage round trips',()=>{
  let book=issued();book=reviseInvoice(book,edit(book.invoices[0],150000),'First source correction',actor,later);book=reviseInvoice(book,edit(book.invoices[0],160000),'Second source correction',actor,'2026-11-01T12:02:00Z');
