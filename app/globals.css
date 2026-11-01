@@ -2789,3 +2789,16 @@ body:has(.preview-workspace) .brand-splash-intro { display: none; }
 .welcome-sharing > a { color: #c4dccc; }
 
 .workspace-share { padding: 0 24px 24px; font-size: .875rem; color: #47616d; }
+
+.fuel-detail-entry { min-width: 0; }
+.fuel-detail-entry .table-scroll { max-width: 100%; margin-block: 16px; }
+.fuel-receipts-table { min-width: 960px; width: 100%; }
+.fuel-receipts-table input { width: 100%; min-width: 0; box-sizing: border-box; }
+.fuel-receipts-table th:nth-child(1) { min-width: 140px; }
+.fuel-receipts-table th:nth-child(2) { min-width: 140px; }
+.fuel-receipts-table th:nth-child(3) { min-width: 220px; }
+.fuel-receipts-table th:nth-child(4), .fuel-receipts-table th:nth-child(5) { min-width: 160px; }
+.fuel-receipts-table th:nth-child(6) { min-width: 120px; }
+.fuel-receipts-table tfoot { font-weight: 700; }
+.fuel-receipts-table td:last-child { text-align: right; }
+.fuel-receipts-table small, .fuel-receipts-table td button { display: block; margin-top: 6px; }
