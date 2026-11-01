@@ -61,6 +61,7 @@ function renderInvoices(invoices:Invoice[],today:string):Uint8Array{
  if(balance.paidCents||invoice.payments.length){row("Recorded received (net of reversals)",invoiceMoney(balance.paidCents));row(invoice.status==="VOID"?"ORIGINAL BALANCE (VOID - DO NOT PAY)":"BALANCE DUE",invoiceMoney(balance.balanceCents),true);}
  const remittance=remittanceInstruction(invoice);if(remittance){row("PAYMENT INSTRUCTIONS","",true);row(remittance);}if(!invoice.lines.some(freightLine)){if(invoice.billingContact)row(`Invoice contact: ${invoice.billingContact}`);if(invoice.notes){row("NOTES","",true);row(invoice.notes);}}if(invoice.payments.length){row("RECORDED PAYMENTS - NO FUNDS MOVED","",true);for(const payment of invoice.payments){const reversal=invoice.paymentReversals.find(reversal=>reversal.paymentId===payment.id);row(`${payment.date} | ${payment.reference}${reversal?" | REVERSED - not counted":""}`,invoiceMoney(payment.amountCents));if(payment.note)row(payment.note);if(reversal)row(`Record correction: ${reversal.reason} | ${reversal.at}`);}}
  if(invoice.revisions?.length)row(`Revision ${invoice.revisions.length} | Earlier versions retained in invoice history.`);
+ if(invoice.standardFooter)row(invoice.standardFooter);
  row("THANK YOU FOR YOUR BUSINESS!");row(`Invoice ${invoice.number} | ${invoiceStatus(invoice,today)} | USD`);if(invoice.status==="VOID")row("VOID - DO NOT PAY","",true);row("INVOICE | No email sent or payment processed by PayCore.");
  }
  const descriptor=5+pages.length*2;

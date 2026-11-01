@@ -68,3 +68,15 @@ test('standard payment instructions persist with company settings and supply new
  assert.equal(invoiceLetterhead('Synthetic Carrier',restored).paymentInstructions,'Reference the invoice number.');
  assert.equal(applyInvoiceCompanyDefaults(draft(),'Synthetic Carrier',restored).paymentInstructions,'Reference the invoice number.');
 });
+
+test('the fixed company invoice footer is reused and prints once without reviving internal freight notes',()=>{
+ const header={...emptyStatementHeader(),email:'carrier@example.test',phone:'555-0100',invoiceFooter:'Synthetic standard invoice contact footer'};
+ const restored=decodeCompanySettings(encodeCompanySettings('Synthetic profile',header),'Synthetic profile');
+ const settings=invoiceLetterhead('Synthetic Carrier',restored),invoice={...draft(),...settings};
+ assert.equal(settings.standardFooter,header.invoiceFooter);
+ const pdf=new TextDecoder().decode(invoicePdf(invoice,'2026-11-01'));
+ assert.equal(pdf.match(/Synthetic standard invoice contact footer/g)?.length,1);assert.ok(!pdf.includes('Internal customer contact note'));
+ assert.equal(invoiceLetterhead('Synthetic Carrier',{...emptyStatementHeader(),email:'carrier@example.test'}).standardFooter,'Invoice questions: Synthetic Carrier | carrier@example.test');
+ assert.equal(invoiceLetterhead('Synthetic Carrier',{...emptyStatementHeader(),email:'carrier@example.test',invoiceFooter:''}).standardFooter,'Invoice questions: Synthetic Carrier | carrier@example.test');
+ const frozen=finalized(),before=JSON.stringify(frozen);applyInvoiceCompanyDefaults(frozen,'Synthetic Carrier',restored);assert.equal(JSON.stringify(frozen),before);
+});

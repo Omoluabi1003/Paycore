@@ -27,3 +27,7 @@ Draft invoices can be reopened with Edit invoice draft. Finalized invoices expos
 Recorded payments and reversal evidence are preserved. Corrections cannot lower the total below net receipts, erase receipts, change invoice identity/company, or overwrite a stale version. Voided invoices remain closed. This edits invoices only; approved contractor payroll snapshots stay immutable. History is stored locally with the invoice book and is not a server-verified audit trail. There is a limit of 50 corrections per invoice and the existing browser storage size limit still applies.
 
 Before rolling back to an older app version, back up the complete local invoice book including revisions; older code does not understand the new optional revision history and may strip it when saving. No automatic email, refund or payment occurs when an invoice is corrected.
+
+## Fixed footer
+
+Standard invoice footer is a company setting, not a per-invoice entry. If unset, saved company email/phone generate a contact footer automatically. A saved custom footer is reused verbatim. Leaving it blank uses the saved company email/phone; without contacts, no automatic footer is added. The footer prints once in preview/PDF and is captured in the issued invoice/revision snapshot. Internal freight notes remain internal; they are not used as the standard footer. Editing company settings does not rewrite issued records.
