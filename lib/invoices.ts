@@ -6,7 +6,8 @@ const cents=z.number().int().safe().nonnegative();
 const lineSchema=z.object({id,loadReference:text.optional(),pickupName:text.optional(),pickupAddress:text.optional(),deliveryName:text.optional(),deliveryAddress:text.optional(),description:text.min(1),quantityMillis:z.number().int().safe().positive(),unitPriceCents:cents});
 const totalsSchema=z.object({subtotalCents:cents,discountCents:cents,taxCents:cents,totalCents:cents});
 const reversalSchema=z.object({id,paymentId:id,at:z.string().datetime(),actor:id,reason:text.min(1)});
-const invoiceSchema=z.object({id,companyId:id,number:id,issuer:text.min(1),issuerAddress:text,customer:text.min(1),customerEmail:z.union([z.literal(""),z.string().trim().email().max(120)]),billingAddress:text,customerPhone:text.optional(),customerFax:text.optional(),issuedOn:date,dueOn:date,currency:z.literal("USD"),lines:z.array(lineSchema).min(1).max(100),discountCents:cents,taxBasisPoints:z.number().int().min(0).max(10000),additionalCostsCents:cents.optional(),additionalCostsDescription:text.optional(),paymentInstructions:z.string().trim().max(600).optional(),billingContact:text.optional(),factoringName:text.optional(),factoringAddress:z.string().trim().max(600).optional(),factoringContact:text.optional(),notes:z.string().trim().max(1000),status:z.enum(["DRAFT","ISSUED","VOID"]),paymentReversals:z.array(reversalSchema).max(200).default([]),totals:totalsSchema.optional(),payments:z.array(z.object({id,date,reference:id,amountCents:cents.positive(),note:text})).max(200),audit:z.array(z.object({at:z.string().datetime(),actor:id,action:id,reason:text.optional()})).max(600)});
+const invoiceRecordSchema=z.object({id,companyId:id,number:id,issuer:text.min(1),issuerAddress:z.string().trim().max(1000),customer:text.min(1),customerEmail:z.union([z.literal(""),z.string().trim().email().max(120)]),billingAddress:text,customerPhone:text.optional(),customerFax:text.optional(),issuedOn:date,dueOn:date,currency:z.literal("USD"),lines:z.array(lineSchema).min(1).max(100),discountCents:cents,taxBasisPoints:z.number().int().min(0).max(10000),additionalCostsCents:cents.optional(),additionalCostsDescription:text.optional(),standardFooter:z.string().trim().max(1000).optional(),paymentInstructions:z.string().trim().max(600).optional(),billingContact:text.optional(),factoringEmail:z.union([z.literal(""),z.string().trim().email().max(120)]).optional(),factoringName:text.optional(),factoringAddress:z.string().trim().max(600).optional(),factoringContact:text.optional(),notes:z.string().trim().max(1000),status:z.enum(["DRAFT","ISSUED","VOID"]),paymentReversals:z.array(reversalSchema).max(200).default([]),totals:totalsSchema.optional(),payments:z.array(z.object({id,date,reference:id,amountCents:cents.positive(),note:text})).max(200),audit:z.array(z.object({at:z.string().datetime(),actor:id,action:id,reason:text.optional()})).max(600)});
+const invoiceSchema=invoiceRecordSchema.extend({revisions:z.array(z.object({version:z.number().int().min(1).max(50),reason:text.min(1),actor:id,at:z.string().datetime(),snapshot:invoiceRecordSchema})).max(50).optional()});
 export type Invoice=z.infer<typeof invoiceSchema>;
 export type InvoiceLine=z.infer<typeof lineSchema>;
 export type InvoiceBook={version:1;companyId:string;invoices:Invoice[]};
@@ -40,6 +41,11 @@ export function validateInvoiceBook(raw:unknown,companyId:string):InvoiceBook{
   const paymentIds=new Set<string>(),references=new Set<string>();for(const payment of invoice.payments){if(paymentIds.has(payment.id)||(!invoice.paymentReversals.some(reversal=>reversal.paymentId===payment.id)&&references.has(key(payment.reference)))||payment.date<invoice.issuedOn)throw Error("A payment is duplicated or has an invalid date.");paymentIds.add(payment.id);if(!invoice.paymentReversals.some(reversal=>reversal.paymentId===payment.id))references.add(key(payment.reference));}
   const reversed=new Set<string>(),reversalIds=new Set<string>();for(const reversal of invoice.paymentReversals){if(!paymentIds.has(reversal.paymentId)||reversed.has(reversal.paymentId)||reversalIds.has(reversal.id)||reversal.at.slice(0,10)<invoice.payments.find(payment=>payment.id===reversal.paymentId)!.date)throw Error("Payment reversal evidence is invalid or duplicated.");reversed.add(reversal.paymentId);reversalIds.add(reversal.id);}
   for(let i=1;i<invoice.audit.length;i++)if(Date.parse(invoice.audit[i].at)<Date.parse(invoice.audit[i-1].at))throw Error("Invoice activity time cannot precede the previous event.");
+  for(const [index,revision]of (invoice.revisions??[]).entries()){
+   if(revision.version!==index+1||revision.snapshot.id!==invoice.id||revision.snapshot.number!==invoice.number||revision.snapshot.companyId!==companyId||revision.snapshot.status!=="ISSUED")throw Error("Invoice revision history does not match this invoice.");
+   if(Date.parse(revision.at)<Date.parse(revision.snapshot.audit.at(-1)?.at??revision.at))throw Error("Revision time cannot precede its original record.");
+   validateInvoiceBook({version:1,companyId,invoices:[revision.snapshot]},companyId);
+  }
   invoiceBalance(invoice);
  }return freeze(book);
 }
@@ -69,4 +75,19 @@ export function reverseInvoicePayment(book:InvoiceBook,invoiceId:string,paymentI
  if(!invoice.payments.some(payment=>payment.id===paymentId))throw Error("Payment record not found.");text.min(1).parse(reason);
  const previous=invoice.paymentReversals.find(reversal=>reversal.paymentId===paymentId);if(previous){if(previous.reason===reason.trim())return book;throw Error("This payment record was already reversed.");}
  const event=command(actor,at);return replace(book,{...invoice,paymentReversals:[...invoice.paymentReversals,{id:paymentId,paymentId,reason:reason.trim(),...event}],audit:[...invoice.audit,{...event,action:"Payment record reversed; no funds moved",reason:reason.trim()}]});
+}
+
+/** Explicit corrections preserve the issued record and all receipt evidence. */
+export function reviseInvoice(book:InvoiceBook,raw:Invoice,reason:string,actor:string,at:string){
+ validateInvoiceBook(book,book.companyId);
+ const existing=book.invoices.find(invoice=>invoice.id===raw.id);
+ if(!existing||existing.status!=="ISSUED")throw Error("Only a finalized invoice can be corrected. Edit drafts normally.");
+ const correctionReason=text.min(1).parse(reason),event=command(actor,at);
+ if(raw.number!==existing.number||raw.companyId!==existing.companyId)throw Error("An invoice correction cannot change its identity or company.");
+ if(JSON.stringify(raw.audit)!==JSON.stringify(existing.audit)||(raw.revisions?.length??0)!==(existing.revisions?.length??0))throw Error("The invoice changed after editing began. Reopen the latest invoice.");
+ if((existing.revisions?.length??0)>=50)throw Error("This invoice has reached its revision limit.");
+ const {revisions:history,...snapshot}=structuredClone(existing);
+ const candidate=invoiceSchema.parse({...raw,status:"ISSUED",payments:existing.payments,paymentReversals:existing.paymentReversals,audit:existing.audit,revisions:history});
+ const totals=calculateInvoice(candidate);if(totals.totalCents===0)throw Error("A corrected invoice must have a positive total.");
+ return replace(book,{...candidate,totals,revisions:[...(history??[]),{version:(history?.length??0)+1,reason:correctionReason,...event,snapshot}],audit:[...existing.audit,{...event,action:"Invoice corrected; previous version retained",reason:correctionReason}]});
 }

@@ -1,3 +1,4 @@
+import {freightLine,remittanceInstruction} from "./invoice-paperwork.ts";
 import { brandPdfImageObject, brandPdfMaskObject, drawBrandMark } from "./brand-pdf-image.ts";
 import {statementFont,statementFontBase64} from "./pdf-fonts/tr-century-gothic-italic.ts";
 import {statementBoldFont,statementBoldFontBase64} from "./pdf-fonts/century-gothic-bold-italic.ts";
@@ -35,7 +36,7 @@ function renderInvoices(invoices:Invoice[],today:string):Uint8Array{
  const chargeHeader=()=>{if(y<105)next();page.push(`0.03 0.48 0.62 rg 28 ${y-5} 556 21 re f 1 1 1 rg`,text(38,y,10,"ITEM DESCRIPTION",true),text(405,y,10,"AMOUNT",true),"0 0 0 rg");y-=7;};
  next();
  const left=["BILL TO:",invoice.customer,invoice.billingAddress,invoice.customerEmail,invoice.customerPhone?`Phone: ${invoice.customerPhone}`:"",invoice.customerFax?`Fax: ${invoice.customerFax}`:""].filter(Boolean).flatMap(value=>value.split('\n').flatMap(part=>wrap(part,272,9)));
- const right=["FOR:",invoice.issuer,invoice.factoringName,invoice.factoringAddress,invoice.factoringContact].filter((value):value is string=>Boolean(value)).flatMap(value=>value.split('\n').flatMap(part=>wrap(part,226,9)));
+ const right=["FOR:",invoice.issuer,invoice.factoringName,invoice.factoringAddress,invoice.factoringContact,invoice.factoringEmail&&!invoice.factoringContact?.includes(invoice.factoringEmail)?invoice.factoringEmail:""].filter((value):value is string=>Boolean(value)).flatMap(value=>value.split('\n').flatMap(part=>wrap(part,226,9)));
  // Draw both independent party columns at the same height; long entries continue safely.
  for(let i=0;i<Math.max(left.length,right.length);i++){if(y<88)next();if(left[i])page.push(text(30,y,9,left[i],i<2));if(right[i])page.push(text(350,y,9,right[i],i<2||right[i]===invoice.factoringName));y-=14;}y-=18;
  chargeHeader();
@@ -43,10 +44,10 @@ function renderInvoices(invoices:Invoice[],today:string):Uint8Array{
   const details:{value:string;bold:boolean;indent:number}[]=[];
   const add=(value:string,bold=false,indent=0)=>{for(const part of value.split('\n'))for(const fragment of wrap(part,326-indent,9,bold))details.push({value:fragment,bold,indent});};
   if(line.loadReference)add(`For the Load #: ${line.loadReference}`,true);
-  add(line.description);
+  if(!freightLine(line))add(line.description);
   if(line.pickupName||line.pickupAddress){add('');add(`From: ${line.pickupName??""}`,true,30);if(line.pickupAddress)add(line.pickupAddress,false,30);}
   if(line.deliveryName||line.deliveryAddress){add('');add(`To: ${line.deliveryName??""}`,true,30);if(line.deliveryAddress)add(line.deliveryAddress,false,30);}
-  add(`${decimalAmount(line.quantityMillis,3)} x ${invoiceMoney(line.unitPriceCents)} per unit`);
+
   let cursor=0,amountPrinted=false;
   while(cursor<details.length){if(y<115){next();chargeHeader();}const available=Math.floor((y-80)/14),count=Math.min(available,details.length-cursor),height=Math.min(y-80,Math.max(count*14+12,(line.pickupAddress||line.deliveryAddress)?130:50));
    page.push(`0.86 0.92 0.97 rg 28 ${y-height} 352 ${height} re f 0.96 0.98 0.99 rg 380 ${y-height} 204 ${height} re f 0.62 0.73 0.78 RG 0.5 w 28 ${y-height} 556 ${height} re S 380 ${y-height} m 380 ${y} l S 0 0 0 rg`);
@@ -56,10 +57,11 @@ function renderInvoices(invoices:Invoice[],today:string):Uint8Array{
   }
  }
  y-=18;
- const balance=invoiceBalance(invoice);row("Subtotal",invoiceMoney(balance.total.subtotalCents));row("Discount",invoiceMoney(balance.total.discountCents));row(`Tax rate (${decimalAmount(invoice.taxBasisPoints)}%)`,invoiceMoney(balance.total.taxCents));row(invoice.additionalCostsDescription?`Additional costs: ${invoice.additionalCostsDescription}`:"Additional costs",invoiceMoney(invoice.additionalCostsCents??0));row("TOTAL COST",invoiceMoney(balance.total.totalCents),true);
+ const balance=invoiceBalance(invoice);if(balance.total.discountCents||balance.total.taxCents||invoice.additionalCostsCents)row("Subtotal",invoiceMoney(balance.total.subtotalCents));if(balance.total.discountCents)row("Discount",invoiceMoney(balance.total.discountCents));if(balance.total.taxCents)row(`Tax rate (${decimalAmount(invoice.taxBasisPoints)}%)`,invoiceMoney(balance.total.taxCents));if(invoice.additionalCostsCents)row(`Additional costs: ${invoice.additionalCostsDescription}`,invoiceMoney(invoice.additionalCostsCents));row("TOTAL COST",invoiceMoney(balance.total.totalCents),true);
  if(balance.paidCents||invoice.payments.length){row("Recorded received (net of reversals)",invoiceMoney(balance.paidCents));row(invoice.status==="VOID"?"ORIGINAL BALANCE (VOID - DO NOT PAY)":"BALANCE DUE",invoiceMoney(balance.balanceCents),true);}
- if(invoice.factoringName)row(`Make all checks payable to ${invoice.factoringName}.`,"",true);
- if(invoice.paymentInstructions){row("PAYMENT INSTRUCTIONS","",true);row(invoice.paymentInstructions);}if(invoice.billingContact)row(`Invoice contact: ${invoice.billingContact}`);if(invoice.notes){row("NOTES","",true);row(invoice.notes);}if(invoice.payments.length){row("RECORDED PAYMENTS - NO FUNDS MOVED","",true);for(const payment of invoice.payments){const reversal=invoice.paymentReversals.find(reversal=>reversal.paymentId===payment.id);row(`${payment.date} | ${payment.reference}${reversal?" | REVERSED - not counted":""}`,invoiceMoney(payment.amountCents));if(payment.note)row(payment.note);if(reversal)row(`Record correction: ${reversal.reason} | ${reversal.at}`);}}
+ const remittance=remittanceInstruction(invoice);if(remittance){row("PAYMENT INSTRUCTIONS","",true);row(remittance);}if(!invoice.lines.some(freightLine)){if(invoice.billingContact)row(`Invoice contact: ${invoice.billingContact}`);if(invoice.notes){row("NOTES","",true);row(invoice.notes);}}if(invoice.payments.length){row("RECORDED PAYMENTS - NO FUNDS MOVED","",true);for(const payment of invoice.payments){const reversal=invoice.paymentReversals.find(reversal=>reversal.paymentId===payment.id);row(`${payment.date} | ${payment.reference}${reversal?" | REVERSED - not counted":""}`,invoiceMoney(payment.amountCents));if(payment.note)row(payment.note);if(reversal)row(`Record correction: ${reversal.reason} | ${reversal.at}`);}}
+ if(invoice.revisions?.length)row(`Revision ${invoice.revisions.length} | Earlier versions retained in invoice history.`);
+ if(invoice.standardFooter)row(invoice.standardFooter);
  row("THANK YOU FOR YOUR BUSINESS!");row(`Invoice ${invoice.number} | ${invoiceStatus(invoice,today)} | USD`);if(invoice.status==="VOID")row("VOID - DO NOT PAY","",true);row("INVOICE | No email sent or payment processed by PayCore.");
  }
  const descriptor=5+pages.length*2;
