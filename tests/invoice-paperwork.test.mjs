@@ -49,3 +49,22 @@ test('duplicate payee text is removed while distinct authorized payment terms re
  assert.equal(result,'Make all checks payable to Synthetic Factor LLC.\nReference the invoice number.');
  assert.equal(remittanceInstruction({paymentInstructions:'Use the agreed reference.'}),'Use the agreed reference.');
 });
+
+test('freight entry needs only route, load reference and an agreed price, with no description or unit entry',async()=>{
+ const {agreedFreightLine}=await import('../lib/invoice-paperwork.ts');
+ const entry={id:'synthetic-freight-entry',loadReference:'SYN-NEW-1',pickupName:'Synthetic Pickup',pickupAddress:'300 Example Road',deliveryName:'Synthetic Delivery',deliveryAddress:'400 Example Road',price:'1400.25'};
+ const before=JSON.stringify(entry),line=agreedFreightLine(entry);
+ assert.equal(line.description,'Load SYN-NEW-1');assert.equal(line.quantityMillis,1000);assert.equal(line.unitPriceCents,140025);assert.equal(JSON.stringify(entry),before);
+});
+test('freight entry blocks missing route data and invalid monetary input',async()=>{
+ const {agreedFreightLine}=await import('../lib/invoice-paperwork.ts');
+ const entry={id:'synthetic-freight-entry',loadReference:'SYN-NEW-1',pickupName:'Synthetic Pickup',pickupAddress:'300 Example Road',deliveryName:'Synthetic Delivery',deliveryAddress:'400 Example Road',price:'1400'};
+ for(const key of ['loadReference','pickupName','pickupAddress','deliveryName','deliveryAddress'])assert.throws(()=>agreedFreightLine({...entry,[key]:''}),/load number/);
+ for(const price of ['1e3','1.001','-1','9007199254740999'])assert.throws(()=>agreedFreightLine({...entry,price}));
+});
+test('standard payment instructions persist with company settings and supply new drafts',()=>{
+ const header={...emptyStatementHeader(),factoringName:'Synthetic Factor LLC',invoicePaymentInstructions:'Reference the invoice number.'};
+ const restored=decodeCompanySettings(encodeCompanySettings('Synthetic profile',header),'Synthetic profile');
+ assert.equal(invoiceLetterhead('Synthetic Carrier',restored).paymentInstructions,'Reference the invoice number.');
+ assert.equal(applyInvoiceCompanyDefaults(draft(),'Synthetic Carrier',restored).paymentInstructions,'Reference the invoice number.');
+});
