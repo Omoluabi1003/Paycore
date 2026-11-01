@@ -1,3 +1,4 @@
+import {assertInvoicePaperworkReady,invoicePaperworkIssues} from "./invoice-readiness.ts";
 import {freightLine,remittanceInstruction} from "./invoice-paperwork.ts";
 import { brandPdfImageObject, brandPdfMaskObject, drawBrandMark } from "./brand-pdf-image.ts";
 import {statementFont,statementFontBase64} from "./pdf-fonts/tr-century-gothic-italic.ts";
@@ -8,16 +9,17 @@ const ascii=(value:string)=>value.replace(/[\r\n\t]/g," ").normalize("NFKD").rep
 const escape=(value:string)=>ascii(value).replace(/[\\()]/g,"\\$&");
 const width=(value:string,size:number,bold=false)=>[...ascii(value)].reduce((n,c)=>n+(bold?statementBoldFont:statementFont).widths[c as keyof typeof statementFont.widths]*size/1000,0);
 const wrap=(value:string,limit:number,size:number,bold=false)=>{const lines:string[]=[];let line="";for(const word of ascii(value).split(/\s+/)){if(line&&width(line+" "+word,size,bold)>limit){lines.push(line+" ");line="";}for(const c of (line?" ":"")+word){if(width(line+c,size,bold)>limit){lines.push(line);line="";}line+=c;}}if(line||!lines.length)lines.push(line);return lines;};
-export function invoicePdf(invoice:Invoice,today:string):Uint8Array{return renderInvoices([invoice],today);}
+export function invoicePdf(invoice:Invoice,today:string,options:{historical?:boolean}={}):Uint8Array{return renderInvoices([invoice],today,options.historical);}
 export function invoiceBatchPdf(invoices:Invoice[],today:string):Uint8Array{
  if(!invoices.length||invoices.length>50||invoices.some(invoice=>invoice.status!=="ISSUED")||new Set(invoices.map(invoice=>invoice.companyId)).size!==1)throw Error("Select 1–50 finalized invoices from one company.");
  validateInvoiceBook({version:1,companyId:invoices[0].companyId,invoices},invoices[0].companyId);
  return renderInvoices(invoices,today);
 }
-function renderInvoices(invoices:Invoice[],today:string):Uint8Array{
+function renderInvoices(invoices:Invoice[],today:string,historical=false):Uint8Array{
  const pages:string[][]=[];let page:string[]=[],y=0;
  const text=(x:number,y:number,size:number,value:string,bold=false)=>`BT /${bold?"F2":"F1"} ${size} Tf ${x} ${y} Td (${escape(value)}) Tj ET`;
  for(const invoice of invoices){
+ if(!historical)assertInvoicePaperworkReady(invoice);
  validateInvoiceBook({version:1,companyId:invoice.companyId,invoices:[invoice]},invoice.companyId);
  const next=()=>{
   page=[];pages.push(page);
@@ -35,6 +37,7 @@ function renderInvoices(invoices:Invoice[],today:string):Uint8Array{
  const row=(label:string,value="",bold=false)=>{const lines=wrap(label,value?340:548,9,bold);for(const [i,line] of lines.entries()){if(y<78)next();if(bold&&i===0)page.push(label==="TOTAL COST"?`0.03 0.48 0.62 rg 28 ${y-4} 556 17 re f 1 1 1 rg`:`0.88 0.94 0.97 rg 28 ${y-4} 556 17 re f 0 0 0 rg`);page.push(text(30,y,9,line,bold));if(i===0&&value)page.push(text(580-width(value,9,bold),y,9,value,bold));page.push("0 0 0 rg");y-=15;}y-=4;};
  const chargeHeader=()=>{if(y<105)next();page.push(`0.03 0.48 0.62 rg 28 ${y-5} 556 21 re f 1 1 1 rg`,text(38,y,10,"ITEM DESCRIPTION",true),text(405,y,10,"AMOUNT",true),"0 0 0 rg");y-=7;};
  next();
+ if(historical)row(invoicePaperworkIssues(invoice).length?"HISTORICAL COPY - incomplete company details at time of issue":"HISTORICAL COPY - earlier invoice version","",true);
  const left=["BILL TO:",invoice.customer,invoice.billingAddress,invoice.customerEmail,invoice.customerPhone?`Phone: ${invoice.customerPhone}`:"",invoice.customerFax?`Fax: ${invoice.customerFax}`:""].filter(Boolean).flatMap(value=>value.split('\n').flatMap(part=>wrap(part,272,9)));
  const right=["FOR:",invoice.issuer,invoice.factoringName,invoice.factoringAddress,invoice.factoringContact,invoice.factoringEmail&&!invoice.factoringContact?.includes(invoice.factoringEmail)?invoice.factoringEmail:""].filter((value):value is string=>Boolean(value)).flatMap(value=>value.split('\n').flatMap(part=>wrap(part,226,9)));
  // Draw both independent party columns at the same height; long entries continue safely.

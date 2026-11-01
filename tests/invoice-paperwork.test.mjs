@@ -70,7 +70,7 @@ test('standard payment instructions persist with company settings and supply new
 });
 
 test('the fixed company invoice footer is reused and prints once without reviving internal freight notes',()=>{
- const header={...emptyStatementHeader(),email:'carrier@example.test',phone:'555-0100',invoiceFooter:'Synthetic standard invoice contact footer'};
+ const header={...emptyStatementHeader(),address:'100 Example Street',email:'carrier@example.test',phone:'555-0100',factoringName:'Synthetic Factor',factoringAddress:'500 Example Way',invoiceFooter:'Synthetic standard invoice contact footer'};
  const restored=decodeCompanySettings(encodeCompanySettings('Synthetic profile',header),'Synthetic profile');
  const settings=invoiceLetterhead('Synthetic Carrier',restored),invoice={...draft(),...settings};
  assert.equal(settings.standardFooter,header.invoiceFooter);

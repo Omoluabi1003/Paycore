@@ -31,3 +31,15 @@ Before rolling back to an older app version, back up the complete local invoice 
 ## Fixed footer
 
 Standard invoice footer is a company setting, not a per-invoice entry. If unset, saved company email/phone generate a contact footer automatically. A saved custom footer is reused verbatim. Leaving it blank uses the saved company email/phone; without contacts, no automatic footer is added. The footer prints once in preview/PDF and is captured in the issued invoice/revision snapshot. Internal freight notes remain internal; they are not used as the standard footer. Editing company settings does not rewrite issued records.
+
+### Repairing incomplete company details
+
+Company settings now include an optional legal business name, independent of the workspace display name. Save the full address, company contact, factoring name/address/email once. Saving complete settings refreshes existing drafts and clears their review acknowledgement; finalized invoices retain their original snapshot.
+
+The company settings panel accepts a version 1 JSON setup file containing only `version` and `header`. Import fills the form for review; Save applies it to the active local profile. Import does not select another workspace or upload data. Private customer setup files must stay outside the repository and public PR attachments.
+
+Freight invoices with missing company address or factoring name/address cannot be finalized, downloaded as outgoing PDFs, or prepared for email. The UI also requires complete saved contact and factoring settings before finalization. Existing incomplete records remain readable. For an issued invoice, **Apply saved company details** creates a tracked revision, preserves its number, amounts and receipts, and archives the earlier version. Historical downloads remain available with a historical-copy label, including incomplete originals.
+
+Validation: 213 unit tests, typecheck, production build, and Chromium workflow covering import-before-save, draft synchronization, blocked incomplete output, issued repair, payment/history preservation, refresh and narrow mobile widths. A generated PDF was visually inspected with fictional data. Physical mobile browsers and remote persistence are not verified; settings and invoices remain local to their existing browser/profile storage.
+
+Rollback: revert this change after exporting local invoice records. The legal name is optional; repaired invoice revisions retain their earlier snapshots. Reverting removes the incomplete-paperwork guards and repair/import UI, so review outgoing paperwork manually during rollback. No database migration, authentication provider or live email delivery is introduced.

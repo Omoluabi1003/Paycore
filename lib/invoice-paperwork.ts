@@ -1,3 +1,4 @@
+import {invoicePaperworkIssues} from "./invoice-readiness.ts";
 import {z} from "zod";
 import {invoiceBalance,invoiceMoney,parseInvoiceAmount} from "./invoices.ts";
 import type {Invoice,InvoiceLine} from "./invoices.ts";
@@ -16,7 +17,7 @@ export function remittanceInstruction(invoice:Pick<Invoice,"factoringName"|"paym
 }
 export function factoringRecipient(value?:string){const parsed=z.string().trim().email().max(120).safeParse(value);return parsed.success?parsed.data:null;}
 export function invoiceEmail(invoice:Invoice,recipient?:string){
- const address=factoringRecipient(recipient);if(!address)return null;
+ const address=factoringRecipient(recipient);if(!address||invoicePaperworkIssues(invoice).length)return null;
  const balance=invoiceBalance(invoice),revision=invoice.revisions?.length??0,number=invoice.number.replace(/[\r\n]/g," ");
  const subject=revision?`Corrected invoice ${number} (revision ${revision})`:`Invoice ${number}`;
  const revisionNotice=revision?`Revision ${revision} replaces the earlier version of this invoice.\n\n`:"";
