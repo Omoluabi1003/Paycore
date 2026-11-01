@@ -59,7 +59,8 @@ test('saved invoices are profile/company scoped and reject altered totals or reo
 });
 test('invoice PDF is deterministic, branded and derives every amount from stored facts',()=>{
  const invoice=recordInvoicePayment(issued(),'invoice-1',payment(),actor,at).invoices[0],before=JSON.stringify(invoice),bytes=invoicePdf(invoice,'2026-10-18'),pdf=new TextDecoder().decode(bytes);
- for(const text of ['PayCore','INVOICE | No email sent or payment processed by PayCore.','Synthetic Customer','$199.50','$149.50','SYN-RECEIPT-1','Developed by ETL GIS Consulting LLC','TRCenturyGothicItalic','CenturyGothic-BoldItalic'])assert.ok(pdf.includes(text),text);
+ for(const text of ['PayCore','Synthetic Customer','$199.50','$149.50','Developed by ETL GIS Consulting LLC','TRCenturyGothicItalic','CenturyGothic-BoldItalic'])assert.ok(pdf.includes(text),text);
+ for(const omitted of ['RECORDED PAYMENTS','SYN-RECEIPT-1','No email sent','Saved on this device'])assert.ok(!pdf.includes(omitted),omitted);
  assert.equal(JSON.stringify(invoice),before);assert.deepEqual(invoicePdf(invoice,'2026-10-18'),bytes);const xref=Number(pdf.match(/startxref\n(\d+)/)[1]);assert.equal(pdf.slice(xref,xref+4),'xref');
  const long={...draft(),notes:'W'.repeat(1000),lines:Array.from({length:100},(_,i)=>({id:'line-'+i,description:`Synthetic invoice line ${i} `+'W'.repeat(180),quantityMillis:1000,unitPriceCents:1000}))};const longInvoice=issueInvoice(saveInvoiceDraft(emptyInvoiceBook('company-1'),long,actor,at),'invoice-1',actor,at).invoices[0],longPdf=new TextDecoder().decode(invoicePdf(longInvoice,'2026-10-18'));
  assert.ok(Number(longPdf.match(/\/Count (\d+)/)[1])>1);assert.ok(longPdf.includes('Synthetic invoice line 99'));assert.equal([...longPdf.matchAll(/Developed by ETL GIS Consulting LLC/g)].length,Number(longPdf.match(/\/Count (\d+)/)[1]));
@@ -74,7 +75,7 @@ test('payment record corrections preserve original receipts and post one compens
  assert.throws(()=>reverseInvoicePayment(corrected,'invoice-1','payment-1','Changed reason',actor,at),/already reversed/);
  assert.throws(()=>reverseInvoicePayment(corrected,'invoice-1','missing','Synthetic correction',actor,at),/not found/);
  const replacement=recordInvoicePayment(corrected,'invoice-1',payment({id:'payment-2',amountCents:19950}),actor,at);assert.equal(invoiceStatus(replacement.invoices[0],'2026-10-18'),'Paid');assert.equal(replacement.invoices[0].payments.length,2);
- const pdf=new TextDecoder().decode(invoicePdf(replacement.invoices[0],'2026-10-18'));assert.ok(pdf.includes('REVERSED - not counted'));assert.ok(pdf.includes('Synthetic amount entered in error'));
+ const pdf=new TextDecoder().decode(invoicePdf(replacement.invoices[0],'2026-10-18'));assert.ok(!pdf.includes('REVERSED - not counted'));assert.ok(!pdf.includes('Synthetic amount entered in error'));assert.ok(pdf.includes('$199.50'));
  const voided=voidInvoice(corrected,'invoice-1','Synthetic replacement invoice needed',actor,at);assert.equal(voided.invoices[0].status,'VOID');assert.equal(voided.invoices[0].payments.length,1);
 });
 test('reference invoice adds described costs after tax and preserves payment instructions at issue',()=>{
