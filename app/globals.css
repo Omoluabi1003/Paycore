@@ -2802,3 +2802,5 @@ body:has(.preview-workspace) .brand-splash-intro { display: none; }
 .fuel-receipts-table tfoot { font-weight: 700; }
 .fuel-receipts-table td:last-child { text-align: right; }
 .fuel-receipts-table small, .fuel-receipts-table td button { display: block; margin-top: 6px; }
+.company-settings > label { display: grid; gap: 8px; min-width: 0; }
+.company-settings input[type="file"] { width: 100%; max-width: 100%; box-sizing: border-box; }

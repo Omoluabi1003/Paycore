@@ -147,7 +147,7 @@ function PeriodWorkspace({ companyHeader,onSaveCompanyHeader,onInvoiceMode, disp
     const [portalRequest, setPortalRequest] = useState(0);
     const [showSetup, setShowSetup] = useState(false);
     const [corrections, setCorrections] = useState<DraftCorrection[]>(initial.corrections ?? []);
-    const workspaceName = companyName || `${displayName}’s workspace`;
+    const workspaceName = companyHeader.legalName||companyName || `${displayName}’s workspace`;
     const [inputs, setInputs] = useState<CalculationInput[]>(initial.inputs);
     const [demo, setDemo] = useState<DemoApproval | null>(initial.demo ?? null);
     const contractors = inputs.map(input => {

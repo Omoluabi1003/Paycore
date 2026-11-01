@@ -107,7 +107,7 @@ test('automatic numbering preserves legacy identities, normalizes reserved refer
 });
 
 test('optional freight facts survive save, restoration and finalization without changing charges',()=>{
- const raw=draft();raw.customerPhone='555-0100';raw.customerFax='555-0101';
+ const raw=draft();raw.factoringName='Synthetic Factor';raw.factoringAddress='500 Example Way';raw.customerPhone='555-0100';raw.customerFax='555-0101';
  Object.assign(raw.lines[0],{loadReference:'SYN-LOAD-42',pickupName:'Synthetic Origin',pickupAddress:'101 Example Road',deliveryName:'Synthetic Destination',deliveryAddress:'202 Example Avenue'});
  const before=calculateInvoice(draft());const book=saveInvoiceDraft(emptyInvoiceBook(raw.companyId),raw,actor,at);
  const restored=decodeInvoiceBook(encodeInvoiceBook(book,'freight-test'),'freight-test',raw.companyId);
