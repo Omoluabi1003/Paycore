@@ -126,8 +126,8 @@ test('factoring template positions broker and remittance columns and omits the i
  const book=saveInvoiceDraft(emptyInvoiceBook(raw.companyId),raw,actor,at),restored=decodeInvoiceBook(encodeInvoiceBook(book,'factoring'),'factoring',raw.companyId),invoice=issueInvoice(restored,raw.id,actor,at).invoices[0];
  assert.equal(invoice.dueOn,raw.dueOn);assert.equal(invoice.factoringAddress,raw.factoringAddress);assert.ok(Object.isFrozen(invoice));assert.deepEqual(calculateInvoice(invoice),calculateInvoice(draft()));
  const pdf=new TextDecoder().decode(invoicePdf(invoice,'2026-10-18'));
- for(const text of ['INVOICE # : SYN-INV-001','Date: 2026-10-01','BILL TO:','FOR:','Synthetic Factor LLC','300 Example Avenue','factor@example.test','Reference the invoice number.','Retain company instructions.','TOTAL COST'])assert.ok(pdf.includes(text),text);
- assert.ok(!pdf.includes('Due date'));assert.ok(!pdf.includes(raw.dueOn));assert.match(pdf,/BT \/F2 9 Tf 350 [\d.]+ Td \(Synthetic Factor LLC\)/);
+ for(const text of ['INVOICE # : SYN-INV-001','Date: 2026-10-01','BILL TO:','FOR:','Synthetic Factor LLC','300 Example Avenue','factor@example.test','Make all checks payable to Synthetic Factor LLC.','Reference the invoice number.','TOTAL COST'])assert.ok(pdf.includes(text),text);
+ assert.ok(!pdf.includes('Retain company instructions.'));assert.ok(pdf.includes('Reference the invoice number.'));assert.ok(!pdf.includes('per unit'));assert.ok(!pdf.includes('Synthetic service'));assert.ok(!pdf.includes('Due date'));assert.ok(!pdf.includes(raw.dueOn));assert.match(pdf,/BT \/F2 9 Tf 350 [\d.]+ Td \(Synthetic Factor LLC\)/);
  const position=text=>Number(pdf.match(new RegExp('BT /F[12] [\\d.]+ Tf 30 ([\\d.]+) Td \\('+text))[1]);
  assert.ok(position('INVOICE #')>position('Date:'));assert.ok(position('Date:')>position('BILL TO:'));
  assert.throws(()=>saveInvoiceDraft(book,{...raw,factoringAddress:'x'.repeat(601)},actor,at));

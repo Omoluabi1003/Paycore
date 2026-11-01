@@ -1,0 +1,11 @@
+"use client";
+import {useEffect,useState} from "react";
+import {StatementHeaderSchema} from "../lib/statement-header";
+import type {StatementHeader} from "../lib/statement-header";
+export default function CompanySettings({companyName,header,onSave}:{companyName:string;header:StatementHeader;onSave:(header:StatementHeader)=>void}){
+ const [draft,setDraft]=useState(header),[message,setMessage]=useState("");
+ useEffect(()=>setDraft(header),[header]);
+ return <details className="panel company-settings"><summary>Company letterhead and factoring settings</summary><p>{companyName} · Save once for new invoices and payroll periods in this workspace. Finalized documents keep their saved details.</p><form className="activity-form" onSubmit={event=>{event.preventDefault();try{onSave(StatementHeaderSchema.parse(draft));setMessage("Company settings saved on this device.");}catch(error){setMessage(error instanceof Error?error.message:"Check the company details.");}}}>
+ {([['address','Company address'],['cityStateZip','Company city, state and ZIP'],['email','Company email'],['phone','Company phone'],['mcNumber','MC number'],['usdotNumber','USDOT number'],['factoringName','Factoring company name'],['factoringAddress','Factoring company address'],['factoringContact','Factoring company contact'],['factoringEmail','Factoring invoice email']] as const).map(([key,label])=><label key={key}>{label}{key==='factoringAddress'?<textarea maxLength={600} value={draft[key]??""} onChange={event=>setDraft({...draft,[key]:event.target.value})}/>:<input type={key==='email'||key==='factoringEmail'?'email':'text'} maxLength={key==='factoringName'||key==='factoringContact'?240:120} value={draft[key]??""} onChange={event=>setDraft({...draft,[key]:event.target.value})}/>}</label>)}
+ <p>Invoice and payroll email drafts use only the authorized factoring email. No customer email is used as a fallback. PayCore opens your mail app; you review and send.</p><button className="button button-secondary" type="submit">Save company settings</button>{message&&<p role="status">{message}</p>}</form></details>;
+}
