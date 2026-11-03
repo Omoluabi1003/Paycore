@@ -1,5 +1,3 @@
-# Scan Inbox preview
+# Scan Inbox
 
-This route currently renders fictional queue data to establish the operator experience before production storage, OCR and durable jobs are connected.
-
-Do not replace the safety language with claims that files are uploaded, stored, scanned or committed in production until those services are actually connected and verified.
+Lists actual browser-local **fictional sample** reviews and history. Private imports are disabled pending secure backend access and storage. The old invented queue rows are removed. See `docs/DOCUMENT-IMPORT.md`.
