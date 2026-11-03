@@ -7,6 +7,7 @@ export class GoogleError extends Error {
     this.status = status;
   }
 }
+export class GoogleResponseLimit extends Error {}
 export async function googleJson(
   url: string,
   init: RequestInit = {},
@@ -28,7 +29,9 @@ export async function googleJson(
     total += value.length;
     if (total > 20 * 1024 * 1024) {
       await reader.cancel();
-      throw Error("Google response exceeds the document limit.");
+      throw new GoogleResponseLimit(
+        "Google response exceeds the document limit.",
+      );
     }
     chunks.push(value);
   }
@@ -100,6 +103,9 @@ export class GmailClient {
     query.append("historyTypes", "labelAdded");
     if (pageToken) query.set("pageToken", pageToken);
     return this.get(`/history?${query}`);
+  }
+  async messageMetadata(id: string) {
+    return this.get(`/messages/${encodeURIComponent(id)}?format=metadata`);
   }
   async message(id: string) {
     return this.get(`/messages/${encodeURIComponent(id)}?format=full`);

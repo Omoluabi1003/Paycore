@@ -1,5 +1,6 @@
 import { auth0 } from "../auth0.ts";
 import { scoped } from "./database.ts";
+import { listDocumentMemberships } from "./repository.ts";
 import {
   resolveCompanyAccess,
   requirePermission,
@@ -24,17 +25,7 @@ export async function authenticatedUser() {
 }
 export async function companies() {
   const user = await authenticatedUser();
-  return scoped(
-    "",
-    user.id,
-    async (sql) =>
-      (
-        await sql.query(
-          "SELECT company_id,company_name,roles FROM document_company_memberships WHERE user_id=$1 AND active=true ORDER BY company_name",
-          [user.id],
-        )
-      ).rows,
-  );
+  return scoped("", user.id, (sql) => listDocumentMemberships(sql, user.id));
 }
 export async function companyAccess(
   companyId: string,

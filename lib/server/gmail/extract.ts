@@ -190,7 +190,7 @@ export function messageParts(payload: GmailPart) {
         files.push(part);
     } else if (
       ["text/plain", "text/html"].includes(part.mimeType ?? "") &&
-      part.body?.data
+      (part.body?.data || part.body?.attachmentId)
     )
       bodies.push(part);
     for (const child of part.parts ?? []) visit(child);

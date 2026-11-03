@@ -158,3 +158,21 @@ export async function sourceStatus(sql: Sql, company: string, sha: string) {
     )
   ).rows[0]?.status as string | undefined;
 }
+
+export async function listDocumentMemberships(sql: Sql, userId: string) {
+  return (
+    await sql.query(
+      "SELECT company_id,company_name,roles FROM document_company_memberships WHERE user_id=$1 AND active=true AND roles && $2::text[] ORDER BY company_name",
+      [
+        userId,
+        [
+          "OWNER_ADMIN",
+          "FINANCE",
+          "AUDITOR",
+          "PAYROLL_SPECIALIST",
+          "PAYROLL_MANAGER",
+        ],
+      ],
+    )
+  ).rows;
+}

@@ -1,7 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { scoped, pool } from "./database.ts";
 import type { Sql } from "./database.ts";
-import { GmailClient, exchangeToken, GoogleError } from "./client.ts";
+import {
+  GmailClient,
+  exchangeToken,
+  GoogleError,
+  GoogleResponseLimit,
+} from "./client.ts";
 import {
   CheckpointSchema,
   credentials,
@@ -15,7 +20,7 @@ import type { Mailbox, Checkpoint } from "./repository.ts";
 import { extractBilling, messageParts, billingMarker } from "./extract.ts";
 import type { MailSource, GmailPart } from "./extract.ts";
 import { digest } from "./crypto.ts";
-import {emptyDocumentFields} from "../../document-import.ts";
+import { emptyDocumentFields } from "../../document-import.ts";
 export type WorkerDependencies = {
   transaction: typeof scoped;
   refresh: typeof exchangeToken;
@@ -148,6 +153,40 @@ export async function syncMailbox(
     try {
       message = await gmail.message(messageId);
     } catch (error) {
+      if (error instanceof GoogleResponseLimit) {
+        const metadata = await gmail.messageMetadata(messageId);
+        if ((metadata.labelIds ?? []).includes("INBOX")) {
+          const timestamp = Number(metadata.internalDate);
+          const source: MailSource = {
+            name: "Oversized email",
+            mime: "application/vnd.paycore.mailbox-exception+json",
+            bytes: Buffer.from(
+              JSON.stringify({ messageId, issue: "message-size-limit" }),
+            ),
+            receivedAt: new Date(
+              Number.isFinite(timestamp) ? timestamp : deps.now(),
+            ).toISOString(),
+            subject: "",
+            sender: "",
+          };
+          await transaction((sql) =>
+            recordSource(sql, box, messageId, source, {
+              fields: emptyDocumentFields(),
+              issues: [
+                "Email exceeds the automatic scan limit. Open the original in Gmail.",
+              ],
+              relevant: true,
+            }),
+          );
+          await transaction((sql) =>
+            sql.query(
+              "INSERT INTO gmail_processed_messages(company_id,mailbox_id,message_id) VALUES($1,$2,$3) ON CONFLICT DO NOTHING",
+              [company, id, messageId],
+            ),
+          );
+        }
+        continue;
+      }
       if (error instanceof GoogleError && error.status === 404) {
         await transaction((sql) =>
           sql.query(
@@ -222,7 +261,7 @@ export async function syncMailbox(
         if ((part.body?.size ?? 0) > 10 * 1024 * 1024)
           result = {
             ...result,
-            fields:emptyDocumentFields(),
+            fields: emptyDocumentFields(),
             relevant: billingMarker(`${subject} ${name}`),
             issues: ["Attachment exceeds 10 MB. Open the original in Gmail."],
           };

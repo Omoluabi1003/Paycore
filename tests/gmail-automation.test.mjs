@@ -732,3 +732,117 @@ test("the scheduler claims mailbox leases atomically and another worker cannot c
     await db.close();
   }
 });
+
+test("an oversized email becomes an exception instead of permanently blocking the inbox checkpoint", async () => {
+  process.env.GMAIL_ENCRYPTION_KEY = key;
+  const { db, transaction } = await database();
+  try {
+    const { GoogleResponseLimit } = await import(
+      "../lib/server/gmail/client.ts"
+    );
+    const gmail = {
+      profile: async () => ({ historyId: "100" }),
+      inboxPage: async () => ({
+        messages: [{ id: "too-large" }, { id: "normal" }],
+      }),
+      message: async (id) => {
+        if (id === "too-large") throw new GoogleResponseLimit();
+        return message();
+      },
+      messageMetadata: async () => ({
+        labelIds: ["INBOX"],
+        internalDate: String(Date.parse(source.receivedAt)),
+      }),
+    };
+    await syncMailbox(company, mailbox, owner, {
+      transaction,
+      client: () => gmail,
+    });
+    const rows = (
+      await db.query("SELECT status,fields FROM incoming_documents")
+    ).rows;
+    assert.equal(rows.filter((row) => row.status === "EXCEPTION").length, 1);
+    assert.equal(rows.filter((row) => row.status === "RECORDED").length, 1);
+    assert.equal(
+      rows.find((row) => row.status === "EXCEPTION").fields.vendor,
+      "",
+    );
+    assert.equal(
+      (await db.query("SELECT count(*) AS n FROM gmail_processed_messages"))
+        .rows[0].n,
+      2,
+    );
+    assert.equal(
+      (await db.query("SELECT checkpoint FROM gmail_mailboxes")).rows[0]
+        .checkpoint.phase,
+      "HISTORY",
+    );
+  } finally {
+    await db.close();
+  }
+});
+
+test("body-only invoices backed by Gmail attachment IDs are downloaded and recorded automatically", async () => {
+  process.env.GMAIL_ENCRYPTION_KEY = key;
+  const { db, transaction } = await database();
+  try {
+    let fetched = false;
+    const body = message();
+    body.payload.body = {
+      attachmentId: "body-attachment",
+      size: billing.length,
+    };
+    assert.equal(messageParts(body.payload).bodies.length, 1);
+    const gmail = {
+      profile: async () => ({ historyId: "100" }),
+      inboxPage: async () => ({ messages: [{ id: "body-only" }] }),
+      message: async () => body,
+      attachment: async (messageId, partId) => {
+        assert.equal(partId, "body-attachment");
+        fetched = true;
+        return { data: Buffer.from(billing).toString("base64url") };
+      },
+    };
+    await syncMailbox(company, mailbox, owner, {
+      transaction,
+      client: () => gmail,
+    });
+    assert.ok(fetched);
+    const row = (await db.query("SELECT status,fields FROM incoming_documents"))
+      .rows[0];
+    assert.equal(row.status, "RECORDED");
+    assert.equal(row.fields.amount, "100.00");
+  } finally {
+    await db.close();
+  }
+});
+
+test("the company selector excludes approver-only and contractor memberships before choosing its default", async () => {
+  process.env.GMAIL_ENCRYPTION_KEY = key;
+  const { db, transaction } = await database();
+  try {
+    const { listDocumentMemberships } = await import(
+      "../lib/server/gmail/repository.ts"
+    );
+    await db.query(
+      "INSERT INTO document_company_memberships(company_id,user_id,company_name,roles) VALUES($1,$2,$3,$4)",
+      ["other-company", user, "AAA Approver Company", ["APPROVER"]],
+    );
+    let rows = await transaction("", user, (sql) =>
+      listDocumentMemberships(sql, user),
+    );
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].company_id, company);
+    await db.query(
+      "UPDATE document_company_memberships SET roles=$1 WHERE company_id=$2",
+      [["CONTRACTOR"], "other-company"],
+    );
+    rows = await transaction("", user, (sql) =>
+      listDocumentMemberships(sql, user),
+    );
+    assert.equal(rows[0].company_id, company);
+    assert.equal(rows.length, 1);
+  } finally {
+    await db.close();
+  }
+});

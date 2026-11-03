@@ -17,7 +17,9 @@ export function pool() {
       statement_timeout: 15000,
     });
     // Idle connection errors must not crash the worker or disclose connection details.
-    singleton.on("error", () => console.error("Mailbox database connection interrupted."));
+    singleton.on("error", () =>
+      console.error("Mailbox database connection interrupted."),
+    );
   }
   return singleton;
 }
