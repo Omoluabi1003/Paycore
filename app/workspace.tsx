@@ -1,4 +1,5 @@
 "use client";
+import {initializeCompanyIdentity,companyIdentityRevisionKey} from "../lib/company-identity";
 import Link from "next/link";
 import {companySettingsKey,encodeCompanySettings,decodeCompanySettings,reusableCompanyHeader,hasCompanyHeader} from "../lib/company-settings";
 import { useEffect, useRef, useState } from "react";
@@ -78,7 +79,23 @@ export default function Workspace({ displayName, companyName }: { displayName: s
     const [journeyNotice, setJourneyNotice] = useState("");
     const drafts = useRef(new Map<string, { run: PayrollRun; draft: PeriodDraft }>());
     useEffect(() => {
-        try { const settings=localStorage.getItem(companySettingsKey(companyScope));if(settings)setCompanyHeader(decodeCompanySettings(settings,companyScope)); }catch{setStorageNotice("Saved company settings could not be read. Recheck Company settings before creating documents.");}
+        try {
+            const settings=localStorage.getItem(companySettingsKey(companyScope));
+            const saved=settings?decodeCompanySettings(settings,companyScope):emptyStatementHeader();
+            setCompanyHeader(saved);
+            const initialized=initializeCompanyIdentity(companyName,saved,settings?localStorage.getItem(companyIdentityRevisionKey(companyScope)):null);
+            let effective=initialized.header;
+            if(initialized.revision){
+                try {
+                    if(initialized.changed||!settings)localStorage.setItem(companySettingsKey(companyScope),encodeCompanySettings(companyScope,initialized.header));
+                    localStorage.setItem(companyIdentityRevisionKey(companyScope),initialized.revision);
+                }catch{
+                    effective=settings?saved:initialized.header;
+                    setStorageNotice("The company preset could not be saved on this device. Previously saved details, if any, remain in use.");
+                }
+            }
+            setCompanyHeader(effective);
+        }catch{setStorageNotice("Saved company settings could not be read or saved. Recheck Company settings before creating documents.");}
         try {
             const saved = localStorage.getItem(scheduleKey);
             if (saved) {
@@ -110,7 +127,7 @@ export default function Workspace({ displayName, companyName }: { displayName: s
     const current = schedule && now ? periodForDate(schedule, dateInZone(now, schedule.timeZone)) : null;
     if (!loaded) return <p role="status">Loading your pay schedule…</p>;
     const setupNavigation=<nav className="setup-module-nav" aria-label="Workspace modules">{([['payroll','Payroll'],['invoices','Invoices'],['reports','Reports']] as const).map(([key,label])=><button type="button" key={key} aria-current={(invoiceMode?(invoiceOnlyReports?'reports':'invoices'):'payroll')===key?'page':undefined} onClick={()=>{setInvoiceMode(key!=='payroll');setInvoiceOnlyReports(key==='reports');requestAnimationFrame(()=>{const target=document.querySelector<HTMLElement>('.invoice-only-shell h1,.period-setup-shell h1');if(target){target.tabIndex=-1;target.focus({preventScroll:true});}});}}>{label}</button>)}<Link className="button button-secondary" href="/scan">Scan documents</Link></nav>;
-    if ((!schedule || !current) && invoiceMode) return <main className="invoice-only-shell"><div className="invoice-only-heading"><BrandLogo/><button className="button button-secondary" onClick={()=>setInvoiceMode(false)}>Set up payroll</button></div>{setupNavigation}<div className="section-heading"><h1>{invoiceOnlyReports?"Reports.":"Customer invoices."}</h1></div><p>Invoice-only workspace · No payroll schedule required.</p><Invoices showReports={invoiceOnlyReports} key={JSON.stringify([displayName,companyName])} scope={JSON.stringify([displayName,companyName])} companyId={previewRun.companyId} companyName={companyName||`${displayName}’s workspace`} actor={displayName} header={companyHeader} onSaveCompanyHeader={saveCompanyHeader}/><footer className="workspace-footer">Developed by ETL GIS Consulting LLC</footer></main>;
+    if ((!schedule || !current) && invoiceMode) return <main className="invoice-only-shell">{storageNotice&&<p role="status">{storageNotice}</p>}<div className="invoice-only-heading"><BrandLogo/><button className="button button-secondary" onClick={()=>setInvoiceMode(false)}>Set up payroll</button></div>{setupNavigation}<div className="section-heading"><h1>{invoiceOnlyReports?"Reports.":"Customer invoices."}</h1></div><p>Invoice-only workspace · No payroll schedule required.</p><Invoices showReports={invoiceOnlyReports} key={JSON.stringify([displayName,companyName])} scope={JSON.stringify([displayName,companyName])} companyId={previewRun.companyId} companyName={companyName||`${displayName}’s workspace`} actor={displayName} header={companyHeader} onSaveCompanyHeader={saveCompanyHeader}/><footer className="workspace-footer">Developed by ETL GIS Consulting LLC</footer></main>;
     if (!schedule || !current) return <div className="period-setup-shell">{setupNavigation}<div className="panel invoice-entry"><div><strong>Ready to bill a customer?</strong><p>Use invoicing without setting up payroll.</p></div><button className="button button-secondary" onClick={()=>{setInvoiceOnlyReports(false);setInvoiceMode(true);}}>Open invoices</button></div>{storageNotice && <p role="status">{storageNotice}</p>}<PayPeriodSetup onSave={next => {
         try { localStorage.setItem(scheduleKey, JSON.stringify({ ...next, workingStart: next.start })); setStorageNotice(""); }
         catch { setStorageNotice("Browser storage is unavailable. This schedule will reset on refresh."); }
@@ -131,7 +148,7 @@ export default function Workspace({ displayName, companyName }: { displayName: s
         try { localStorage.setItem(scheduleKey, JSON.stringify({ ...schedule, workingStart: period.start })); setStorageNotice(""); }
         catch { setStorageNotice("Browser storage is unavailable. Your selected period will reset on refresh."); }
     }
-    return <><section hidden={invoiceMode} className="period-banner" aria-label="Pay schedule"><strong>Working period: {formatPeriod(run)}</strong><span>{schedule.timeZone} · Repeats every {Math.round((Date.parse(schedule.end) - Date.parse(schedule.start)) / 86400000) + 1} days</span>{storageNotice && <p role="status">{storageNotice}</p>}
+    return <>{invoiceMode&&storageNotice&&<p role="status">{storageNotice}</p>}<section hidden={invoiceMode} className="period-banner" aria-label="Pay schedule"><strong>Working period: {formatPeriod(run)}</strong><span>{schedule.timeZone} · Repeats every {Math.round((Date.parse(schedule.end) - Date.parse(schedule.start)) / 86400000) + 1} days</span>{storageNotice && <p role="status">{storageNotice}</p>}
       <label>Payroll period<select aria-label="Payroll period" value={run.payPeriodId} onChange={event => { const chosen = options.get(event.target.value); if (chosen) selectPeriod(chosen); }}>{Array.from(options.values()).sort((a, b) => a.start.localeCompare(b.start)).map(period => <option key={period.payPeriodId} value={period.payPeriodId}>{formatPeriod(period)}{period.payPeriodId === run.payPeriodId ? " · working" : period.payPeriodId === current.payPeriodId ? " · current by date" : ""}</option>)}</select></label>
       <button type="button" className="button button-secondary" onClick={() => selectPeriod(next)}>Open next period</button>
       <ExhibitReset onReset={resetExhibit} />
