@@ -1,5 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
+import { mailboxSourceLink } from "../../mailbox-links.ts";
+import type { MailboxProvider } from "../../mailbox-links.ts";
 import { DocumentFieldsSchema, documentIssues } from "../../document-import.ts";
 import type { Sql } from "./database.ts";
 import { seal, unseal, digest } from "./crypto.ts";
@@ -19,6 +21,7 @@ export type Mailbox = {
   credentials: string;
   checkpoint: Checkpoint;
   active: boolean;
+  provider?: MailboxProvider;
 };
 export async function event(
   sql: Sql,
@@ -124,7 +127,7 @@ export async function recordSource(
     `gmail-source:${box.company_id}:${id}`,
   );
   const inserted = await sql.query(
-    "INSERT INTO incoming_documents(id,company_id,mailbox_id,message_id,source_name,sha256,source_encrypted,fields,status,issues,received_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) ON CONFLICT(company_id,sha256) DO NOTHING RETURNING id",
+    "INSERT INTO incoming_documents(id,company_id,mailbox_id,message_id,source_name,sha256,source_encrypted,fields,status,issues,received_at,source_provider,source_url) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) ON CONFLICT(company_id,sha256) DO NOTHING RETURNING id",
     [
       id,
       box.company_id,
@@ -137,6 +140,13 @@ export async function recordSource(
       issues.length ? "EXCEPTION" : "RECORDED",
       issues,
       source.receivedAt,
+      box.provider ?? "GMAIL",
+      mailboxSourceLink(
+        box.provider ?? "GMAIL",
+        box.email,
+        messageId,
+        source.sourceUrl,
+      ),
     ],
   );
   if (!inserted.rows.length) return false;

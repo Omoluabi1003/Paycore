@@ -1,15 +1,17 @@
-import { gmailConfiguration } from "../../../../lib/server/gmail/config";
+import { mailboxAutomationConfiguration } from "../../../../lib/server/gmail/config";
 import { auth0Configured } from "../../../../lib/server/auth0";
 import {
   companies,
   apiError,
   companyAccess,
 } from "../../../../lib/server/gmail/access";
+import { companyIdentity } from "../../../../lib/company-identity";
+import { discoverMailboxProvider } from "../../../../lib/server/mailbox-provider";
 import { scoped } from "../../../../lib/server/gmail/database";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
-  const configuration = gmailConfiguration();
+  const configuration = mailboxAutomationConfiguration();
   if (!auth0Configured() || !process.env.DATABASE_URL)
     return Response.json(
       {
@@ -43,14 +45,23 @@ export async function GET(request: Request) {
       async (sql) =>
         (
           await sql.query(
-            "SELECT id,email,active,last_synced_at,last_error,checkpoint->>'phase' AS phase FROM gmail_mailboxes WHERE company_id=$1 ORDER BY connected_at DESC",
+            "SELECT id,email,provider,active,last_synced_at,last_error,checkpoint->>'phase' AS phase FROM gmail_mailboxes WHERE company_id=$1 ORDER BY connected_at DESC",
             [company],
           )
         ).rows,
     );
+    const contact = companyIdentity(
+      available.find((row) => row.company_id === company)?.company_name ?? "",
+    )?.header.email;
+    const recommendedProvider = contact
+      ? await discoverMailboxProvider(contact)
+      : "UNKNOWN";
     return Response.json(
       {
         configured: true,
+        providers: configuration.providers,
+        recommendedProvider,
+        contactEmail: contact,
         automationReady: configuration.ready,
         missing: configuration.missing,
         companyId: company,

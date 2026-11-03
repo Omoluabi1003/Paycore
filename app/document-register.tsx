@@ -1,11 +1,11 @@
 "use client";
-import GmailWorkspace from "./gmail-workspace";
+import MailboxWorkspace from "./mailbox-workspace";
 export default function DocumentRegister({
   exceptions = false,
 }: {
   exceptions?: boolean;
 }) {
   return (
-    <GmailWorkspace compact view={exceptions ? "exceptions" : "activity"} />
+    <MailboxWorkspace compact view={exceptions ? "exceptions" : "activity"} />
   );
 }

@@ -56,6 +56,7 @@ async function database() {
       "utf8",
     ),
   );
+  await db.exec(await fs.readFile(new URL("../db/migrations/003_mailbox_providers.sql",import.meta.url),"utf8"));
   await db.query("INSERT INTO workspaces(id) VALUES($1),($2)", [
     company,
     "other-company",

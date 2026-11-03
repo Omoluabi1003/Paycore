@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { BrandLogo } from "../brand";
-import GmailWorkspace from "../gmail-workspace";
+import MailboxWorkspace from "../mailbox-workspace";
 export default function ScanPage() {
   return (
     <main className="document-page">
@@ -15,11 +15,11 @@ export default function ScanPage() {
       </header>
       <h1>Your inbox. Organized automatically.</h1>
       <p>
-        Connect Gmail once. PayCore finds invoices and receipts, extracts
-        billing details, and records them without manual uploads or routine
-        approval.
+        Connect your business mailbox once. PayCore finds invoices and receipts,
+        extracts billing details, and records them without manual uploads or
+        routine approval.
       </p>
-      <GmailWorkspace />
+      <MailboxWorkspace />
       <footer className="document-footer">
         Developed by <strong>ETL GIS Consulting LLC</strong>
       </footer>
