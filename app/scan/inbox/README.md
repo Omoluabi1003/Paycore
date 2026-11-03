@@ -1,5 +1,3 @@
-# Scan Inbox preview
+# Scan Inbox
 
-This route currently renders fictional queue data to establish the operator experience before production storage, OCR and durable jobs are connected.
-
-Do not replace the safety language with claims that files are uploaded, stored, scanned or committed in production until those services are actually connected and verified.
+This route now lists actual browser-local incoming document reviews and history, scoped to the active workspace profile. It no longer renders fictional queue rows. See `docs/DOCUMENT-IMPORT.md` for extraction, review, persistence and production limitations.

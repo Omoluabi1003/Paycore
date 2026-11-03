@@ -1,6 +1,8 @@
 # Route map
 
-- `/scan` starts or reviews a scan preview.
-- `/scan/inbox` shows scan work by state.
+- `/scan`: upload and review a real incoming invoice or receipt.
+- `/scan?document=<id>`: reopen a local review or recorded document.
+- `/scan/inbox`: pending document reviews and local history/backup download.
+- `/scan/activity`: recorded incoming documents, also shown in the existing Activity Register.
 
-Future production routes should keep review and commit actions authorization-protected and server-side. A URL route must never be treated as an authorization boundary.
+These are browser-local records, not secure account or tenant boundaries. Production private-data routes will require authenticated server-side membership and authorization.

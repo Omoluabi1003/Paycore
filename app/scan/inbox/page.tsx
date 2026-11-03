@@ -1,26 +1,7 @@
-import Link from "next/link";
-import { BrandLogo } from "../../brand";
-import "./scan-inbox.css";
-
-const scans = [
-  { name: "Loads_Oct_19.xlsx", meta: "142 records · $183,420.00", state: "Ready", note: "Reconciled and ready for specialist review", tone: "ready" },
-  { name: "Fuel_Report_1021.pdf", meta: "38 records · 3 matches needed", state: "Needs review", note: "Contractor matching requires attention", tone: "review" },
-  { name: "September_Settlements.pdf", meta: "74 pages", state: "Scanning", note: "Reading source pages and checking totals", tone: "scanning" },
-  { name: "Loads_Oct_12.csv", meta: "126 records", state: "Completed", note: "Approved scan record", tone: "complete" },
-];
-
-function BackgroundPhoto(){return <div className="inbox-photo" aria-hidden="true"><div className="photo-desk"><div className="photo-laptop"><span className="photo-bar"/><span/><span/><span/></div><div className="photo-paper paper-a"><b>PAYROLL</b><i/><i/><i/><strong>$183,420</strong></div><div className="photo-paper paper-b"><b>LOAD REPORT</b><i/><i/><i/><i/></div><div className="photo-phone"><span/><span/><span/></div><div className="photo-hand"/></div></div>}
-
-export default function ScanInboxPage() {
-  return <main className="inbox-page">
-    <BackgroundPhoto/><div className="inbox-grid" aria-hidden="true"/><div className="inbox-orb inbox-orb-a" aria-hidden="true"/><div className="inbox-orb inbox-orb-b" aria-hidden="true"/>
-    <div className="inbox-shell">
-      <header className="inbox-header"><Link href="/" className="inbox-brand" aria-label="PayCore workspace home"><BrandLogo /></Link><nav aria-label="Scan workspace"><Link href="/">Workspace</Link><Link href="/scan">New scan</Link><span>Scan inbox</span></nav></header>
-      <section className="inbox-hero"><div><p className="inbox-kicker">PAYCORE SCAN</p><h1>Your scan inbox.</h1><p>A focused command center for documents entering payroll. See what is ready, isolate what needs attention, and move only verified data forward.</p><div className="hero-proof"><span>4 documents</span><span>1 review item</span><span>0 silent guesses</span></div></div><Link href="/scan" className="inbox-cta">Scan a document <b>↗</b></Link></section>
-      <section className="inbox-stats">{[["4","In workspace","Documents currently moving through Scan"],["1","Ready","Reconciled and ready to review"],["1","Needs review","One decision requires a specialist"],["0","Silent guesses","Ambiguity never moves forward unseen"]].map(([value,label,copy])=><article key={label}><small>{label}</small><strong>{value}</strong><p>{copy}</p></article>)}</section>
-      <section className="inbox-queue"><div className="queue-heading"><div><p className="inbox-kicker">DOCUMENT FLOW</p><strong>Payroll scans</strong></div><span>LIVE WORKSPACE · SPECIALIST CONTROLLED</span></div>{scans.map((scan,index)=><article className="scan-row" key={scan.name}><div className="scan-file"><span className="file-icon">▤</span><div><strong>{scan.name}</strong><small>{scan.meta}</small></div></div><div><span className={`status ${scan.tone}`}><i/>{scan.state}</span></div><p>{scan.note}</p><span className="row-action">{scan.tone==="review"?"Review →":scan.tone==="ready"?"Open →":"View →"}</span><span className="row-index">0{index+1}</span></article>)}</section>
-      <section className="inbox-controls"><article><small>CONTROL</small><h2>Nothing posts from the inbox.</h2><p>A scan must be verified, reconciled and explicitly approved before it can create payroll activity.</p></article><article><small>TRACEABILITY</small><h2>Every value keeps its evidence.</h2><p>Document, source location, extracted value, review decision and transaction lineage stay connected.</p></article></section>
-      <footer className="inbox-developer-footer">Developed by <strong>ETL GIS Consulting LLC</strong></footer>
-    </div>
-  </main>;
-}
+"use client";
+import Link from 'next/link';
+import {BrandLogo} from '../../brand';
+import DocumentRegister from '../../document-register';
+import {useDocumentBook} from '../../use-document-book';
+import './scan-inbox.css';
+export default function ScanInboxPage(){const {book,scope,error,ready}=useDocumentBook();return <main className="document-page"><header className="scan-topbar"><Link href="/" aria-label="PayCore home"><BrandLogo/></Link><nav><Link href="/scan">Import document</Link> · <Link href="/scan/activity">Activity Register</Link></nav></header><h1>Your document inbox.</h1><p>Check incoming invoices and receipts before recording them. No payroll activity or payments are created here.</p>{error&&<p role="alert">{error}</p>}<DocumentRegister exceptions/>{ready&&scope&&!error&&<section className="panel"><h2>Document history</h2><button type="button" className="button button-secondary" onClick={()=>{const blob=new Blob([JSON.stringify(book,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob),anchor=document.createElement('a');anchor.href=url;anchor.download='PayCore-incoming-document-records.json';anchor.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}}>Download records backup</button><ul>{book.documents.map(item=><li key={item.id}><Link href={`/scan?document=${encodeURIComponent(item.id)}`}>{item.source.name}</Link> · {item.status.toLowerCase()}</li>)}</ul>{!book.documents.length&&<p>Your inbox is empty. <Link href="/scan">Import your first document.</Link></p>}</section>}<footer className="document-footer">Local workspace · Developed by ETL GIS Consulting LLC</footer></main>}
