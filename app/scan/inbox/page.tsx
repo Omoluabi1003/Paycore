@@ -1,7 +1,27 @@
-"use client";
-import Link from 'next/link';
-import {BrandLogo} from '../../brand';
-import DocumentRegister from '../../document-register';
-import {useDocumentBook} from '../../use-document-book';
-import './scan-inbox.css';
-export default function ScanInboxPage(){const {book,scope,error,ready}=useDocumentBook();return <main className="document-page"><header className="scan-topbar"><Link href="/" aria-label="PayCore home"><BrandLogo/></Link><nav><Link href="/scan">Try sample</Link> · <Link href="/scan/activity">Activity Register</Link></nav></header><h1>Your sample document inbox.</h1><p>Fictional samples only. Private invoice imports require secure accounts and shared storage. No payroll activity or payments are created here.</p>{error&&<p role="alert">{error}</p>}<DocumentRegister exceptions/>{ready&&scope&&!error&&<section className="panel"><h2>Document history</h2><button type="button" className="button button-secondary" onClick={()=>{const blob=new Blob([JSON.stringify(book,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob),anchor=document.createElement('a');anchor.href=url;anchor.download='PayCore-incoming-document-records.json';anchor.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}}>Download records backup</button><ul>{book.documents.map(item=><li key={item.id}><Link href={`/scan?document=${encodeURIComponent(item.id)}`}>{item.source.name}</Link> · {item.status.toLowerCase()}</li>)}</ul>{!book.documents.length&&<p>Your inbox is empty. <Link href="/scan">Import your first document.</Link></p>}</section>}<footer className="document-footer">Local workspace · Developed by ETL GIS Consulting LLC</footer></main>}
+import Link from "next/link";
+import { BrandLogo } from "../../brand";
+import GmailWorkspace from "../../gmail-workspace";
+export default function ScanInboxPage() {
+  return (
+    <main className="document-page">
+      <header className="document-heading">
+        <Link href="/" aria-label="PayCore home">
+          <BrandLogo />
+        </Link>
+        <nav>
+          <Link href="/scan">Gmail connection</Link> ·{" "}
+          <Link href="/scan/activity">Activity Register</Link>
+        </nav>
+      </header>
+      <h1>Your billing inbox.</h1>
+      <p>
+        Recorded invoices and receipts flow into PayCore automatically. Only
+        extraction issues appear below.
+      </p>
+      <GmailWorkspace view="exceptions" />
+      <footer className="document-footer">
+        Developed by ETL GIS Consulting LLC
+      </footer>
+    </main>
+  );
+}

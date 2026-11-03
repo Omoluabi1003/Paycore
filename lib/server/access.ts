@@ -2,14 +2,14 @@ import { z } from "zod";
 
 export const roles = ["OWNER_ADMIN", "PAYROLL_SPECIALIST", "PAYROLL_MANAGER", "APPROVER", "FINANCE", "AUDITOR", "CONTRACTOR"] as const;
 export type Role = typeof roles[number];
-export type Permission = "company.configure" | "contractor.read" | "contractor.write" | "payroll.prepare" | "payroll.read" | "payroll.approve" | "ledger.read" | "ledger.post" | "audit.read" | "portal.read";
+export type Permission = "documents.read" | "documents.connect" | "company.configure" | "contractor.read" | "contractor.write" | "payroll.prepare" | "payroll.read" | "payroll.approve" | "ledger.read" | "ledger.post" | "audit.read" | "portal.read";
 const grants: Record<Role, readonly Permission[]> = {
-  OWNER_ADMIN: ["company.configure", "contractor.read", "contractor.write", "payroll.read", "ledger.read", "audit.read"],
-  PAYROLL_SPECIALIST: ["contractor.read", "contractor.write", "payroll.prepare", "payroll.read", "ledger.read"],
-  PAYROLL_MANAGER: ["contractor.read", "contractor.write", "payroll.prepare", "payroll.read", "ledger.read", "ledger.post", "audit.read"],
+  OWNER_ADMIN: ["documents.read", "documents.connect","company.configure", "contractor.read", "contractor.write", "payroll.read", "ledger.read", "audit.read"],
+  PAYROLL_SPECIALIST: ["documents.read","contractor.read", "contractor.write", "payroll.prepare", "payroll.read", "ledger.read"],
+  PAYROLL_MANAGER: ["documents.read","contractor.read", "contractor.write", "payroll.prepare", "payroll.read", "ledger.read", "ledger.post", "audit.read"],
   APPROVER: ["payroll.read", "payroll.approve", "ledger.read", "audit.read"],
-  FINANCE: ["payroll.read", "ledger.read", "ledger.post"],
-  AUDITOR: ["contractor.read", "payroll.read", "ledger.read", "audit.read"],
+  FINANCE: ["documents.read", "documents.connect","payroll.read", "ledger.read", "ledger.post"],
+  AUDITOR: ["documents.read","contractor.read", "payroll.read", "ledger.read", "audit.read"],
   CONTRACTOR: ["portal.read"],
 };
 const identifier = z.string().trim().min(1).max(128);

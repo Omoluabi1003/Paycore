@@ -1,0 +1,31 @@
+name: Gmail document sync
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: paycore-gmail-sync
+  cancel-in-progress: false
+jobs:
+  synchronize:
+    if: vars.PAYCORE_GMAIL_SCHEDULER_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Invoke the authorized PayCore mailbox worker
+        env:
+          PAYCORE_APP_URL: ${{ vars.PAYCORE_APP_URL }}
+          PAYCORE_CRON_SECRET: ${{ secrets.PAYCORE_GMAIL_CRON_SECRET }}
+        run: |
+          test -n "$PAYCORE_CRON_SECRET" || { echo 'Missing scheduler secret'; exit 1; }
+          case "$PAYCORE_APP_URL" in
+            https://*) ;;
+            *) echo 'Set the HTTPS PayCore origin'; exit 1 ;;
+          esac
+          status="$(curl --fail --silent --show-error --max-time 295 \
+            --output /dev/null --write-out '%{http_code}' \
+            --header "Authorization: Bearer $PAYCORE_CRON_SECRET" \
+            "${PAYCORE_APP_URL%/}/api/cron/gmail-sync")"
+          test "$status" = '200' || { echo "Scheduler returned HTTP $status"; exit 1; }

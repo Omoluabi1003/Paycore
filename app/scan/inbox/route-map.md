@@ -1,10 +1,10 @@
-# Route map
+# Automatic inbox tracking routes
 
-- `/scan`: extraction and review of supplied fictional samples; private file selection is disabled.
-- `/scan?document=<id>`: reopen a sample review/record.
-- `/scan/inbox`: pending sample reviews, history and backup download.
-- `/scan/activity`: recorded samples, also shown in the Activity Register.
-- `/sample-invoice.pdf`: fixed public fictional PDF fixture, with no workspace input.
-- `/api/document-access`: fail-closed private-import access status (HTTP 503).
+- `/scan`: Gmail connection and automatic-tracking status.
+- `/scan/inbox`: extraction exceptions.
+- `/scan/activity`: automatically recorded incoming documents.
+- `/api/gmail/status`, `/api/gmail/documents`: verified Auth0 session plus live company membership.
+- `/api/gmail/connect`, `/api/gmail/callback`, `/api/gmail/disconnect`: authorized OAuth lifecycle.
+- `/api/cron/gmail-sync`: secret-authenticated background scanning and extraction.
 
-Profile names and sample routes are not authorization boundaries. Every future private-data read and write requires authenticated server-side company membership checks.
+Private records live in the database, not localStorage. These routes do not accept browser profile claims as identity.

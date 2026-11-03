@@ -1,3 +1,3 @@
-# Scan Inbox
+# Gmail billing inbox
 
-Lists actual browser-local **fictional sample** reviews and history. Private imports are disabled pending secure backend access and storage. The old invented queue rows are removed. See `docs/DOCUMENT-IMPORT.md`.
+Shows authenticated company mailbox exceptions from the private PostgreSQL repository. Automatic records appear in Activity Register. No fictional queue, manual upload or browser-profile authorization is used. Setup and operation: `docs/DOCUMENT-IMPORT.md`.
