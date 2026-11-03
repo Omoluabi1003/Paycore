@@ -14,3 +14,7 @@ test('single-record CSV maps billing columns and preserves quoted vendor address
 test('CSV rejects multi-document, duplicate-header and malformed input rather than silently omitting rows',()=>{for(const text of ['vendor,reference\na,b\nc,d','vendor,vendor\na,b','vendor,reference\n"unfinished,b','vendor,reference\na'])assert.throws(()=>extractDocumentCsv(text));});
 
 test('freight pickup labels do not override the invoice issuer as vendor',()=>{assert.equal(extractDocumentFields('Synthetic Vendor LLC\nInvoice #: INV-1\nDate: 2026-11-03\nFrom: Synthetic Pickup\nTotal cost: $1400.00').fields.vendor,'Synthetic Vendor LLC');});
+
+test('CSV preserves multiline cells and references with spaces without interpreting embedded labels',()=>{const result=extractDocumentCsv('vendor,reference,date,total,address\nSynthetic Vendor,Invoice 123,2026-11-03,10.00,"100 Example Road\nSuite 200\nPhone: not a phone field"');assert.equal(result.fields.reference,'Invoice 123');assert.equal(result.fields.address,'100 Example Road\nSuite 200\nPhone: not a phone field');assert.equal(result.fields.phone,'');assert.deepEqual(documentIssues(result.fields),[]);});
+
+test('sample collections do not accept a private-document mode',()=>{const book=emptyDocumentBook(scope);assert.equal(book.mode,'SAMPLE');assert.throws(()=>decodeDocumentBook(JSON.stringify({...book,mode:'PRIVATE'}),scope));});

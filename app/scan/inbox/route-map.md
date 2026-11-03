@@ -1,8 +1,10 @@
 # Route map
 
-- `/scan`: upload and review a real incoming invoice or receipt.
-- `/scan?document=<id>`: reopen a local review or recorded document.
-- `/scan/inbox`: pending document reviews and local history/backup download.
-- `/scan/activity`: recorded incoming documents, also shown in the existing Activity Register.
+- `/scan`: extraction and review of supplied fictional samples; private file selection is disabled.
+- `/scan?document=<id>`: reopen a sample review/record.
+- `/scan/inbox`: pending sample reviews, history and backup download.
+- `/scan/activity`: recorded samples, also shown in the Activity Register.
+- `/sample-invoice.pdf`: fixed public fictional PDF fixture, with no workspace input.
+- `/api/document-access`: fail-closed private-import access status (HTTP 503).
 
-These are browser-local records, not secure account or tenant boundaries. Production private-data routes will require authenticated server-side membership and authorization.
+Profile names and sample routes are not authorization boundaries. Every future private-data read and write requires authenticated server-side company membership checks.

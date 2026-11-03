@@ -1,3 +1,3 @@
 # Scan Inbox
 
-This route now lists actual browser-local incoming document reviews and history, scoped to the active workspace profile. It no longer renders fictional queue rows. See `docs/DOCUMENT-IMPORT.md` for extraction, review, persistence and production limitations.
+Lists actual browser-local **fictional sample** reviews and history. Private imports are disabled pending secure backend access and storage. The old invented queue rows are removed. See `docs/DOCUMENT-IMPORT.md`.
