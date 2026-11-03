@@ -1,4 +1,5 @@
 "use client";
+import {initializeCompanyIdentity,companyIdentityRevisionKey} from "../lib/company-identity";
 import Link from "next/link";
 import {companySettingsKey,encodeCompanySettings,decodeCompanySettings,reusableCompanyHeader,hasCompanyHeader} from "../lib/company-settings";
 import { useEffect, useRef, useState } from "react";
@@ -78,7 +79,16 @@ export default function Workspace({ displayName, companyName }: { displayName: s
     const [journeyNotice, setJourneyNotice] = useState("");
     const drafts = useRef(new Map<string, { run: PayrollRun; draft: PeriodDraft }>());
     useEffect(() => {
-        try { const settings=localStorage.getItem(companySettingsKey(companyScope));if(settings)setCompanyHeader(decodeCompanySettings(settings,companyScope)); }catch{setStorageNotice("Saved company settings could not be read. Recheck Company settings before creating documents.");}
+        try {
+            const settings=localStorage.getItem(companySettingsKey(companyScope));
+            const saved=settings?decodeCompanySettings(settings,companyScope):emptyStatementHeader();
+            const initialized=initializeCompanyIdentity(companyName,saved,settings?localStorage.getItem(companyIdentityRevisionKey(companyScope)):null);
+            if(initialized.revision){
+                if(initialized.changed||!settings)localStorage.setItem(companySettingsKey(companyScope),encodeCompanySettings(companyScope,initialized.header));
+                localStorage.setItem(companyIdentityRevisionKey(companyScope),initialized.revision);
+            }
+            setCompanyHeader(initialized.header);
+        }catch{setStorageNotice("Saved company settings could not be read or saved. Recheck Company settings before creating documents.");}
         try {
             const saved = localStorage.getItem(scheduleKey);
             if (saved) {

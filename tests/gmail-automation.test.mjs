@@ -846,3 +846,5 @@ test("the company selector excludes approver-only and contractor memberships bef
     await db.close();
   }
 });
+
+test('Google connection hints the supplied contact only for a verified matching company membership',async()=>{process.env.GMAIL_ENCRYPTION_KEY=key;process.env.APP_BASE_URL='https://paycore.example.test';process.env.GOOGLE_CLIENT_ID='synthetic-client';const {db,transaction}=await database();try{const {MAK_COMPANY_IDENTITY:identity}=await import('../lib/company-identity.ts');const {beginGoogleConnect}=await import('../lib/server/gmail/oauth.ts');let url=new URL(await beginGoogleConnect(company,user,transaction));assert.equal(url.searchParams.has('login_hint'),false);await db.query('UPDATE document_company_memberships SET company_name=$1 WHERE company_id=$2',[identity.header.legalName,company]);url=new URL(await beginGoogleConnect(company,user,transaction));assert.equal(url.searchParams.get('login_hint'),identity.header.email);assert.equal(url.searchParams.get('scope'),GMAIL_SCOPE);}finally{await db.close();}});

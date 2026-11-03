@@ -1,3 +1,4 @@
+import {companyIdentity} from "../../company-identity.ts";
 import { randomBytes, randomUUID, createHash } from "node:crypto";
 import { applicationOrigin } from "./config.ts";
 import { scoped } from "./database.ts";
@@ -15,7 +16,7 @@ export async function beginGoogleConnect(
       JSON.stringify({ company, nonce: randomBytes(32).toString("base64url") }),
       "gmail-oauth-state",
     );
-  await transaction(company, user, async (sql) => {
+  const loginHint=await transaction(company, user, async (sql) => {
     await sql.query(
       "DELETE FROM gmail_oauth_states WHERE company_id=$1 AND expires_at<now()",
       [company],
@@ -29,6 +30,8 @@ export async function beginGoogleConnect(
         seal(verifier, `gmail-pkce:${company}:${user}`),
       ],
     );
+    const member=(await sql.query("SELECT company_name FROM document_company_memberships WHERE company_id=$1 AND user_id=$2 AND active=true",[company,user])).rows[0];
+    return member?companyIdentity(member.company_name)?.header.email:undefined;
   });
   const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
   url.search = new URLSearchParams({
@@ -42,6 +45,7 @@ export async function beginGoogleConnect(
     code_challenge: createHash("sha256").update(verifier).digest("base64url"),
     state,
   }).toString();
+  if(loginHint)url.searchParams.set("login_hint",loginHint);
   return url.toString();
 }
 export function stateCompany(state: string) {
