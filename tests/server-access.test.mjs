@@ -40,3 +40,5 @@ test('contractor portal scope cannot read other contractors or companies',async(
  assert.throws(()=>requireOwnContractor(access,'company-b','contractor-a',now),PermissionDenied);
  assert.throws(()=>requirePermission(access,'payroll.read',now),PermissionDenied);
 });
+
+test('mailbox connection permission is distinct from company document read access',async()=>{for(const role of ['OWNER_ADMIN','FINANCE']){const access=await resolveCompanyAccess(deps(session,{...member,roles:[role]}),'opaque','company-a',now);assert.doesNotThrow(()=>requirePermission(access,'documents.connect',now));}for(const role of ['AUDITOR','PAYROLL_SPECIALIST','PAYROLL_MANAGER']){const access=await resolveCompanyAccess(deps(session,{...member,roles:[role]}),'opaque','company-a',now);assert.doesNotThrow(()=>requirePermission(access,'documents.read',now));assert.throws(()=>requirePermission(access,'documents.connect',now),PermissionDenied);}const access=await resolveCompanyAccess(deps(session,{...member,roles:['CONTRACTOR']}),'opaque','company-a',now);assert.throws(()=>requirePermission(access,'documents.read',now),PermissionDenied);});
