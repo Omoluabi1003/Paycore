@@ -1,5 +1,21 @@
 # PayCore
 
+## Project at a glance
+
+| | |
+| --- | --- |
+| **Category** | Payroll and contractor settlement platform |
+| **Purpose** | Support payroll operations, document-driven intake, and controlled settlement workflows. |
+| **Primary audience** | Users, contributors, evaluators and potential implementation partners |
+| **Repository** | https://github.com/Omoluabi1003/Paycore |
+
+**Implementation boundary:** Identity, persistence and production financial integrations must be configured and validated before real payroll use.
+
+**How to read this documentation:** Start with the overview and product scope below, then follow the technical sections for architecture, local development, verification, deployment and roadmap. Where a feature is described as proposed, planned or experimental, do not interpret it as production-ready.
+
+---
+
+
 PayCore is a safety-first payroll and contractor settlement platform designed for nontechnical operators.
 
 ## Development and build verification
