@@ -1,3 +1,4 @@
+import { verifiedBrice } from "../microsoft/ownership.ts";
 import { auth0 } from "../auth0.ts";
 import { scoped } from "./database.ts";
 import { listDocumentMemberships } from "./repository.ts";
@@ -20,6 +21,7 @@ export async function authenticatedUser() {
     throw new ApiError(401, "Sign in to your secure PayCore account.");
   return {
     id: session.user.sub,
+    canManageMicrosoft: verifiedBrice(session.user),
     authenticatedAt: session.internal.createdAt * 1000,
   };
 }
@@ -87,4 +89,11 @@ export function apiError(error: unknown) {
     },
     { status, headers: { "Cache-Control": "no-store" } },
   );
+}
+
+export async function requireMicrosoftOwner() {
+  const user = await authenticatedUser();
+  if (!user.canManageMicrosoft)
+    throw new ApiError(403, "Only Brice’s verified account can manage this mailbox.");
+  return user;
 }

@@ -1,5 +1,5 @@
+import { verifyMicrosoftOwner, isBrice, BRICE_EMAIL } from "./ownership.ts";
 import { randomBytes, createHash } from "node:crypto";
-import { companyIdentity } from "../../company-identity.ts";
 import { scoped } from "../gmail/database.ts";
 import { seal, unseal, digest } from "../gmail/crypto.ts";
 import { applicationOrigin } from "../gmail/config.ts";
@@ -16,11 +16,12 @@ export async function beginMicrosoftConnect(
   transaction = scoped,
 ) {
   const verifier = randomBytes(32).toString("base64url");
+  const nonce = randomBytes(32).toString("base64url");
   const state = seal(
-    JSON.stringify({ company, nonce: randomBytes(32).toString("base64url") }),
+    JSON.stringify({ company, nonce }),
     "microsoft-oauth-state",
   );
-  const hint = await transaction(company, user, async (sql) => {
+  await transaction(company, user, async (sql) => {
     await sql.query(
       "DELETE FROM gmail_oauth_states WHERE company_id=$1 AND expires_at<now()",
       [company],
@@ -34,18 +35,10 @@ export async function beginMicrosoftConnect(
         seal(verifier, `microsoft-pkce:${company}:${user}`),
       ],
     );
-    const member = (
-      await sql.query(
-        "SELECT company_name FROM document_company_memberships WHERE company_id=$1 AND user_id=$2 AND active=true",
-        [company, user],
-      )
-    ).rows[0];
-    return member
-      ? companyIdentity(member.company_name)?.header.email
-      : undefined;
   });
   const url = new URL(`${microsoftAuthority()}/authorize`);
   url.search = new URLSearchParams({
+    nonce,
     client_id: process.env.MICROSOFT_CLIENT_ID ?? "",
     response_type: "code",
     response_mode: "query",
@@ -56,7 +49,7 @@ export async function beginMicrosoftConnect(
     code_challenge: createHash("sha256").update(verifier).digest("base64url"),
     state,
   }).toString();
-  if (hint) url.searchParams.set("login_hint", hint);
+  url.searchParams.set("login_hint", BRICE_EMAIL);
   return url.href;
 }
 export function microsoftStateCompany(state: string) {
@@ -75,6 +68,7 @@ export async function finishMicrosoftConnect(
     transaction: scoped,
     exchange: exchangeMicrosoftToken,
     profile: async (token: string) => new MicrosoftClient(token).profile(),
+    verifyOwner: verifyMicrosoftOwner,
   },
 ) {
   if (microsoftStateCompany(state) !== company)
@@ -108,7 +102,11 @@ export async function finishMicrosoftConnect(
       .map((value) => value.split("/").at(-1)?.toLowerCase()) ?? [];
   if (!scopes.includes("mail.read") || !scopes.includes("user.read"))
     throw Error("Microsoft read-only mailbox permission was not granted.");
+  const nonce = JSON.parse(unseal(state, "microsoft-oauth-state")).nonce;
+  const accountId = await dependencies.verifyOwner(token.id_token ?? "", nonce);
   const profile = await dependencies.profile(token.access_token);
+  if (!isBrice(profile.emailAddress) || profile.accountId.toLowerCase() !== accountId)
+    throw Error("Only Brice’s Microsoft mailbox can be connected.");
   return saveMailboxConnection(
     company,
     user,
@@ -116,5 +114,6 @@ export async function finishMicrosoftConnect(
     profile,
     token,
     dependencies.transaction,
+    accountId,
   );
 }

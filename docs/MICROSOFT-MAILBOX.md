@@ -32,3 +32,32 @@ The public provider hint uses a bounded, cached MX lookup for the known company 
 Unit/integration tests use actual PostgreSQL semantics through PGlite and mocked Graph responses. They cover schema preservation, provider isolation, delta pagination, file attachment extraction, automatic recording, immutable IDs, token rotation, OAuth state replay/cross-user/cross-provider rejection and continuation/source URL restrictions. Live Microsoft consent, tenant licensing/admin policy and production mailbox data remain unverified until deployment setup is complete.
 
 Rollback: disable the scheduler first and disconnect/remove Microsoft scan jobs before reverting to a Gmail-only worker. Do not run old Gmail-only worker code against active Microsoft credentials. Retain source records, provider metadata and the encryption key. The schema additions are backward-compatible with existing Gmail rows; keep them during a code rollback rather than dropping originals or audit data.
+
+## Brice-only mailbox management
+
+Microsoft connection management is restricted to `brice@makfreightservices.com`.
+The PayCore Auth0 session must contain that verified email (`email_verified: true`),
+and an active company membership with OWNER_ADMIN or FINANCE remains required.
+Other company members can retain their permitted document access; they cannot
+connect, replace, or disconnect this Microsoft mailbox. Local company profiles,
+editable contact details, request headers and a Microsoft login hint do not grant access.
+
+Apply `db/migrations/004_mailbox_owner.sql` with the migration identity before deploying.
+The callback validates Microsoft's signed OpenID token, audience, nonce, expiry and
+MAK tenant `d2fad647-1619-4648-8d67-16a04f3c3646`, then matches its object ID to Graph
+`/me` and requires Brice's primary mailbox address. The Microsoft object ID and
+PayCore account subject are retained across disconnects. A different account cannot
+replace either binding. Account migration requires reviewed administrator recovery;
+there is no browser reset for this binding. Existing unbound Brice connections must
+be reauthorized before scanning resumes. Google cannot claim Brice's address.
+
+Brice signs in and consents on Microsoft-hosted pages. PayCore must never collect
+his Microsoft password. Entra app registration, secure server credentials, existing
+Auth0/database/encryption configuration, and mailbox consent are still required.
+To use Microsoft credentials for the PayCore sign-in too, configure the approved
+Microsoft enterprise connection in Auth0 Universal Login and ensure it supplies a
+trusted verified email claim; do not manufacture verification from a typed address.
+No live mailbox has been connected or read during implementation.
+
+Rollback: disable mailbox scheduling before reverting this restriction; retaining
+migration 004 is safe. Do not silently revert to unrestricted management.

@@ -1,3 +1,5 @@
+import { requireMicrosoftOwner } from "../../../../lib/server/gmail/access";
+import { isBrice } from "../../../../lib/server/microsoft/ownership";
 import {
   companyAccess,
   apiError,
@@ -16,6 +18,12 @@ export async function POST(request: Request) {
       mailbox = url.searchParams.get("mailboxId") ?? "";
     const access = await companyAccess(company, "documents.connect");
     await scoped(company, access.userId, async (sql) => {
+      const box = (await sql.query("SELECT provider,email,connected_by FROM gmail_mailboxes WHERE company_id=$1 AND id=$2 FOR UPDATE", [company, mailbox])).rows[0];
+      if (!box) throw new ApiError(404, "Mailbox not found.");
+      if (box.provider === "MICROSOFT" || isBrice(box.email)) {
+        await requireMicrosoftOwner();
+        if (box.connected_by !== access.userId) throw new ApiError(403, "Only the connected account can disconnect this mailbox.");
+      }
       const found = (
         await sql.query(
           "UPDATE gmail_mailboxes SET active=false,credentials='' WHERE company_id=$1 AND id=$2 RETURNING id",

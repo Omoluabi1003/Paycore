@@ -18,6 +18,8 @@ export type Mailbox = {
   id: string;
   company_id: string;
   email: string;
+  connected_by: string;
+  microsoft_owner_id?: string;
   credentials: string;
   checkpoint: Checkpoint;
   active: boolean;

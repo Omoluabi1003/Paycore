@@ -1,3 +1,4 @@
+import { isBrice } from "../microsoft/ownership.ts";
 import { randomUUID } from "node:crypto";
 import { scoped } from "./database.ts";
 import { seal } from "./crypto.ts";
@@ -11,7 +12,11 @@ export async function saveMailboxConnection(
   profile: { emailAddress: string; historyId: string },
   token: { access_token: string; refresh_token?: string; expires_in: number },
   transaction = scoped,
+  microsoftOwnerId?: string,
 ) {
+  if ((provider === "MICROSOFT" && (!isBrice(profile.emailAddress) || !microsoftOwnerId)) ||
+      (provider !== "MICROSOFT" && isBrice(profile.emailAddress)))
+    throw Error("This mailbox requires Brice’s Microsoft account.");
   return transaction(company, user, async (sql) => {
     const member = (
       await sql.query(
@@ -34,6 +39,9 @@ export async function saveMailboxConnection(
         [company, profile.emailAddress.toLowerCase()],
       )
     ).rows[0] as Mailbox | undefined;
+    if (prior && provider === "MICROSOFT" &&
+        (prior.connected_by !== user || (prior.microsoft_owner_id && prior.microsoft_owner_id !== microsoftOwnerId)))
+      throw Error("Mailbox ownership does not match the authorized account.");
     const id = prior?.id ?? randomUUID();
     const refresh =
       token.refresh_token ||
@@ -63,6 +71,10 @@ export async function saveMailboxConnection(
         JSON.stringify({ phase: "BACKFILL", anchor: profile.historyId }),
         provider,
       ],
+    );
+    if (provider === "MICROSOFT") await sql.query(
+      "UPDATE gmail_mailboxes SET microsoft_owner_id=$3 WHERE company_id=$1 AND id=$2",
+      [company, id, microsoftOwnerId],
     );
     await sql.query(
       "INSERT INTO gmail_sync_jobs(mailbox_id,company_id) VALUES($1,$2) ON CONFLICT(mailbox_id) DO UPDATE SET next_run_at=now(),lease_owner=NULL,lease_until=NULL",

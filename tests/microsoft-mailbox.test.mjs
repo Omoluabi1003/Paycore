@@ -36,6 +36,7 @@ async function database() {
     "001_contractors",
     "002_gmail_documents",
     "003_mailbox_providers",
+    "004_mailbox_owner",
   ])
     await db.exec(
       await fs.readFile(
@@ -170,6 +171,7 @@ test("Microsoft Graph inbox delta pages use immutable IDs, preserve the delta to
       const query = new URL(url).searchParams;
       if (path.endsWith("/me"))
         return Response.json({
+          id: "11111111-1111-1111-1111-111111111111",
           mail: "billing@example.test",
           userPrincipalName: "other@example.test",
         });
@@ -242,7 +244,7 @@ test("Microsoft mailbox contents flow automatically through the shared worker, d
       const parsed = new URL(url),
         path = parsed.pathname;
       if (path.endsWith("/me"))
-        return Response.json({ mail: "billing@example.test" });
+        return Response.json({ id: "11111111-1111-1111-1111-111111111111", mail: "billing@example.test" });
       if (path.endsWith("/mailFolders/inbox"))
         return Response.json({ id: "inbox-immutable" });
       if (path.endsWith("/messages/delta")) {
@@ -410,6 +412,7 @@ test("Microsoft OAuth has read-only delegated scopes, PKCE, owner binding and si
     );
     const dependencies = {
       transaction,
+      verifyOwner: async () => "11111111-1111-1111-1111-111111111111",
       exchange: async (params) => {
         assert.ok(params.code_verifier);
         assert.ok(params.redirect_uri.endsWith("/api/microsoft/callback"));
@@ -421,7 +424,8 @@ test("Microsoft OAuth has read-only delegated scopes, PKCE, owner binding and si
         };
       },
       profile: async () => ({
-        emailAddress: "new-ms@example.test",
+        emailAddress: "brice@makfreightservices.com",
+        accountId: "11111111-1111-1111-1111-111111111111",
         historyId: "microsoft-delta",
       }),
     };
@@ -445,7 +449,7 @@ test("Microsoft OAuth has read-only delegated scopes, PKCE, owner binding and si
     );
     const row = (
       await db.query("SELECT provider FROM gmail_mailboxes WHERE email=$1", [
-        "new-ms@example.test",
+        "brice@makfreightservices.com",
       ])
     ).rows[0];
     assert.equal(row.provider, "MICROSOFT");
@@ -557,6 +561,7 @@ test("a provider change preserves historical Gmail links and cannot reuse a Goog
     const { recordSource } = await import("../lib/server/gmail/repository.ts");
     const { extractBilling } = await import("../lib/server/gmail/extract.ts");
     await db.query("UPDATE gmail_mailboxes SET provider='GMAIL'");
+    await db.query("UPDATE gmail_mailboxes SET email=$1", ["brice@makfreightservices.com"]);
     const box = (await db.query("SELECT * FROM gmail_mailboxes")).rows[0],
       source = {
         name: "old-invoice.txt",
@@ -572,13 +577,15 @@ test("a provider change preserves historical Gmail links and cannot reuse a Goog
     );
     const dependencies = {
       transaction,
+      verifyOwner: async () => "11111111-1111-1111-1111-111111111111",
       exchange: async () => ({
         access_token: "ms-new",
         expires_in: 3600,
         scope: "User.Read Mail.Read",
       }),
       profile: async () => ({
-        emailAddress: "billing@example.test",
+        emailAddress: "brice@makfreightservices.com",
+        accountId: "11111111-1111-1111-1111-111111111111",
         historyId: "microsoft-delta",
       }),
     };
@@ -685,4 +692,60 @@ test("a message that disappears during fetching can still be imported when resto
   } finally {
     await db.close();
   }
+});
+
+test('Microsoft callback rejects a different mailbox or account object before storing credentials', async () => {
+  process.env.GMAIL_ENCRYPTION_KEY = key;
+  process.env.APP_BASE_URL = 'https://paycore.example.test';
+  const { db, transaction } = await database();
+  try {
+    for (const profile of [
+      { emailAddress: 'someone@makfreightservices.com', accountId: '11111111-1111-1111-1111-111111111111' },
+      { emailAddress: 'brice@makfreightservices.com', accountId: '22222222-2222-2222-2222-222222222222' },
+    ]) {
+      const state = new URL(await beginMicrosoftConnect(company, user, transaction)).searchParams.get('state');
+      await assert.rejects(() => finishMicrosoftConnect(company, user, state, 'synthetic-code', {
+        transaction,
+        exchange: async () => ({ access_token: 'synthetic-access', refresh_token: 'synthetic-refresh', expires_in: 3600, scope: 'User.Read Mail.Read' }),
+        profile: async () => ({ ...profile, historyId: 'microsoft-delta' }),
+        verifyOwner: async () => '11111111-1111-1111-1111-111111111111',
+      }), /Only Brice/);
+    }
+    assert.equal((await db.query('SELECT count(*)::int AS count FROM gmail_mailboxes')).rows[0].count, 1);
+    assert.equal((await db.query('SELECT email FROM gmail_mailboxes')).rows[0].email, 'billing@example.test');
+  } finally { await db.close(); }
+});
+
+test('Microsoft account binding survives disconnect and prevents replacement by a new identity', async () => {
+  const { saveMailboxConnection } = await import('../lib/server/gmail/connect-mailbox.ts');
+  process.env.GMAIL_ENCRYPTION_KEY = key;
+  const { db, transaction } = await database();
+  const profile = { emailAddress: 'brice@makfreightservices.com', historyId: 'microsoft-delta' };
+  const token = { access_token: 'synthetic', refresh_token: 'synthetic-refresh', expires_in: 3600 };
+  const objectId = '11111111-1111-1111-1111-111111111111';
+  try {
+    const id = await saveMailboxConnection(company, user, 'MICROSOFT', profile, token, transaction, objectId);
+    await db.query("UPDATE gmail_mailboxes SET active=false,credentials='' WHERE id=$1", [id]);
+    await assert.rejects(() => saveMailboxConnection(company, user, 'MICROSOFT', profile, token, transaction, '22222222-2222-2222-2222-222222222222'), /ownership/);
+    await db.query('INSERT INTO document_company_memberships(company_id,user_id,company_name,roles) VALUES($1,$2,$3,$4)', [company,'other-verified-subject','Synthetic Company',['FINANCE']]);
+    await assert.rejects(() => saveMailboxConnection(company, 'other-verified-subject', 'MICROSOFT', profile, token, transaction, objectId), /ownership/);
+    const row = (await db.query('SELECT active,credentials,microsoft_owner_id FROM gmail_mailboxes WHERE id=$1',[id])).rows[0];
+    assert.equal(row.active, false);
+    assert.equal(row.credentials, '');
+    assert.equal(row.microsoft_owner_id, objectId);
+    await saveMailboxConnection(company, user, 'MICROSOFT', profile, token, transaction, objectId);
+    assert.equal((await db.query('SELECT active FROM gmail_mailboxes WHERE id=$1',[id])).rows[0].active, true);
+  } finally { await db.close(); }
+});
+
+test('background scans refuse unbound Brice connections and mismatched Microsoft account identities', async () => {
+  process.env.GMAIL_ENCRYPTION_KEY = key;
+  const { db, transaction } = await database();
+  try {
+    await db.query('UPDATE gmail_mailboxes SET email=$1 WHERE id=$2', ['brice@makfreightservices.com', mailbox]);
+    await assert.rejects(() => syncMailbox(company, mailbox, owner, { transaction, client: () => { throw Error('Must not read mailbox'); } }), /owner verification/);
+    await db.query('UPDATE gmail_mailboxes SET microsoft_owner_id=$1 WHERE id=$2', ['11111111-1111-1111-1111-111111111111', mailbox]);
+    await assert.rejects(() => syncMailbox(company, mailbox, owner, { transaction, client: () => ({ profile: async () => ({ emailAddress: 'brice@makfreightservices.com', accountId: '22222222-2222-2222-2222-222222222222' }), inboxPage: () => { throw Error('Must not read messages'); } }) }), /ownership changed/);
+    assert.equal((await db.query('SELECT count(*)::int AS count FROM incoming_documents')).rows[0].count, 0);
+  } finally { await db.close(); }
 });

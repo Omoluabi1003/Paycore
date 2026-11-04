@@ -1,3 +1,4 @@
+import { requireMicrosoftOwner } from "../../../../lib/server/gmail/access";
 import {
   companyAccess,
   apiError,
@@ -16,6 +17,7 @@ export async function POST(request: Request) {
     if (request.headers.get("origin") !== applicationOrigin())
       throw new ApiError(403, "Open this action from PayCore.");
     const company = new URL(request.url).searchParams.get("companyId") ?? "";
+    await requireMicrosoftOwner();
     const access = await companyAccess(company, "documents.connect");
     return Response.redirect(
       await beginMicrosoftConnect(company, access.userId),

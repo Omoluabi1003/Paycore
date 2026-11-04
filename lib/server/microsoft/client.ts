@@ -7,7 +7,7 @@ import {
 } from "../gmail/client.ts";
 import { mailboxSourceLink } from "../../mailbox-links.ts";
 export const MICROSOFT_SCOPES =
-  "offline_access https://graph.microsoft.com/User.Read https://graph.microsoft.com/Mail.Read";
+  "openid profile email offline_access https://graph.microsoft.com/User.Read https://graph.microsoft.com/Mail.Read";
 export function microsoftAuthority() {
   const tenant = process.env.MICROSOFT_TENANT_ID || "organizations";
   if (!/^[A-Za-z0-9.-]+$/.test(tenant))
@@ -82,7 +82,7 @@ export class MicrosoftClient {
     const row = await this.get("/me?$select=id,mail,userPrincipalName");
     const emailAddress = z.email().parse(row.mail || row.userPrincipalName);
     await this.inbox();
-    return { emailAddress, historyId: "microsoft-delta" };
+    return { emailAddress, accountId: z.string().min(1).parse(row.id), historyId: "microsoft-delta" };
   }
   private async delta(cursor?: string) {
     const page = await this.get(

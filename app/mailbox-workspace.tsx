@@ -9,6 +9,7 @@ type Mailbox = {
   provider?: MailboxProvider;
   email: string;
   active: boolean;
+  canDisconnect?: boolean;
   last_synced_at: string | null;
   last_error: string | null;
   phase: string;
@@ -25,6 +26,7 @@ type Status = {
   companyId?: string;
   mailboxes?: Mailbox[];
   canConnect?: boolean;
+  canConnectMicrosoft?: boolean;
   error?: string;
 };
 type RecordRow = {
@@ -277,7 +279,7 @@ export default function MailboxWorkspace({
                       </p>
                     )}
                     {box.last_error && <p role="status">{box.last_error}</p>}
-                    {box.active && status.canConnect && (
+                    {box.active && box.canDisconnect && (
                       <button
                         type="button"
                         className="button button-secondary"
@@ -310,7 +312,7 @@ export default function MailboxWorkspace({
                       <button
                         className="button button-primary"
                         type="submit"
-                        disabled={!status.providers?.MICROSOFT.ready}
+                        disabled={!status.providers?.MICROSOFT.ready || !status.canConnectMicrosoft}
                       >
                         Connect Microsoft 365 / Outlook
                       </button>
@@ -333,6 +335,7 @@ export default function MailboxWorkspace({
                   )}
                 </div>
               )}
+              {!status.canConnectMicrosoft && <p>Only Brice’s verified account can manage the Microsoft connection.</p>}
               {status.recommendedProvider === "MICROSOFT" &&
                 !status.providers?.MICROSOFT.ready && (
                   <p>

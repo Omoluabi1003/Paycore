@@ -1,3 +1,4 @@
+import { isBrice } from "../microsoft/ownership.ts";
 import {
   MicrosoftClient,
   exchangeMicrosoftToken,
@@ -74,6 +75,8 @@ export async function syncMailbox(
       ).rows[0] as Mailbox,
   );
   if (!box) throw Error("Mailbox not active.");
+  if (isBrice(box.email) && (box.provider !== "MICROSOFT" || !box.microsoft_owner_id))
+    throw Error("Mailbox owner verification required. Reconnect Microsoft.");
   let token = credentials(box);
   if (token.expiresAt < deps.now() + 60000) {
     const refreshed = await deps.refresh(
@@ -91,6 +94,11 @@ export async function syncMailbox(
     await transaction((sql) => saveCredentials(sql, box, token));
   }
   const gmail = deps.client(token.accessToken, box.provider ?? "GMAIL");
+  if (isBrice(box.email)) {
+    const profile = await gmail.profile() as { emailAddress?: string; accountId?: string };
+    if (!isBrice(profile.emailAddress) || profile.accountId?.toLowerCase() !== box.microsoft_owner_id)
+      throw Error("Microsoft mailbox ownership changed. Reconnect Microsoft.");
+  }
   let checkpoint: Checkpoint = CheckpointSchema.parse(box.checkpoint);
   if (checkpoint.phase === "BACKFILL" && !checkpoint.anchor) {
     checkpoint = { ...checkpoint, anchor: (await gmail.profile()).historyId };

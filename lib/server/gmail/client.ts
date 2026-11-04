@@ -39,6 +39,7 @@ export async function googleJson(
 }
 export const TokenSchema = z.object({
   access_token: z.string().min(1),
+  id_token: z.string().optional(),
   refresh_token: z.string().optional(),
   expires_in: z.number().positive().max(86400),
   scope: z.string().optional(),
