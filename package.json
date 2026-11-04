@@ -20,6 +20,7 @@
     "@tesseract.js-data/eng": "1.0.0",
     "decimal.js": "10.6.0",
     "image-size": "2.0.4",
+    "jose": "6.2.15",
     "next": "15.5.28",
     "pdfjs-dist": "6.5.438",
     "pg": "8.23.1",

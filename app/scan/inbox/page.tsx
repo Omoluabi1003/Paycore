@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { BrandLogo } from "../../brand";
-import GmailWorkspace from "../../gmail-workspace";
+import MailboxWorkspace from "../../mailbox-workspace";
 export default function ScanInboxPage() {
   return (
     <main className="document-page">
@@ -9,7 +9,7 @@ export default function ScanInboxPage() {
           <BrandLogo />
         </Link>
         <nav>
-          <Link href="/scan">Gmail connection</Link> ·{" "}
+          <Link href="/scan">Mailbox connection</Link> ·{" "}
           <Link href="/scan/activity">Activity Register</Link>
         </nav>
       </header>
@@ -18,7 +18,7 @@ export default function ScanInboxPage() {
         Recorded invoices and receipts flow into PayCore automatically. Only
         extraction issues appear below.
       </p>
-      <GmailWorkspace view="exceptions" />
+      <MailboxWorkspace view="exceptions" />
       <footer className="document-footer">
         Developed by ETL GIS Consulting LLC
       </footer>

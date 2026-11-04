@@ -7,6 +7,7 @@ import {
 } from "../../document-import.ts";
 import type { DocumentFields } from "../../document-import.ts";
 export type MailSource = {
+  sourceUrl?:string;
   name: string;
   mime: string;
   bytes: Uint8Array;

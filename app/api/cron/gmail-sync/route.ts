@@ -1,5 +1,5 @@
 import { cronAuthorized } from "../../../../lib/server/gmail/crypto";
-import { gmailConfiguration } from "../../../../lib/server/gmail/config";
+import { mailboxAutomationConfiguration } from "../../../../lib/server/gmail/config";
 import { runGmailScheduler } from "../../../../lib/server/gmail/worker";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,7 +12,7 @@ export async function GET(request: Request) {
     )
   )
     return Response.json({ error: "Unauthorized" }, { status: 401 });
-  const configuration = gmailConfiguration();
+  const configuration = mailboxAutomationConfiguration();
   if (!configuration.ready)
     return Response.json(
       { active: false, missing: configuration.missing },

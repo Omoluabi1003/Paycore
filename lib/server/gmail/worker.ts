@@ -1,3 +1,10 @@
+import { isBrice } from "../microsoft/ownership.ts";
+import {
+  MicrosoftClient,
+  exchangeMicrosoftToken,
+} from "../microsoft/client.ts";
+import type { MailboxProvider } from "../../mailbox-links.ts";
+import type { MailboxClient } from "./client.ts";
 import { randomUUID } from "node:crypto";
 import { scoped, pool } from "./database.ts";
 import type { Sql } from "./database.ts";
@@ -23,15 +30,24 @@ import { digest } from "./crypto.ts";
 import { emptyDocumentFields } from "../../document-import.ts";
 export type WorkerDependencies = {
   transaction: typeof scoped;
-  refresh: typeof exchangeToken;
-  client: (token: string) => GmailClient;
+  refresh: (
+    parameters: Record<string, string>,
+    provider?: MailboxProvider,
+  ) => ReturnType<typeof exchangeToken>;
+  client: (token: string, provider?: MailboxProvider) => MailboxClient;
   extract: typeof extractBilling;
   now: () => number;
 };
 const defaults: WorkerDependencies = {
   transaction: scoped,
-  refresh: exchangeToken,
-  client: (token) => new GmailClient(token),
+  refresh: (parameters, provider) =>
+    provider === "MICROSOFT"
+      ? exchangeMicrosoftToken(parameters)
+      : exchangeToken(parameters),
+  client: (token, provider) =>
+    provider === "MICROSOFT"
+      ? new MicrosoftClient(token)
+      : new GmailClient(token),
   extract: extractBilling,
   now: Date.now,
 };
@@ -59,12 +75,17 @@ export async function syncMailbox(
       ).rows[0] as Mailbox,
   );
   if (!box) throw Error("Mailbox not active.");
+  if (isBrice(box.email) && (box.provider !== "MICROSOFT" || !box.microsoft_owner_id))
+    throw Error("Mailbox owner verification required. Reconnect Microsoft.");
   let token = credentials(box);
   if (token.expiresAt < deps.now() + 60000) {
-    const refreshed = await deps.refresh({
-      grant_type: "refresh_token",
-      refresh_token: token.refreshToken,
-    });
+    const refreshed = await deps.refresh(
+      {
+        grant_type: "refresh_token",
+        refresh_token: token.refreshToken,
+      },
+      box.provider ?? "GMAIL",
+    );
     token = {
       accessToken: refreshed.access_token,
       refreshToken: refreshed.refresh_token ?? token.refreshToken,
@@ -72,7 +93,12 @@ export async function syncMailbox(
     };
     await transaction((sql) => saveCredentials(sql, box, token));
   }
-  const gmail = deps.client(token.accessToken);
+  const gmail = deps.client(token.accessToken, box.provider ?? "GMAIL");
+  if (isBrice(box.email)) {
+    const profile = await gmail.profile() as { emailAddress?: string; accountId?: string };
+    if (!isBrice(profile.emailAddress) || profile.accountId?.toLowerCase() !== box.microsoft_owner_id)
+      throw Error("Microsoft mailbox ownership changed. Reconnect Microsoft.");
+  }
   let checkpoint: Checkpoint = CheckpointSchema.parse(box.checkpoint);
   if (checkpoint.phase === "BACKFILL" && !checkpoint.anchor) {
     checkpoint = { ...checkpoint, anchor: (await gmail.profile()).historyId };
@@ -92,7 +118,7 @@ export async function syncMailbox(
   } catch (error) {
     if (
       error instanceof GoogleError &&
-      error.status === 404 &&
+      [404, 410].includes(error.status) &&
       checkpoint.phase === "HISTORY"
     ) {
       await transaction((sql) =>
@@ -142,8 +168,8 @@ export async function syncMailbox(
       Boolean(
         (
           await sql.query(
-            "SELECT message_id FROM gmail_processed_messages WHERE company_id=$1 AND mailbox_id=$2 AND message_id=$3",
-            [company, id, messageId],
+            "SELECT message_id FROM gmail_processed_messages WHERE company_id=$1 AND mailbox_id=$2 AND message_id=$3 AND provider=$4",
+            [company, id, messageId, box.provider ?? "GMAIL"],
           )
         ).rows.length,
       ),
@@ -159,6 +185,7 @@ export async function syncMailbox(
           const timestamp = Number(metadata.internalDate);
           const source: MailSource = {
             name: "Oversized email",
+            sourceUrl: metadata.sourceUrl,
             mime: "application/vnd.paycore.mailbox-exception+json",
             bytes: Buffer.from(
               JSON.stringify({ messageId, issue: "message-size-limit" }),
@@ -173,27 +200,23 @@ export async function syncMailbox(
             recordSource(sql, box, messageId, source, {
               fields: emptyDocumentFields(),
               issues: [
-                "Email exceeds the automatic scan limit. Open the original in Gmail.",
+                "Email exceeds the automatic scan limit. Open the original email.",
               ],
               relevant: true,
             }),
           );
           await transaction((sql) =>
             sql.query(
-              "INSERT INTO gmail_processed_messages(company_id,mailbox_id,message_id) VALUES($1,$2,$3) ON CONFLICT DO NOTHING",
-              [company, id, messageId],
+              "INSERT INTO gmail_processed_messages(company_id,mailbox_id,message_id,provider) VALUES($1,$2,$3,$4) ON CONFLICT DO NOTHING",
+              [company, id, messageId, box.provider ?? "GMAIL"],
             ),
           );
         }
         continue;
       }
       if (error instanceof GoogleError && error.status === 404) {
-        await transaction((sql) =>
-          sql.query(
-            "INSERT INTO gmail_processed_messages(company_id,mailbox_id,message_id) VALUES($1,$2,$3) ON CONFLICT DO NOTHING",
-            [company, id, messageId],
-          ),
-        );
+        // It may have moved or been deleted while listing. A later Inbox restore
+        // must remain eligible, so do not permanently mark it as processed.
         continue;
       }
       throw error;
@@ -256,6 +279,7 @@ export async function syncMailbox(
           receivedAt,
           subject,
           sender,
+          sourceUrl: message.sourceUrl,
         };
         let result = await deps.extract(source);
         if ((part.body?.size ?? 0) > 10 * 1024 * 1024)
@@ -263,7 +287,7 @@ export async function syncMailbox(
             ...result,
             fields: emptyDocumentFields(),
             relevant: billingMarker(`${subject} ${name}`),
-            issues: ["Attachment exceeds 10 MB. Open the original in Gmail."],
+            issues: ["Attachment exceeds 10 MB. Open the original email."],
           };
         if (result.relevant) {
           await transaction((sql) =>
@@ -275,8 +299,8 @@ export async function syncMailbox(
     }
     await transaction((sql) =>
       sql.query(
-        "INSERT INTO gmail_processed_messages(company_id,mailbox_id,message_id) VALUES($1,$2,$3) ON CONFLICT DO NOTHING",
-        [company, id, messageId],
+        "INSERT INTO gmail_processed_messages(company_id,mailbox_id,message_id,provider) VALUES($1,$2,$3,$4) ON CONFLICT DO NOTHING",
+        [company, id, messageId, box.provider ?? "GMAIL"],
       ),
     );
     processed++;
@@ -284,14 +308,18 @@ export async function syncMailbox(
   const next: Checkpoint = page.nextPageToken
     ? { ...checkpoint, pageToken: page.nextPageToken }
     : checkpoint.phase === "BACKFILL"
-      ? { phase: "HISTORY", historyId: checkpoint.anchor }
+      ? {
+          phase: "HISTORY",
+          historyId:
+            box.provider === "MICROSOFT" ? page.historyId : checkpoint.anchor,
+        }
       : { phase: "HISTORY", historyId: page.historyId ?? checkpoint.historyId };
   await transaction(async (sql) => {
     await sql.query(
       "UPDATE gmail_mailboxes SET checkpoint=$3,last_synced_at=now(),last_error=NULL WHERE company_id=$1 AND id=$2",
       [company, id, JSON.stringify(next)],
     );
-    await event(sql, company, "gmail-worker", "gmail.synced", {
+    await event(sql, company, "gmail-worker", "mailbox.synced", {
       mailboxId: id,
       processed,
     });
@@ -328,7 +356,7 @@ export async function runGmailScheduler() {
     } catch (reason) {
       error =
         reason instanceof GoogleError && [400, 401].includes(reason.status)
-          ? "Gmail authorization expired. Reconnect this mailbox."
+          ? "Mailbox authorization expired. Reconnect this mailbox."
           : reason instanceof TimeBudget
             ? "More messages remain; automatic scan will continue."
             : "Mailbox scan will retry automatically.";

@@ -3,7 +3,7 @@ export const GMAIL_SCOPE = "https://www.googleapis.com/auth/gmail.readonly";
 export class GoogleError extends Error {
   status: number;
   constructor(status: number) {
-    super("Google mailbox request failed.");
+    super("Mailbox provider request failed.");
     this.status = status;
   }
 }
@@ -37,8 +37,9 @@ export async function googleJson(
   }
   return JSON.parse(Buffer.concat(chunks).toString("utf8"));
 }
-const TokenSchema = z.object({
+export const TokenSchema = z.object({
   access_token: z.string().min(1),
+  id_token: z.string().optional(),
   refresh_token: z.string().optional(),
   expires_in: z.number().positive().max(86400),
   scope: z.string().optional(),
@@ -116,3 +117,13 @@ export class GmailClient {
     );
   }
 }
+
+export type MailboxClient = Pick<
+  GmailClient,
+  | "profile"
+  | "inboxPage"
+  | "historyPage"
+  | "messageMetadata"
+  | "message"
+  | "attachment"
+>;

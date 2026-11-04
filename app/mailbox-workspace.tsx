@@ -1,16 +1,23 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { mailboxSourceLink } from "../lib/mailbox-links";
+import type { MailboxProvider } from "../lib/mailbox-links";
 import type { DocumentFields } from "../lib/document-import";
 type Mailbox = {
   id: string;
+  provider?: MailboxProvider;
   email: string;
   active: boolean;
+  canDisconnect?: boolean;
   last_synced_at: string | null;
   last_error: string | null;
   phase: string;
 };
 type Status = {
+  providers?: Record<MailboxProvider, { ready: boolean }>;
+  recommendedProvider?: MailboxProvider | "UNKNOWN";
+  contactEmail?: string;
   configured?: boolean;
   automationReady?: boolean;
   authConfigured?: boolean;
@@ -19,9 +26,12 @@ type Status = {
   companyId?: string;
   mailboxes?: Mailbox[];
   canConnect?: boolean;
+  canConnectMicrosoft?: boolean;
   error?: string;
 };
 type RecordRow = {
+  source_provider?: MailboxProvider;
+  source_url?: string;
   id: string;
   message_id: string;
   mailbox_email: string;
@@ -31,13 +41,24 @@ type RecordRow = {
   received_at: string;
   recorded_at: string;
 };
-export default function GmailWorkspace({
+export default function MailboxWorkspace({
   view = "inbox",
   compact = false,
 }: {
   view?: "inbox" | "activity" | "exceptions";
   compact?: boolean;
 }) {
+  const [connectionError, setConnectionError] = useState("");
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (
+      params.get("mailbox") === "connection-failed" ||
+      params.get("gmail") === "connection-failed"
+    )
+      setConnectionError(
+        "The mailbox connection was not completed. Try again or ask your email administrator to approve access.",
+      );
+  }, []);
   const [status, setStatus] = useState<Status | null>(null),
     [company, setCompany] = useState(""),
     [documents, setDocuments] = useState<RecordRow[]>([]),
@@ -145,7 +166,7 @@ export default function GmailWorkspace({
       ? "Inbox exceptions"
       : view === "activity"
         ? "Incoming invoices and receipts"
-        : "Automatic Gmail tracking";
+        : "Automatic email tracking";
   return (
     <section className="panel gmail-workspace" aria-label={heading}>
       <div className="section-heading">
@@ -154,7 +175,7 @@ export default function GmailWorkspace({
           <p>
             {view === "exceptions"
               ? "Only documents that could not be recorded reliably appear here."
-              : "Billing documents are collected from Gmail and recorded automatically in PayCore."}
+              : "Billing documents are collected from your connected mailbox and recorded automatically in PayCore."}
           </p>
         </div>
         {compact && (
@@ -163,6 +184,7 @@ export default function GmailWorkspace({
           </Link>
         )}
       </div>
+      {connectionError && <p role="alert">{connectionError}</p>}
       {loading && <p role="status">Checking mailbox connection…</p>}
       {error && <p role="alert">{error}</p>}
       {signIn && (
@@ -178,11 +200,11 @@ export default function GmailWorkspace({
       )}
       {status?.configured === false && (
         <div className="gmail-setup">
-          <h3>Gmail automation needs setup.</h3>
+          <h3>Mailbox automation needs setup.</h3>
           <p>
             The connection is not live yet. Your developer needs to configure
-            secure account access, private storage and the Google connection
-            before you can authorize your mailbox.
+            secure account access, private storage and the email-provider
+            connection before you can authorize your mailbox.
           </p>
           <details>
             <summary>Setup status</summary>
@@ -236,6 +258,11 @@ export default function GmailWorkspace({
                 {status.mailboxes?.map((box) => (
                   <article key={box.id}>
                     <strong>{box.email}</strong>
+                    <small>
+                      {box.provider === "MICROSOFT"
+                        ? "Microsoft 365 / Outlook"
+                        : "Google Workspace"}
+                    </small>
                     <p>
                       {!box.active
                         ? "Disconnected"
@@ -252,7 +279,7 @@ export default function GmailWorkspace({
                       </p>
                     )}
                     {box.last_error && <p role="status">{box.last_error}</p>}
-                    {box.active && status.canConnect && (
+                    {box.active && box.canDisconnect && (
                       <button
                         type="button"
                         className="button button-secondary"
@@ -264,19 +291,61 @@ export default function GmailWorkspace({
                   </article>
                 ))}
               </div>
-              {status.canConnect && status.automationReady !== false && (
-                <form
-                  method="post"
-                  action={`/api/gmail/connect?companyId=${encodeURIComponent(company)}`}
-                >
-                  <button className="button button-primary" type="submit">
-                    Connect Gmail / Google Workspace
-                  </button>
-                </form>
+              {status.contactEmail && (
+                <p>
+                  Business email: <strong>{status.contactEmail}</strong>
+                  {status.recommendedProvider === "MICROSOFT"
+                    ? " · Domain routes through Microsoft 365"
+                    : status.recommendedProvider === "GMAIL"
+                      ? " · Domain routes through Google Workspace"
+                      : ""}
+                </p>
               )}
+              {status.canConnect && (
+                <div className="activity-actions">
+                  {(status.providers?.MICROSOFT.ready ||
+                    status.recommendedProvider === "MICROSOFT") && (
+                    <form
+                      method="post"
+                      action={`/api/microsoft/connect?companyId=${encodeURIComponent(company)}`}
+                    >
+                      <button
+                        className="button button-primary"
+                        type="submit"
+                        disabled={!status.providers?.MICROSOFT.ready || !status.canConnectMicrosoft}
+                      >
+                        Connect Microsoft 365 / Outlook
+                      </button>
+                    </form>
+                  )}
+                  {(status.providers?.GMAIL.ready ||
+                    status.recommendedProvider === "GMAIL") && (
+                    <form
+                      method="post"
+                      action={`/api/gmail/connect?companyId=${encodeURIComponent(company)}`}
+                    >
+                      <button
+                        className="button button-secondary"
+                        type="submit"
+                        disabled={!status.providers?.GMAIL.ready}
+                      >
+                        Connect Gmail / Google Workspace
+                      </button>
+                    </form>
+                  )}
+                </div>
+              )}
+              {!status.canConnectMicrosoft && <p>Only Brice’s verified account can manage the Microsoft connection.</p>}
+              {status.recommendedProvider === "MICROSOFT" &&
+                !status.providers?.MICROSOFT.ready && (
+                  <p>
+                    Microsoft 365 connection needs developer setup before this
+                    mailbox can be authorized.
+                  </p>
+                )}
               <p className="guide-rail-note">
                 Authorize once. PayCore reads billing documents from your inbox
-                and checks for new ones automatically. Gmail access is
+                and checks for new ones automatically. Mailbox access is
                 read-only; this does not send emails, make payments or change
                 payroll.
               </p>
@@ -321,7 +390,12 @@ export default function GmailWorkspace({
                         </ul>
                       )}
                       <a
-                        href={`https://mail.google.com/mail/?authuser=${encodeURIComponent(item.mailbox_email)}#all/${encodeURIComponent(item.message_id)}`}
+                        href={mailboxSourceLink(
+                          item.source_provider ?? "GMAIL",
+                          item.mailbox_email,
+                          item.message_id,
+                          item.source_url,
+                        )}
                         target="_blank"
                         rel="noopener noreferrer"
                       >
