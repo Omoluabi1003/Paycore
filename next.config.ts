@@ -1,3 +1,4 @@
+import { securityHeaders, privateHeaders } from "./lib/server/security/headers.ts";
 import type { NextConfig } from "next";
 import { createRequire } from "node:module";
 import { realpathSync } from "node:fs";
@@ -12,6 +13,14 @@ function packageFiles(name: string, pattern: string) {
   return `./${relative(process.cwd(), directory).replaceAll("\\", "/")}/${pattern}`;
 }
 const nextConfig: NextConfig = {
+  poweredByHeader: false,
+  async headers() {
+    return [
+      { source: "/:path*", headers: securityHeaders },
+      { source: "/api/:path*", headers: privateHeaders },
+      { source: "/auth/:path*", headers: privateHeaders },
+    ];
+  },
   serverExternalPackages: [
     "pdfjs-dist",
     "@napi-rs/canvas",

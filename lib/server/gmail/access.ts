@@ -1,3 +1,5 @@
+import { HttpError as ApiError } from "../security/http.ts";
+export { HttpError as ApiError } from "../security/http.ts";
 import { verifiedBrice } from "../microsoft/ownership.ts";
 import { auth0 } from "../auth0.ts";
 import { scoped } from "./database.ts";
@@ -8,13 +10,6 @@ import {
   PermissionDenied,
 } from "../access.ts";
 import type { CompanyAccess } from "../access.ts";
-export class ApiError extends Error {
-  status: number;
-  constructor(status: number, message: string) {
-    super(message);
-    this.status = status;
-  }
-}
 export async function authenticatedUser() {
   const session = await auth0().getSession();
   if (!session?.user.sub)
