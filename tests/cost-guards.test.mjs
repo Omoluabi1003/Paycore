@@ -86,4 +86,5 @@ test('an endless provider cursor cannot exceed the page budget or continue after
  assert.equal(calls,10);
  assert.equal(await runBoundedPages(async()=>{throw Error('Must not run after deadline')},100,()=>101),0);
  assert.equal(await runBoundedPages(async()=>({more:false}),100,()=>0),1);
+ assert.equal(await runBoundedPages(async()=>({}),100,()=>0),1); // Cursor reset ends this pass.
 });

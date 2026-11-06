@@ -21,7 +21,7 @@ export async function finishMailboxJob(sql: Sql, company: string, mailbox: strin
 
 // Stop even when a provider returns an endless sequence of continuation pages.
 export async function runBoundedPages(
-  synchronize: () => Promise<{ more: boolean }>,
+  synchronize: () => Promise<{ more?: boolean }>,
   deadline: number,
   now = Date.now,
 ) {
