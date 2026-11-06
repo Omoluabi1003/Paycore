@@ -1,3 +1,5 @@
-import Link from 'next/link';
-import DocumentRegister from '../../document-register';
-export default function DocumentActivityPage(){return <main id="scan-main-content" tabIndex={-1} className="document-page"><nav><Link href="/">Workspace</Link> · <Link href="/scan">Scan</Link> · <Link href="/scan/inbox">Document inbox</Link></nav><h1>Activity Register</h1><DocumentRegister/><footer>Developed by ETL GIS Consulting LLC</footer></main>}
+import DocumentShell from "../../document-shell";
+import DocumentRegister from "../../document-register";
+export default function DocumentActivityPage() {
+  return <DocumentShell current="activity" title="Your paperwork, in one place." description="See the invoices and receipts recorded from your connected mailbox. Open any source email for the full context."><DocumentRegister /></DocumentShell>;
+}

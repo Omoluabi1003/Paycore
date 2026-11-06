@@ -5,6 +5,7 @@ import BrandIntro from "./brand-intro";
 import ScanNavigationBridge from "./scan-navigation-bridge";
 import "./globals.css";
 import "./page-story-backgrounds.css";
+import "./interface-upgrade.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(PAYCORE_PUBLIC_URL),
