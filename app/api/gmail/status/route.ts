@@ -1,3 +1,4 @@
+import { limitRequest } from "../../../../lib/server/security/rate-limit";
 import { isBrice } from "../../../../lib/server/microsoft/ownership";
 import { mailboxAutomationConfiguration } from "../../../../lib/server/gmail/config";
 import { auth0Configured } from "../../../../lib/server/auth0";
@@ -25,6 +26,7 @@ export async function GET(request: Request) {
     );
   try {
     const user = await authenticatedUser();
+    await limitRequest(user.id, "documents");
     const available = await companies();
     const company =
       new URL(request.url).searchParams.get("companyId") ??

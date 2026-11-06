@@ -37,6 +37,7 @@ async function database() {
     "002_gmail_documents",
     "003_mailbox_providers",
     "004_mailbox_owner",
+    "005_cost_guards",
   ])
     await db.exec(
       await fs.readFile(

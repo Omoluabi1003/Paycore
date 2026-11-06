@@ -12,6 +12,8 @@ export async function GET(request: Request) {
     )
   )
     return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (process.env.PAYCORE_MAILBOX_SYNC_ENABLED === "false")
+    return Response.json({ active: false, paused: true }, { headers: { "Cache-Control": "no-store" } });
   const configuration = mailboxAutomationConfiguration();
   if (!configuration.ready)
     return Response.json(

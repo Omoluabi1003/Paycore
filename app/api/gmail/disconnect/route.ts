@@ -1,3 +1,5 @@
+import { limitRequest } from "../../../../lib/server/security/rate-limit";
+import { requireSameOrigin } from "../../../../lib/server/security/http";
 import { requireMicrosoftOwner } from "../../../../lib/server/gmail/access";
 import { isBrice } from "../../../../lib/server/microsoft/ownership";
 import {
@@ -5,18 +7,17 @@ import {
   apiError,
   ApiError,
 } from "../../../../lib/server/gmail/access";
-import { applicationOrigin } from "../../../../lib/server/gmail/config";
 import { scoped } from "../../../../lib/server/gmail/database";
 import { event } from "../../../../lib/server/gmail/repository";
 export const runtime = "nodejs";
 export async function POST(request: Request) {
   try {
-    if (request.headers.get("origin") !== applicationOrigin())
-      throw new ApiError(403, "Open this action from PayCore.");
+    requireSameOrigin(request);
     const url = new URL(request.url),
       company = url.searchParams.get("companyId") ?? "",
       mailbox = url.searchParams.get("mailboxId") ?? "";
     const access = await companyAccess(company, "documents.connect");
+    await limitRequest(access.userId, "mailbox-management");
     await scoped(company, access.userId, async (sql) => {
       const box = (await sql.query("SELECT provider,email,connected_by FROM gmail_mailboxes WHERE company_id=$1 AND id=$2 FOR UPDATE", [company, mailbox])).rows[0];
       if (!box) throw new ApiError(404, "Mailbox not found.");

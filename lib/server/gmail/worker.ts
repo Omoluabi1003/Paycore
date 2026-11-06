@@ -1,3 +1,5 @@
+import { claimScheduler, releaseScheduler, finishMailboxJob, runBoundedPages } from "./scheduler-guards.ts";
+import type { JobOutcome } from "./scheduler-guards.ts";
 import { isBrice } from "../microsoft/ownership.ts";
 import {
   MicrosoftClient,
@@ -327,7 +329,17 @@ export async function syncMailbox(
   return { processed, more: Boolean(page.nextPageToken) };
 }
 export async function runGmailScheduler() {
+  if (process.env.PAYCORE_MAILBOX_SYNC_ENABLED === "false") return { mailboxes: 0, paused: true, outcomes: [] };
   const owner = randomUUID();
+  const database = pool();
+  if (!await claimScheduler(database, owner)) return { mailboxes: 0, throttled: true, outcomes: [] };
+  try {
+    return await runClaimedScheduler(owner);
+  } finally {
+    await releaseScheduler(database, owner);
+  }
+}
+async function runClaimedScheduler(owner: string) {
   const jobs = await claimMailboxJobs(pool(), owner);
   const outcomes: object[] = [];
   const deadline = Date.now() + 180000;
@@ -341,21 +353,18 @@ export async function runGmailScheduler() {
       continue;
     }
     let error: string | null = null;
+    let outcome: JobOutcome = "success";
     try {
-      let result;
-      do {
-        result = await syncMailbox(
-          job.company_id,
-          job.mailbox_id,
-          owner,
-          {},
-          deadline,
-        );
-      } while (result.more && Date.now() < deadline);
+      await runBoundedPages(
+        () => syncMailbox(job.company_id, job.mailbox_id, owner, {}, deadline),
+        deadline,
+      );
       outcomes.push({ ok: true });
     } catch (reason) {
+      outcome = reason instanceof TimeBudget ? "continue" :
+        reason instanceof GoogleError && [400, 401, 403].includes(reason.status) ? "authorization" : "transient";
       error =
-        reason instanceof GoogleError && [400, 401].includes(reason.status)
+        reason instanceof GoogleError && [400, 401, 403].includes(reason.status)
           ? "Mailbox authorization expired. Reconnect this mailbox."
           : reason instanceof TimeBudget
             ? "More messages remain; automatic scan will continue."
@@ -368,10 +377,7 @@ export async function runGmailScheduler() {
         );
       });
     } finally {
-      await pool().query(
-        "UPDATE gmail_sync_jobs SET lease_owner=NULL,lease_until=NULL,next_run_at=now()+interval '5 minutes' WHERE company_id=$1 AND mailbox_id=$2 AND lease_owner=$3",
-        [job.company_id, job.mailbox_id, owner],
-      );
+      await finishMailboxJob(pool(), job.company_id, job.mailbox_id, owner, outcome);
     }
   }
   return { mailboxes: jobs.length, outcomes };

@@ -77,7 +77,7 @@ export async function saveMailboxConnection(
       [company, id, microsoftOwnerId],
     );
     await sql.query(
-      "INSERT INTO gmail_sync_jobs(mailbox_id,company_id) VALUES($1,$2) ON CONFLICT(mailbox_id) DO UPDATE SET next_run_at=now(),lease_owner=NULL,lease_until=NULL",
+      "INSERT INTO gmail_sync_jobs(mailbox_id,company_id) VALUES($1,$2) ON CONFLICT(mailbox_id) DO UPDATE SET next_run_at=now(),lease_owner=NULL,lease_until=NULL,consecutive_failures=0",
       [id, company],
     );
     await event(sql, company, user, "mailbox.connected", {

@@ -53,9 +53,4 @@ export function mailboxAutomationConfiguration() {
     },
   };
 }
-export function applicationOrigin() {
-  const url = new URL(process.env.APP_BASE_URL ?? "");
-  if (url.protocol !== "https:" && url.hostname !== "localhost")
-    throw Error("HTTPS application URL required.");
-  return url.origin;
-}
+export { configuredOrigin as applicationOrigin } from "../security/http.ts";
