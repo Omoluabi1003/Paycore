@@ -81,7 +81,7 @@ introducing SMS requires appropriate consent, opt-outs and applicable legal revi
 
 ## Rollout and rollback
 
-This change builds on PR #72's HTTP/audit baseline. Deploy migration 005 and its grants
+This change includes PR #72's HTTP/audit baseline in the consolidated update. Deploy migration 005 and its grants
 before the code, or keep scheduling paused until they are ready. Test 429 recovery,
 OAuth and document access, a successful scan, provider failure backoff and overlapping
 cron calls with synthetic staging data. Watch error rates and legitimate multi-tab
