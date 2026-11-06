@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import UiIcon from "./ui-icon";
 import { mailboxSourceLink } from "../lib/mailbox-links";
 import type { MailboxProvider } from "../lib/mailbox-links";
 import type { DocumentFields } from "../lib/document-import";
@@ -48,6 +49,10 @@ export default function MailboxWorkspace({
   view?: "inbox" | "activity" | "exceptions";
   compact?: boolean;
 }) {
+  const [query, setQuery] = useState("");
+  const [disconnecting, setDisconnecting] = useState<string | null>(null);
+  const disconnectPending = useRef(false);
+  const searchId = useId();
   const [connectionError, setConnectionError] = useState("");
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -177,7 +182,11 @@ export default function MailboxWorkspace({
       document.removeEventListener("visibilitychange", visibilityChanged);
     };
   }, [company, view, page]);
+  useEffect(() => { setQuery(""); }, [company, view, page]);
   async function disconnect(id: string) {
+    if (disconnectPending.current) return;
+    disconnectPending.current = true;
+    setDisconnecting(id);
     try {
       const response = await fetch(
         `/api/gmail/disconnect?companyId=${encodeURIComponent(company)}&mailboxId=${encodeURIComponent(id)}`,
@@ -196,8 +205,15 @@ export default function MailboxWorkspace({
       );
     } catch (reason) {
       setError((reason as Error).message);
+    } finally {
+      disconnectPending.current = false;
+      setDisconnecting(null);
     }
   }
+  const activeCount = status?.mailboxes?.filter(box => box.active).length ?? 0;
+  const connectionNeedsAttention = status?.mailboxes?.some(box => box.active && box.last_error) ?? false;
+  const filtered = documents.filter(item => [item.fields.vendor, item.fields.reference, item.source_name].some(value => value?.toLowerCase().includes(query.trim().toLowerCase())));
+  const connectionLabel = loading ? "Checking connection" : status?.configured === false ? "Setup needed" : signIn ? "Sign-in required" : error ? "Unavailable" : connectionNeedsAttention ? "Needs attention" : activeCount ? `${activeCount} connected` : "No mailbox connected";
   const heading =
     view === "exceptions"
       ? "Inbox exceptions"
@@ -215,6 +231,7 @@ export default function MailboxWorkspace({
               : "Billing documents are collected from your connected mailbox and recorded automatically in PayCore."}
           </p>
         </div>
+        <span className="mailbox-status-pill" data-connected={activeCount > 0 && !loading && !error && !connectionNeedsAttention}><span aria-hidden="true" />{connectionLabel}</span>
         {compact && (
           <Link className="button button-secondary" href="/scan">
             Manage mailbox
@@ -239,9 +256,8 @@ export default function MailboxWorkspace({
         <div className="gmail-setup">
           <h3>Mailbox automation needs setup.</h3>
           <p>
-            The connection is not live yet. Your developer needs to configure
-            secure account access, private storage and the email-provider
-            connection before you can authorize your mailbox.
+            One-time setup is needed before you can authorize your business mailbox.
+            Ask your administrator to finish the connection.
           </p>
           <details>
             <summary>Setup status</summary>
@@ -321,9 +337,11 @@ export default function MailboxWorkspace({
                         type="button"
                         className="button button-secondary"
                         aria-label={`Disconnect ${box.email}`}
+                        disabled={Boolean(disconnecting)}
+                        aria-busy={disconnecting === box.id}
                         onClick={() => void disconnect(box.id)}
                       >
-                        Disconnect
+                        {disconnecting === box.id ? "Disconnecting…" : "Disconnect"}
                       </button>
                     )}
                   </article>
@@ -389,7 +407,11 @@ export default function MailboxWorkspace({
               </p>
             </>
           )}
-          <div className="table-scroll" role="region" aria-label="Invoice and receipt records" tabIndex={0}>
+          {documents.length > 0 && <div className="mailbox-records-toolbar">
+            <label htmlFor={searchId}>Search this page<span className="mailbox-search"><UiIcon name="search" size={17} /><input id={searchId} type="search" value={query} placeholder="Vendor, reference or file" onChange={event => setQuery(event.target.value)} /></span></label>
+            <p role="status">{filtered.length} of {documents.length} records on this page</p>
+          </div>}
+          {documents.length > 0 && <div className="table-scroll" role="region" aria-label="Invoice and receipt records" tabIndex={0}>
             <table>
               <caption className="sr-only">{heading}</caption>
               <thead>
@@ -404,7 +426,7 @@ export default function MailboxWorkspace({
                 </tr>
               </thead>
               <tbody>
-                {documents.map((item) => (
+                {filtered.map((item) => (
                   <tr key={item.id}>
                     <td>{item.fields.date || "Not identified"}</td>
                     <th scope="row">
@@ -447,14 +469,8 @@ export default function MailboxWorkspace({
                 ))}
               </tbody>
             </table>
-          </div>
-          {!documents.length && (
-            <p>
-              {view === "exceptions"
-                ? "No inbox exceptions found."
-                : "No billing documents recorded yet. Connected mailboxes are checked automatically; no manual upload is needed."}
-            </p>
-          )}
+          </div>}
+          {!filtered.length && !loading && <div className="mailbox-empty-state"><span><UiIcon name={query ? "search" : "document"} size={25} /></span><h3>{query ? "No matches on this page." : view === "exceptions" ? "Nothing needs attention here." : "Your documents will appear here."}</h3><p>{query ? "Try another vendor or reference, or browse the next page." : view === "exceptions" ? "Documents that cannot be recorded reliably will appear here with the details to check." : activeCount ? "Invoices and receipts appear after the automatic scan. There is no manual upload step." : "Connect a mailbox to start collecting invoices and receipts."}</p>{query && <button type="button" className="button button-secondary" onClick={() => setQuery("")}>Clear search</button>}</div>}
           <nav className="activity-actions" aria-label="Document pages">
             <button
               className="button button-secondary"
