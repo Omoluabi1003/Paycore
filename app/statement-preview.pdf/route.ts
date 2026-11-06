@@ -6,6 +6,8 @@ import { workingPeriod } from "../../lib/pay-periods";
 
 export const runtime = "nodejs";
 // Fixed public fictional example only. Never read request/session/workspace records here.
+// Fixed public fictional output is generated at build time, never from a session.
+export const dynamic = "force-static";
 export function GET() {
   const at = "2026-10-18T12:00:00Z";
   const run = workingPeriod({ version: 1, start: "2026-10-05", end: "2026-10-16", timeZone: "UTC" });
@@ -18,5 +20,5 @@ export function GET() {
   input.fuelReconciliation={expectedTotalCents:4000};
   // Pure fixture construction: no workspace approval, persistence or payment operation.
   const sample = simulateApproval([input], { companyName: "Synthetic Logistics LLC", actor: "Synthetic example specialist", at, reviewed: true, reviewReasons: {}, statementHeader: { address: "101 Example Way", cityStateZip: "Example City, ST 00000", email: "office@example.test", phone: "202-555-0100", mcNumber: "SYN-MC", usdotNumber: "SYN-DOT", payrollNumber: "SYN-2026-006", invoicePayDate: "2026-10-23" } });
-  return new Response(new Uint8Array(demoPdf(sample)).buffer, { headers: { "Content-Type": "application/pdf", "Content-Disposition": 'inline; filename="PayCore-SYNTHETIC-statement-preview.pdf"', "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" } });
+  return new Response(new Uint8Array(demoPdf(sample)).buffer, { headers: { "Content-Type": "application/pdf", "Content-Disposition": 'inline; filename="PayCore-SYNTHETIC-statement-preview.pdf"', "Cache-Control": "public, max-age=3600, s-maxage=86400", "X-Content-Type-Options": "nosniff" } });
 }

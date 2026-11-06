@@ -1,3 +1,4 @@
+import { limitRequest } from "../../../../lib/server/security/rate-limit";
 import { requireSameOrigin } from "../../../../lib/server/security/http";
 import {
   companyAccess,
@@ -14,6 +15,7 @@ export async function POST(request: Request) {
     requireSameOrigin(request);
     const company = new URL(request.url).searchParams.get("companyId") ?? "";
     const access = await companyAccess(company, "documents.connect");
+    await limitRequest(access.userId, "mailbox-management");
     return Response.redirect(
       await beginGoogleConnect(company, access.userId),
       303,

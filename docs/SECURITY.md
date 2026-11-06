@@ -100,3 +100,7 @@ The accountable operator must also establish and retain evidence for:
 Scope and evidence must be reviewed with the independent SOC 2 CPA firm or ISO 27001
 certification auditor. Do not mark controls effective merely because a checklist or
 implementation exists. See `docs/SECURITY-READINESS.md` for the review boundary.
+
+For account rate limits, scheduler budgets/backoff, the scan pause switch and targeted
+accessibility checks, see `docs/COST-AND-ACCESSIBILITY.md`. Edge defenses and vendor
+spending settings still require operator configuration.

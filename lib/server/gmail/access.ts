@@ -1,3 +1,4 @@
+import { RateLimitError } from "../security/rate-limit.ts";
 import { HttpError as ApiError } from "../security/http.ts";
 export { HttpError as ApiError } from "../security/http.ts";
 import { verifiedBrice } from "../microsoft/ownership.ts";
@@ -82,7 +83,7 @@ export function apiError(error: unknown) {
           ? error.message
           : "Mailbox service is temporarily unavailable.",
     },
-    { status, headers: { "Cache-Control": "no-store" } },
+    { status, headers: { "Cache-Control": "no-store", ...(error instanceof RateLimitError ? { "Retry-After": String(error.retryAfter) } : {}) } },
   );
 }
 

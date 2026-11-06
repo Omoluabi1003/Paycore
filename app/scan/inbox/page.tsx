@@ -3,7 +3,7 @@ import { BrandLogo } from "../../brand";
 import MailboxWorkspace from "../../mailbox-workspace";
 export default function ScanInboxPage() {
   return (
-    <main className="document-page">
+    <main id="scan-main-content" tabIndex={-1} className="document-page">
       <header className="document-heading">
         <Link href="/" aria-label="PayCore home">
           <BrandLogo />

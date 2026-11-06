@@ -70,15 +70,36 @@ export default function MailboxWorkspace({
   useEffect(() => {
     const controller = new AbortController();
     let mounted = true;
+    let inFlight = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let failures = 0;
+    let nextLoad = 0;
+    let poll = true;
+    setLoading(true);
     async function load() {
+      if (!mounted || inFlight || document.hidden) return;
+      if (Date.now() < nextLoad) {
+        timer = setTimeout(() => void load(), nextLoad - Date.now());
+        return;
+      }
+      inFlight = true;
+      let delay = 60000;
+      function checkLimit(response: Response) {
+        if (response.status === 429) {
+          const seconds = Number(response.headers.get("Retry-After"));
+          delay = Math.max(delay, Math.min(600000, (Number.isFinite(seconds) && seconds > 0 ? seconds : 60) * 1000));
+        }
+      }
       try {
         const response = await fetch(
           `/api/gmail/status${company ? `?companyId=${encodeURIComponent(company)}` : ""}`,
           { cache: "no-store", signal: controller.signal },
         );
+        checkLimit(response);
         const next = await response.json();
         if (!mounted) return;
         if (response.status === 401) {
+          poll = false;
           setSignIn(true);
           setStatus(null);
           setDocuments([]);
@@ -86,6 +107,7 @@ export default function MailboxWorkspace({
           return;
         }
         if (response.status === 503 && next.configured === false) {
+          poll = false;
           setStatus(next);
           setDocuments([]);
           setLoading(false);
@@ -107,6 +129,7 @@ export default function MailboxWorkspace({
             `/api/gmail/documents?companyId=${encodeURIComponent(next.companyId)}&status=${view === "exceptions" ? "EXCEPTION" : "RECORDED"}&page=${page}`,
             { cache: "no-store", signal: controller.signal },
           );
+          checkLimit(result);
           const body = await result.json();
           if (!result.ok)
             throw Error(body.error || "Documents could not be loaded.");
@@ -115,11 +138,15 @@ export default function MailboxWorkspace({
             setMore(body.hasMore);
           }
         }
+        failures = 0;
+        if (!next.companyId) poll = false;
         if (mounted) {
           setError("");
           setLoading(false);
         }
       } catch (reason) {
+        failures++;
+        delay = Math.max(delay, Math.min(300000, 30000 * 2 ** Math.min(failures, 4)));
         if (mounted && !controller.signal.aborted) {
           setError(
             reason instanceof Error
@@ -130,14 +157,24 @@ export default function MailboxWorkspace({
           setStatus(null);
           setLoading(false);
         }
+      } finally {
+        inFlight = false;
+        nextLoad = Date.now() + delay;
+        if (mounted && poll && !document.hidden)
+          timer = setTimeout(() => void load(), delay);
       }
     }
+    function visibilityChanged() {
+      if (timer) clearTimeout(timer);
+      if (!document.hidden && poll) void load();
+    }
     void load();
-    const timer = setInterval(() => void load(), 30000);
+    document.addEventListener("visibilitychange", visibilityChanged);
     return () => {
       mounted = false;
       controller.abort();
-      clearInterval(timer);
+      if (timer) clearTimeout(timer);
+      document.removeEventListener("visibilitychange", visibilityChanged);
     };
   }, [company, view, page]);
   async function disconnect(id: string) {
@@ -168,7 +205,7 @@ export default function MailboxWorkspace({
         ? "Incoming invoices and receipts"
         : "Automatic email tracking";
   return (
-    <section className="panel gmail-workspace" aria-label={heading}>
+    <section className="panel gmail-workspace" aria-label={heading} aria-busy={loading}>
       <div className="section-heading">
         <div>
           <h2>{heading}</h2>
@@ -180,7 +217,7 @@ export default function MailboxWorkspace({
         </div>
         {compact && (
           <Link className="button button-secondary" href="/scan">
-            Manage Gmail
+            Manage mailbox
           </Link>
         )}
       </div>
@@ -283,6 +320,7 @@ export default function MailboxWorkspace({
                       <button
                         type="button"
                         className="button button-secondary"
+                        aria-label={`Disconnect ${box.email}`}
                         onClick={() => void disconnect(box.id)}
                       >
                         Disconnect
@@ -351,15 +389,16 @@ export default function MailboxWorkspace({
               </p>
             </>
           )}
-          <div className="table-scroll">
+          <div className="table-scroll" role="region" aria-label="Invoice and receipt records" tabIndex={0}>
             <table>
+              <caption className="sr-only">{heading}</caption>
               <thead>
                 <tr>
-                  <th>Date</th>
-                  <th>Vendor / reference</th>
-                  <th>Total</th>
-                  <th>Contact details</th>
-                  <th>
+                  <th scope="col">Date</th>
+                  <th scope="col">Vendor / reference</th>
+                  <th scope="col">Total</th>
+                  <th scope="col">Contact details</th>
+                  <th scope="col">
                     {view === "exceptions" ? "Needs attention" : "Source"}
                   </th>
                 </tr>
@@ -396,6 +435,7 @@ export default function MailboxWorkspace({
                           item.message_id,
                           item.source_url,
                         )}
+                        aria-label={`Open source email for ${item.fields.vendor || "unidentified vendor"}${item.fields.reference ? `, ${item.fields.reference}` : ""} (opens in a new tab)`}
                         target="_blank"
                         rel="noopener noreferrer"
                       >
@@ -415,23 +455,23 @@ export default function MailboxWorkspace({
                 : "No billing documents recorded yet. Connected mailboxes are checked automatically; no manual upload is needed."}
             </p>
           )}
-          <div className="activity-actions">
+          <nav className="activity-actions" aria-label="Document pages">
             <button
               className="button button-secondary"
               disabled={page === 0}
-              onClick={() => setPage((value) => value - 1)}
+              onClick={() => { setDocuments([]); setPage((value) => value - 1); }}
             >
               Previous
             </button>
-            <span>Page {page + 1}</span>
+            <span role="status">Page {page + 1}</span>
             <button
               className="button button-secondary"
               disabled={!more}
-              onClick={() => setPage((value) => value + 1)}
+              onClick={() => { setDocuments([]); setPage((value) => value + 1); }}
             >
               Next
             </button>
-          </div>
+          </nav>
         </>
       )}
     </section>

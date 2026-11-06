@@ -1,3 +1,4 @@
+import { limitRequest } from "../../../../lib/server/security/rate-limit";
 import { requireSameOrigin } from "../../../../lib/server/security/http";
 import { requireMicrosoftOwner } from "../../../../lib/server/gmail/access";
 import {
@@ -16,6 +17,7 @@ export async function POST(request: Request) {
     const company = new URL(request.url).searchParams.get("companyId") ?? "";
     await requireMicrosoftOwner();
     const access = await companyAccess(company, "documents.connect");
+    await limitRequest(access.userId, "mailbox-management");
     return Response.redirect(
       await beginMicrosoftConnect(company, access.userId),
       303,

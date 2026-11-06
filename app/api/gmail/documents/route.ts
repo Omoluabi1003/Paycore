@@ -1,3 +1,4 @@
+import { limitRequest } from "../../../../lib/server/security/rate-limit";
 import { companyAccess, apiError } from "../../../../lib/server/gmail/access";
 import { readDocuments } from "../../../../lib/server/gmail/read-documents";
 export const runtime = "nodejs";
@@ -13,6 +14,7 @@ export async function GET(request: Request) {
     const raw = Number(url.searchParams.get("page") ?? 0),
       page = Number.isSafeInteger(raw) && raw >= 0 ? Math.min(raw, 100000) : 0;
     const access = await companyAccess(company, "documents.read");
+    await limitRequest(access.userId, "documents");
     return Response.json(
       await readDocuments(access, status, page),
       { headers: { "Cache-Control": "no-store" } },

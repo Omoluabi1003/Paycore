@@ -50,7 +50,7 @@ async function capability(companyId, userId, roles = ["AUDITOR"]) {
 test("document reads require a real company capability and commit minimal append-only access evidence", async () => {
   const db = new PGlite(), company = "audit-company", user = "auth0|synthetic-auditor", mailbox = randomUUID(), id = randomUUID();
   try {
-    for (const name of ["001_contractors", "002_gmail_documents", "003_mailbox_providers", "004_mailbox_owner"])
+    for (const name of ["001_contractors", "002_gmail_documents", "003_mailbox_providers", "004_mailbox_owner", "005_cost_guards"])
       await db.exec(await fs.readFile(new URL(`../db/migrations/${name}.sql`, import.meta.url), "utf8"));
     await db.query("INSERT INTO workspaces(id) VALUES($1),($2)", [company, "other-audit-company"]);
     await db.query("INSERT INTO gmail_mailboxes(id,company_id,email,connected_by,credentials) VALUES($1,$2,$3,$4,$5)", [mailbox,company,"synthetic@example.test",user,"synthetic-encrypted-credentials"]);
