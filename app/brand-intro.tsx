@@ -21,14 +21,14 @@ export default function BrandIntro({ splash, children }: { splash: ReactNode; ch
       return;
     }
     setVisible(true);
-    const timer = window.setTimeout(() => { decision.current = false; setVisible(false); }, 7000);
+    const timer = window.setTimeout(() => { decision.current = false; setVisible(false); }, 2200);
     return () => window.clearTimeout(timer);
   }, [pathname]);
   function dismiss() { decision.current = false; setVisible(false); }
   return <>
     {visible && <div className="brand-intro-overlay" role="region" aria-label="PayCore introduction">
       {splash}
-      <button type="button" className="brand-intro-skip" onClick={dismiss}>Skip introduction</button>
+      <button type="button" className="brand-intro-skip" onClick={dismiss}>Enter workspace <span aria-hidden="true">↗</span></button>
       <span className="brand-intro-progress" aria-hidden="true" />
     </div>}
     <div className="paycore-app-content" inert={visible} aria-hidden={visible || undefined}>{children}</div>
