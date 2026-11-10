@@ -1,0 +1,36 @@
+/* PayCore entry: layered financial architecture, no second authentication flow. */
+:root { --paycore-obsidian:#071626; --paycore-metal:#d9c49b; --paycore-glacier:#a9e0df; }
+.access-page { background:#081929; grid-template-columns:minmax(0,1.1fr) minmax(360px,.9fr); }
+.access-story { isolation:isolate;position:relative;overflow:hidden;background:
+linear-gradient(145deg,rgba(5,18,32,.22),rgba(4,14,27,.93)),
+radial-gradient(ellipse at 76% 10%,rgba(170,225,232,.27),transparent 40%),
+linear-gradient(150deg,#122c42 3%,#05111f 75%); }
+.access-story::before { content:"";pointer-events:none;position:absolute;inset:-12%;z-index:-1;
+background:repeating-linear-gradient(116deg,transparent 0 80px,rgba(218,229,236,.055) 81px 82px,transparent 83px 150px),
+linear-gradient(125deg,transparent 22%,rgba(233,221,184,.12) 42%,transparent 52%);
+transform:perspective(1100px) rotateY(-12deg) scale(1.15); }
+.access-story::after { content:"";pointer-events:none;position:absolute;width:min(65vw,640px);height:min(65vw,640px);right:-22%;bottom:-28%;border:1px solid rgba(218,239,240,.2);border-radius:50%;
+box-shadow:0 0 0 48px rgba(214,229,234,.035),0 0 0 118px rgba(214,229,234,.025),0 0 140px rgba(125,196,200,.14); }
+.access-story-copy {max-width:750px;position:relative;z-index:1;}
+.access-story h1 {font-size:clamp(46px,5.4vw,88px);font-weight:560;line-height:1.03;letter-spacing:-.07em;text-wrap:balance;}
+.access-story-copy > p:last-child {max-width:430px;color:#c3d2db;}
+.access-story .access-eyebrow {color:var(--paycore-metal);letter-spacing:.24em;}
+.access-panel {background:radial-gradient(ellipse at 85% 10%,#edf6f6,transparent 55%),#e7edef;}
+.access-card {max-width:440px;padding:clamp(25px,3vw,44px);border:1px solid rgba(255,255,255,.85);border-radius:32px;background:rgba(255,255,255,.77);box-shadow:0 24px 80px rgba(12,36,55,.13),inset 0 1px 0 white;backdrop-filter:blur(18px);}
+.access-card h2 {font-size:clamp(30px,3.3vw,42px);letter-spacing:-.055em;}
+.access-card .access-note {color:#526577;font-size:12px;}
+.brand-intro-overlay {background:#061522;}
+.brand-intro-overlay .sculptural-splash {filter:saturate(.84) contrast(1.05);}
+.brand-intro-skip {top:auto;bottom:max(38px,env(safe-area-inset-bottom));right:50%;transform:translateX(50%);padding:15px 28px;border-radius:999px;background:#e8d8b4;color:#15293a;border:1px solid #fff7e4;box-shadow:0 12px 42px #0008;font-weight:700;min-width:200px;}
+.brand-intro-skip:hover {background:white;}
+.brand-intro-progress {height:2px;background:#dec79b;animation-duration:2.2s;}
+@media(max-width:720px) {
+.access-page {grid-template-columns:1fr;}
+.access-story {min-height:52svh;padding:clamp(24px,7vw,42px);}
+.access-story-copy {padding:38px 0 30px;}
+.access-story h1 {font-size:clamp(42px,10vw,61px);}
+.access-panel {padding:24px 18px 44px;}
+.access-card {border-radius:24px;padding:28px 23px;}
+.access-story::after {width:320px;height:320px;right:-170px;bottom:-130px;}
+}
+@media(prefers-reduced-motion:reduce){.brand-intro-progress{animation:none;}}
