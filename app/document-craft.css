@@ -23,4 +23,13 @@
 .craft-preview-disclosure{padding:12px 22px;background:#eff0ed;color:#49606c;font-size:11px;border-top:1px solid #d4d9d7;}
 @media(max-width:640px){.craft-preview-toolbar{min-height:76px}.craft-preview-instruments{top:76px;gap:7px;padding:8px 12px}.craft-preview-instruments .craft-print-button{margin-left:0}.craft-preview-stage{padding:14px}.craft-preview-zoom button,.craft-paper-select button,.craft-print-button{padding:7px 9px}.craft-preview-disclosure{padding:10px 14px}}
 @media(prefers-reduced-motion:reduce){.craft-preview-sheet{transition:none}}
-@media print{body:has(.craft-document-preview[open])>*:not(.craft-document-preview){visibility:hidden!important}.craft-document-preview[open]{position:static!important;inset:auto!important;width:100%!important;height:auto!important;max-height:none!important;overflow:visible!important;border:0!important;box-shadow:none!important;background:#fff!important}.craft-document-preview[open] .craft-preview-toolbar,.craft-document-preview[open] .craft-preview-instruments,.craft-document-preview[open] .craft-preview-disclosure{display:none!important}.craft-document-preview[open] .craft-preview-stage{padding:0!important;background:#fff!important;overflow:visible!important}.craft-document-preview[open] .craft-preview-sheet{zoom:1!important}.craft-document-preview[open] .preview-paper{box-shadow:none!important;border:0!important;background:#fff!important}}
+@media print {
+ body:has(.craft-document-preview[open]) * {visibility:hidden!important;}
+ body:has(.craft-document-preview[open]) .craft-document-preview[open],
+ body:has(.craft-document-preview[open]) .craft-document-preview[open] * {visibility:visible!important;}
+ .craft-document-preview[open] {position:fixed!important;inset:0!important;margin:0!important;width:100%!important;height:auto!important;max-height:none!important;overflow:visible!important;border:0!important;box-shadow:none!important;background:white!important;}
+ .craft-document-preview[open] .craft-preview-toolbar,.craft-document-preview[open] .craft-preview-instruments,.craft-document-preview[open] .craft-preview-disclosure {display:none!important;}
+ .craft-document-preview[open] .craft-preview-stage {padding:0!important;background:white!important;overflow:visible!important;}
+ .craft-document-preview[open] .craft-preview-sheet {zoom:1!important;}
+ .craft-document-preview[open] .preview-paper {box-shadow:none!important;border:0!important;background:white!important;}
+}
