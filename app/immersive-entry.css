@@ -49,3 +49,35 @@ box-shadow:0 0 0 48px rgba(214,229,234,.035),0 0 0 118px rgba(214,229,234,.025),
 .paycore-document-bottom span:last-child {font-size:23px;color:#ad9165;line-height:1;}
 @media(max-width:720px){.paycore-entry-document {max-width:400px;margin:25px 0 8px;padding:18px 20px;transform:none;}.paycore-entry-document:hover {transform:none;}.paycore-document-row {font-size:11px;}}
 @media(prefers-reduced-motion:reduce){.paycore-entry-document {transition:none;}}
+
+/* ASTRYX-inspired component contract: one focus and interaction language.
+   Keep PayCore's identity, its genuine form semantics and local-profile disclosure. */
+.access-page{
+ --pc-control-min-target:44px;
+ --pc-control-ring:#1e6c78;
+ --pc-control-border:#829da7;
+}
+.access-card .preview-signin :is(input,button),
+.preview-profile-editor :is(input,button){
+ min-height:var(--pc-control-min-target);
+}
+.access-card .preview-signin :is(input,button):focus-visible,
+.preview-profile-editor :is(input,button):focus-visible,
+.preview-account button:focus-visible{
+ outline:3px solid var(--pc-control-ring)!important;
+ outline-offset:3px!important;
+}
+.access-card .preview-signin input:focus{
+ border-color:var(--pc-control-border);
+ box-shadow:0 0 0 3px rgba(30,108,120,.12);
+}
+.access-card .preview-signin input:invalid:not(:placeholder-shown):not(:focus){
+ border-color:#b94d4d;
+}
+@media(forced-colors:active){
+ .access-card .preview-signin input{border:1px solid CanvasText;}
+ .access-card .preview-signin button{border:1px solid ButtonText;}
+}
+@media(prefers-reduced-motion:reduce){
+ .access-card .preview-signin :is(input,button){transition:none!important;}
+}
