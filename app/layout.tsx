@@ -7,6 +7,7 @@ import "./globals.css";
 import "./page-story-backgrounds.css";
 import "./immersive-entry.css";
 import "./document-craft.css";
+import "./curved-glass-navigation.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(PAYCORE_PUBLIC_URL),
