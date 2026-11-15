@@ -1,0 +1,18 @@
+/* A discoverable glass navigation control while a payroll schedule is not configured.
+   The established desktop sidebar and mobile drawer remain authoritative after setup. */
+.pc-workspace-command{position:fixed;z-index:1100;right:20px;top:calc(84px + env(safe-area-inset-top,0px));color:#f4fcff}
+.pc-workspace-command-trigger{display:flex;align-items:center;gap:11px;min-height:48px;padding:7px 14px 7px 8px;border-radius:17px 27px 20px 14px;border:1px solid rgba(166,234,236,.55);background:linear-gradient(135deg,rgba(29,93,109,.96),rgba(7,37,58,.95));color:#f6ffff;box-shadow:0 12px 32px rgba(7,30,48,.3),inset 0 1px rgba(255,255,255,.26),0 0 24px rgba(90,211,205,.2);backdrop-filter:blur(23px);-webkit-backdrop-filter:blur(23px);font-size:12px;font-weight:750;letter-spacing:.02em}
+.pc-workspace-command-glyph{display:grid;place-items:center;width:32px;height:32px;border-radius:12px;color:#e3fffa;background:linear-gradient(130deg,#52c5b8,#2d5880);font-size:21px}
+.pc-workspace-command-trigger>span:last-child{font-size:17px;color:#c5f2e9}
+.pc-workspace-command-scrim{position:fixed;inset:0;border:0;background:rgba(1,15,24,.32);z-index:-1}
+.pc-workspace-command-panel{position:absolute;top:61px;right:0;width:min(300px,calc(100vw - 30px));padding:18px 13px 16px;border-radius:30px 48px 34px 23px;border:1px solid rgba(179,236,230,.38);background:linear-gradient(155deg,rgba(62,112,135,.88),rgba(15,51,73,.96) 40%,rgba(4,25,44,.98));box-shadow:0 28px 78px rgba(0,0,0,.46),inset 0 1px rgba(255,255,255,.21);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px)}
+.pc-workspace-command-heading{padding:9px 9px 14px;border-bottom:1px solid rgba(237,255,253,.15);margin-bottom:9px}
+.pc-workspace-command-heading strong{display:block;font-size:14px;letter-spacing:.16em}
+.pc-workspace-command-heading small{display:block;font-size:9px;color:#b4dfdb;letter-spacing:.15em;margin-top:5px}
+.pc-workspace-command-panel>a,.pc-workspace-command-panel>button{display:flex;justify-content:space-between;align-items:center;width:100%;min-height:48px;padding:12px 13px;border:1px solid transparent;border-radius:14px;background:transparent;color:#f3fcff;text-decoration:none;text-align:left;font-size:13px;font-weight:650}
+.pc-workspace-command-panel>a:hover,.pc-workspace-command-panel>button:hover{background:rgba(139,235,222,.16);border-color:rgba(180,241,231,.2)}
+.pc-workspace-command-panel p{font-size:10px;line-height:1.6;color:#b3d5d5;padding:13px 9px 0}
+.pc-workspace-command :is(button,a):focus-visible{outline:3px solid #a3ffed;outline-offset:3px}
+@media(min-width:721px){body:has(.preview-workspace .app-shell .sidebar) .pc-workspace-command{display:none}}
+@media(max-width:720px){.pc-workspace-command{display:none}}
+@media(prefers-reduced-motion:reduce){.pc-workspace-command *{transition:none!important;animation:none!important}}
