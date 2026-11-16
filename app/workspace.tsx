@@ -68,6 +68,13 @@ export default function Workspace({ displayName, companyName }: { displayName: s
     const companyScope=JSON.stringify([displayName,companyName]);
     const [companyHeader,setCompanyHeader]=useState<StatementHeader>(emptyStatementHeader());
     function saveCompanyHeader(header:StatementHeader){const reusable=reusableCompanyHeader(header);localStorage.setItem(companySettingsKey(companyScope),encodeCompanySettings(companyScope,reusable));setCompanyHeader(reusable);}
+    const [edgePanelOpen,setEdgePanelOpen] = useState(false);
+    useEffect(() => {
+      if (!edgePanelOpen) return;
+      const onEscape = (event: KeyboardEvent) => { if (event.key === "Escape") setEdgePanelOpen(false); };
+      window.addEventListener("keydown",onEscape);
+      return () => window.removeEventListener("keydown",onEscape);
+    },[edgePanelOpen]);
     const [invoiceMode,setInvoiceMode] = useState(false);
     const [invoiceOnlyReports,setInvoiceOnlyReports] = useState(false);
     const [presenting, setPresenting] = useState(false), [tourStage, setTourStage] = useState(0), [resetEpoch, setResetEpoch] = useState(0);
@@ -247,9 +254,12 @@ function PeriodWorkspace({ companyHeader,onSaveCompanyHeader,onInvoiceMode, disp
         const targets = [".exhibit-onboarding", ".payroll-sheet", ".exception-workbench", ".exhibit-statement", ".demo-completion", ".exhibit-statement", ".presentation-guide"];
         revealPresentation(targets[stage]);
     }
-    return <div className={`app-shell ${presenting ? "presentation-mode" : ""}`}>
+    return <div className={`app-shell paycore-edge-shell ${edgePanelOpen ? "edge-panel-open" : ""} ${presenting ? "presentation-mode" : ""}`}>
     <a href="#main-content" className="skip-link">Skip to content</a>
-    <aside className="sidebar" aria-label="Workspace navigation">
+    <button type="button" className="pc-edge-tab" aria-controls="pc-edge-navigation" aria-expanded={edgePanelOpen} aria-label={edgePanelOpen ? "Close PayCore edge navigation" : "Unfurl PayCore edge navigation"} onClick={() => setEdgePanelOpen(value => !value)}><span className="pc-edge-tab-icon" aria-hidden="true">❖</span><span className="pc-edge-tab-label">MENU</span><span className="pc-edge-tab-chevron" aria-hidden="true">{edgePanelOpen ? "‹" : "›"}</span></button>
+    {edgePanelOpen && <button type="button" className="pc-edge-backdrop" tabIndex={-1} aria-label="Close PayCore navigation" onClick={() => setEdgePanelOpen(false)} />}
+
+    <aside id="pc-edge-navigation" className="sidebar" aria-label="Workspace navigation" aria-hidden={!edgePanelOpen} inert={!edgePanelOpen} onClick={(event) => { if ((event.target as HTMLElement).closest("button, a")) setEdgePanelOpen(false); }}>
       <a className="brand" href="/" aria-label="PayCore home"><BrandLogo /></a>
       <div className="workspace-label"><span className="company-avatar" aria-hidden="true">{profileInitials(companyName || displayName)}</span><div>{workspaceName}<small>Local workspace</small></div></div>
       <p className="nav-caption">YOUR WORKSPACE</p>
