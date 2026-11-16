@@ -12,13 +12,14 @@ type EntryProps = {
   onCompany: (value: string) => void;
   onNameEdited: () => void;
   onOpen: () => void;
+  onReturn?: () => void;
 };
 type Mode = "workspace" | "discover";
 
 /** UI-only entry experience. This is NOT an Auth0 login or identity verification. */
 export default function AnimatedAccess({
   email, displayName, companyName, nameEdited,
-  onEmail, onName, onCompany, onNameEdited, onOpen
+  onEmail, onName, onCompany, onNameEdited, onOpen, onReturn
 }: EntryProps) {
   const [mode,setMode] = useState<Mode>("workspace");
   const [transitioning,setTransitioning] = useState(false);
@@ -42,7 +43,7 @@ export default function AnimatedAccess({
   return <main className="pc-auth-stage">
     <div className="pc-auth-backdrop-orb pc-auth-orb-one" aria-hidden="true" />
     <div className="pc-auth-backdrop-orb pc-auth-orb-two" aria-hidden="true" />
-    <header className="pc-auth-top"><BrandLogo/><span>CONTRACTOR SETTLEMENTS &amp; PAYROLL</span></header>
+    <header className="pc-auth-top"><BrandLogo/>{onReturn ? <button type="button" className="pc-auth-return" onClick={onReturn}>Return to workspace ↗</button> : <span>CONTRACTOR SETTLEMENTS &amp; PAYROLL</span>}</header>
     <section className="pc-auth-shell" data-mode={mode} aria-label="PayCore local workspace entry">
       <div className="pc-auth-content pc-auth-form-side" inert={mode!=="workspace"}>
         <div className="pc-auth-form-wrap">
