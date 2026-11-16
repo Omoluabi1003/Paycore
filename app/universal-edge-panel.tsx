@@ -7,36 +7,49 @@ const sections = [["Home","Home"],["Run payroll","Run payroll"],["Contractors","
 const setup = [["Payroll","Payroll"],["Invoices","Invoices"],["Reports","Reports"]] as const;
 type AudioWindow = Window & { webkitAudioContext?: typeof AudioContext };
 
-function playWhoosh(opening: boolean) {
-  if (typeof window === "undefined" || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+// AudioContext.resume is requested synchronously from the click/touch gesture,
+// including on iOS Safari. Never play sound automatically on mount.
+function playWhoosh(opening: boolean): void {
+  if (typeof window === "undefined") return;
   const AudioContextCtor = window.AudioContext || (window as AudioWindow).webkitAudioContext;
   if (!AudioContextCtor) return;
-  let ctx: AudioContext | undefined;
-  try {
-    ctx = new AudioContextCtor();
-    const length = Math.floor(ctx.sampleRate * 0.27);
-    const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
-    const samples = buffer.getChannelData(0);
-    // Shaped white noise creates a quick soft air sweep without external audio assets.
-    for (let i=0;i<length;i++) {
-      const t = i/length;
-      const envelope = Math.pow(Math.sin(Math.PI*t), 1.4);
-      samples[i] = (Math.random()*2-1)*envelope;
-    }
-    const source = ctx.createBufferSource();
-    source.buffer = buffer;
-    const filter = ctx.createBiquadFilter();
-    filter.type = "lowpass";
-    filter.frequency.setValueAtTime(opening?370:850,ctx.currentTime);
-    filter.frequency.exponentialRampToValueAtTime(opening?1250:310,ctx.currentTime+0.25);
-    const gain = ctx.createGain();
-    gain.gain.setValueAtTime(0.0001,ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.075,ctx.currentTime+0.035);
-    gain.gain.exponentialRampToValueAtTime(0.0001,ctx.currentTime+0.27);
-    source.connect(filter);filter.connect(gain);gain.connect(ctx.destination);
-    source.start();source.stop(ctx.currentTime+0.27);
-    source.onended = () => { void ctx?.close().catch(()=>{}); };
-  } catch { void ctx?.close().catch(()=>{}); }
+  let context: AudioContext;
+  try { context = new AudioContextCtor(); } catch { return; }
+  const start = () => {
+    try {
+      const duration = opening ? 0.42 : 0.30;
+      const count = Math.floor(context.sampleRate * duration);
+      const buffer = context.createBuffer(1,count,context.sampleRate);
+      const samples = buffer.getChannelData(0);
+      for (let i=0;i<count;i++) {
+        const t=i/count;
+        const attack=Math.min(1,t/0.13);
+        const decay=Math.pow(1-t,1.15);
+        samples[i]=(Math.random()*2-1)*attack*decay;
+      }
+      const source=context.createBufferSource();
+      source.buffer=buffer;
+      const lowpass=context.createBiquadFilter();
+      lowpass.type="lowpass";
+      lowpass.frequency.setValueAtTime(opening?380:1500,context.currentTime);
+      lowpass.frequency.exponentialRampToValueAtTime(opening?2100:350,context.currentTime+duration);
+      const highpass=context.createBiquadFilter();
+      highpass.type="highpass";
+      highpass.frequency.value=150;
+      const gain=context.createGain();
+      const t=context.currentTime;
+      gain.gain.setValueAtTime(0.0001,t);
+      gain.gain.linearRampToValueAtTime(0.19,t+0.075);
+      gain.gain.exponentialRampToValueAtTime(0.0001,t+duration);
+      source.connect(lowpass);lowpass.connect(highpass);highpass.connect(gain);gain.connect(context.destination);
+      source.start(t);source.stop(t+duration);
+      source.onended=()=>{void context.close().catch(()=>{});};
+    } catch {void context.close().catch(()=>{});}
+  };
+  if(context.state==="suspended") {
+    // resume() must be requested inside the user interaction.
+    void context.resume().then(start).catch(()=>{void context.close().catch(()=>{});});
+  } else start();
 }
 
 /** Samsung Edge-style access to real PayCore actions across signed-in workspace states. */
@@ -62,8 +75,8 @@ export default function UniversalEdgePanel({companyName,displayName,onEditProfil
     return ()=>{window.removeEventListener("keydown",escape);handle.current?.focus({preventScroll:true});};
   },[open]);
   const change=(next:boolean)=>{
-    setOpen(next);
     if(!muted)playWhoosh(next);
+    setOpen(next);
   };
   const go=(label:string)=>{
     const scope=full?".paycore-edge-shell .sidebar .nav-item":".setup-module-nav button";
@@ -84,6 +97,7 @@ export default function UniversalEdgePanel({companyName,displayName,onEditProfil
     </button>
     <div className="pc-unfurl-mask" data-visible={open} aria-hidden="true" onClick={()=>change(false)}/>
     <nav ref={panel} id="pc-unfurl-panel" className="pc-unfurl-panel" aria-label="PayCore edge navigation" aria-hidden={!open} inert={!open}>
+      <div className="pc-folio-folds" aria-hidden="true"><span className="pc-folio-fold pc-folio-fold-one"/><span className="pc-folio-fold pc-folio-fold-two"/><span className="pc-folio-fold pc-folio-fold-three"/></div>
       <div className="pc-unfurl-head"><span className="pc-unfurl-crest" aria-hidden="true">✧</span><div><strong>PAYCORE</strong><small>YOUR INTELLIGENT WORKSPACE</small></div><button type="button" onClick={()=>change(false)} aria-label="Close navigation">×</button></div>
       <div className="pc-unfurl-profile"><span className="pc-unfurl-avatar">{displayName.slice(0,1).toUpperCase()}</span><div><strong>{displayName}</strong><small>{companyName||"Local workspace"}</small></div><span className="pc-unfurl-status" aria-hidden="true"/></div>
       <p className="pc-unfurl-label">WORKSPACE</p>
