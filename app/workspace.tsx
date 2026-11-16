@@ -156,6 +156,13 @@ export default function Workspace({ displayName, companyName }: { displayName: s
     </section>{journeyNotice && <p className="exhibit-continuity" role="status">{journeyNotice}</p>}<PeriodWorkspace companyHeader={companyHeader} onSaveCompanyHeader={saveCompanyHeader} onInvoiceMode={setInvoiceMode} key={`${run.payPeriodId}:${resetEpoch}`} presenting={presenting} tourStage={tourStage} onPresent={setPresenting} onTourStage={setTourStage} onNextExhibit={() => { selectPeriod(next); setTourStage(1); }} displayName={displayName} companyName={companyName} run={run} initial={initial} onSnapshot={draft => drafts.current.set(run.payPeriodId, { run, draft })} /></>;
 }
 function PeriodWorkspace({ companyHeader,onSaveCompanyHeader,onInvoiceMode, displayName, companyName, run, initial, onSnapshot, presenting, tourStage, onPresent, onTourStage, onNextExhibit }: { companyHeader:StatementHeader;onSaveCompanyHeader:(header:StatementHeader)=>void;onInvoiceMode:(value:boolean)=>void; presenting: boolean; tourStage: number; onPresent: (value: boolean) => void; onTourStage: (value: number) => void; onNextExhibit: () => void; displayName: string; companyName: string; run: PayrollRun; initial: PeriodDraft; onSnapshot: (draft: PeriodDraft) => void }) {
+    const [edgePanelOpen,setEdgePanelOpen] = useState(false);
+    useEffect(() => {
+      if (!edgePanelOpen) return;
+      const onEscape = (event: KeyboardEvent) => { if (event.key === "Escape") setEdgePanelOpen(false); };
+      window.addEventListener("keydown",onEscape);
+      return () => window.removeEventListener("keydown",onEscape);
+    },[edgePanelOpen]);
     useEffect(()=>{onInvoiceMode(false);},[onInvoiceMode]);
     const period = formatPeriod(run);
     const [statementDirty,setStatementDirty] = useState(false);
@@ -247,9 +254,12 @@ function PeriodWorkspace({ companyHeader,onSaveCompanyHeader,onInvoiceMode, disp
         const targets = [".exhibit-onboarding", ".payroll-sheet", ".exception-workbench", ".exhibit-statement", ".demo-completion", ".exhibit-statement", ".presentation-guide"];
         revealPresentation(targets[stage]);
     }
-    return <div className={`app-shell ${presenting ? "presentation-mode" : ""}`}>
+    return <div className={`app-shell paycore-edge-shell ${edgePanelOpen ? "edge-panel-open" : ""} ${presenting ? "presentation-mode" : ""}`}>
     <a href="#main-content" className="skip-link">Skip to content</a>
-    <aside className="sidebar" aria-label="Workspace navigation">
+    <button type="button" className="pc-edge-tab" aria-controls="pc-edge-navigation" aria-expanded={edgePanelOpen} aria-label={edgePanelOpen ? "Close PayCore edge navigation" : "Unfurl PayCore edge navigation"} onClick={() => setEdgePanelOpen(value => !value)}><span className="pc-edge-tab-icon" aria-hidden="true">❖</span><span className="pc-edge-tab-label">MENU</span><span className="pc-edge-tab-chevron" aria-hidden="true">{edgePanelOpen ? "‹" : "›"}</span></button>
+    {edgePanelOpen && <button type="button" className="pc-edge-backdrop" tabIndex={-1} aria-label="Close PayCore navigation" onClick={() => setEdgePanelOpen(false)} />}
+
+    <aside id="pc-edge-navigation" className="sidebar" aria-label="Workspace navigation" aria-hidden={!edgePanelOpen} inert={!edgePanelOpen} onClick={(event) => { if ((event.target as HTMLElement).closest("button, a")) setEdgePanelOpen(false); }}>
       <a className="brand" href="/" aria-label="PayCore home"><BrandLogo /></a>
       <div className="workspace-label"><span className="company-avatar" aria-hidden="true">{profileInitials(companyName || displayName)}</span><div>{workspaceName}<small>Local workspace</small></div></div>
       <p className="nav-caption">YOUR WORKSPACE</p>

@@ -1,0 +1,54 @@
+/* PayCore Edge Glass: the navigation is an unfurling edge panel, not a permanent column.
+   Preserve existing workspace controls and handlers. */
+@media(min-width:721px){
+ .preview-workspace .paycore-edge-shell{display:block!important;padding:0!important;min-height:100dvh;background:#e5edf5}
+ .preview-workspace .paycore-edge-shell>.workspace-main{width:100%;border-radius:0;overflow:visible}
+ .preview-workspace .paycore-edge-shell>.sidebar{
+   display:flex!important;position:fixed!important;top:clamp(12px,4vh,36px)!important;left:17px!important;
+   height:calc(100dvh - clamp(24px,8vh,72px))!important;max-height:900px!important;
+   width:min(306px,calc(100vw - 75px))!important;
+   z-index:2102!important;margin:0!important;
+   transform:translate3d(calc(-100% - 35px),0,0) scale(.96);
+   transform-origin:left center;opacity:0;visibility:hidden;pointer-events:none;
+   border-radius:32px 55px 37px 27px!important;
+   transition:transform .42s cubic-bezier(.2,.85,.25,1),opacity .29s ease,visibility .42s!important;
+   box-shadow:22px 32px 90px rgba(4,16,39,.44),0 0 48px rgba(169,192,255,.17),inset 1px 1px rgba(255,255,255,.44)!important;
+ }
+ .preview-workspace .paycore-edge-shell.edge-panel-open>.sidebar{
+   transform:translate3d(0,0,0) scale(1);opacity:1;visibility:visible;pointer-events:auto;
+ }
+ .pc-edge-tab{
+   display:flex;position:fixed;z-index:2104;left:0;top:48%;transform:translateY(-50%);
+   width:38px;min-height:115px;align-items:center;justify-content:center;flex-direction:column;gap:10px;
+   border:1px solid rgba(230,248,255,.48);border-left:0;border-radius:0 20px 23px 0;
+   background:linear-gradient(150deg,rgba(98,132,169,.94),rgba(28,52,86,.96) 52%,rgba(12,28,56,.97));
+   color:#f7fdff;box-shadow:7px 12px 40px rgba(7,24,57,.35),inset 1px 1px rgba(255,255,255,.32),0 0 30px rgba(138,194,245,.16);
+   backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+   transition:left .42s cubic-bezier(.2,.85,.25,1),background .2s;
+ }
+ .pc-edge-tab-icon{font-size:20px;line-height:1}
+ .pc-edge-tab-label{writing-mode:vertical-rl;letter-spacing:.23em;font-size:9px;font-weight:800}
+ .pc-edge-tab-chevron{font-size:20px;line-height:1;color:#d1e5ff}
+ .preview-workspace .edge-panel-open>.pc-edge-tab{left:min(323px,calc(100vw - 58px))}
+ .pc-edge-backdrop{display:block;position:fixed;inset:0;z-index:2100;border:0;background:rgba(3,10,24,.48);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+ .preview-workspace .paycore-edge-shell>.sidebar .workspace-label{flex-shrink:0}
+}
+@media(max-width:720px){
+ .pc-edge-tab,.pc-edge-backdrop{display:none}
+ /* Reuse the existing mobile drawer instead of introducing a competing menu. */
+ .preview-workspace .mobile-menu-trigger{
+   position:fixed!important;right:0!important;top:46%!important;z-index:1900!important;transform:translateY(-50%);
+   margin:0!important;width:40px!important;min-width:40px!important;height:115px!important;
+   border-radius:21px 0 0 24px!important;border-right:0!important;
+   flex-direction:column!important;padding:9px 6px!important;gap:8px!important;
+   background:linear-gradient(160deg,rgba(94,134,159,.96),rgba(24,58,84,.98),rgba(8,28,52,.98))!important;
+   box-shadow:-6px 10px 32px rgba(0,18,37,.35),inset 1px 1px rgba(255,255,255,.32)!important;
+ }
+ .preview-workspace .mobile-menu-trigger strong{writing-mode:vertical-rl;letter-spacing:.14em;font-size:9px!important}
+ .preview-workspace .mobile-menu-trigger .pc-menu-bars{transform:rotate(90deg) scale(.83)}
+ .preview-workspace .mobile-drawer-layer{z-index:2200!important}
+ .preview-workspace .mobile-command-drawer{right:9px!important;top:calc(9px + env(safe-area-inset-top,0px))!important;bottom:calc(9px + env(safe-area-inset-bottom,0px))!important;height:auto!important;max-height:calc(100dvh - 18px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px))!important;animation:pcEdgeUnfurl .38s cubic-bezier(.2,.85,.25,1)!important}
+}
+@keyframes pcEdgeUnfurl{from{opacity:.5;transform:translate3d(106%,0,0) scale(.94)}to{opacity:1;transform:translate3d(0,0,0) scale(1)}}
+@media(prefers-reduced-motion:reduce){.preview-workspace .paycore-edge-shell>.sidebar,.pc-edge-tab{transition:none!important}.preview-workspace .mobile-command-drawer{animation:none!important}}
+.pc-edge-tab:focus-visible{outline:3px solid #9deaff;outline-offset:3px}
