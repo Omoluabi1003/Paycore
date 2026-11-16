@@ -22,3 +22,82 @@
 .period-setup-shell .panel.invoice-entry{border:1px solid rgba(145,213,216,.33);border-radius:22px 34px 24px 20px;box-shadow:0 18px 48px rgba(14,44,60,.12),inset 0 1px rgba(255,255,255,.8);background:linear-gradient(125deg,rgba(238,253,252,.96),rgba(220,236,243,.81))}
 @media(min-width:721px){.preview-workspace .sidebar{outline:1px solid rgba(90,223,213,.14);outline-offset:3px}.preview-workspace .sidebar nav .nav-item{min-height:42px}.preview-workspace .sidebar nav .nav-item:focus-visible{outline:3px solid #94ebdb;outline-offset:2px}}
 @media(max-width:720px){.period-setup-shell .setup-module-nav{margin:10px 0 17px!important;overflow-x:auto}.period-setup-shell .setup-module-nav button,.period-setup-shell .setup-module-nav a{white-space:nowrap}}
+
+
+/* LUMEN-INSPIRED / PAYCORE-OWNED CURVED GLASS NAVIGATION
+ * Applied to the actual interactive navigation, not a marketing card.
+ * Imported after legacy globals; no new navigation state or dependencies.
+ */
+@media (min-width: 721px) {
+  .preview-workspace .app-shell {grid-template-columns:minmax(264px,292px) minmax(0,1fr);gap:clamp(14px,2vw,30px);padding:16px 16px 16px 20px;background:radial-gradient(ellipse at 16% 0%,rgba(78,141,159,.16),transparent 48%),#dce7ed;min-height:100dvh}
+  .preview-workspace .app-shell > .sidebar {
+    position:sticky;top:16px;align-self:start;height:calc(100dvh - 32px);max-height:none;
+    margin:0;padding:20px 15px 16px;isolation:isolate;
+    border:1px solid rgba(230,252,255,.46);
+    border-radius:32px 55px 37px 27px;
+    background:linear-gradient(155deg,rgba(92,119,145,.74) 0%,rgba(42,63,91,.83) 36%,rgba(16,29,54,.95) 78%,rgba(11,20,39,.96));
+    color:#f7faff;
+    box-shadow:0 32px 74px rgba(19,30,56,.28),-3px 0 32px rgba(117,165,198,.12),inset 1px 1px 0 rgba(255,255,255,.44),inset -1px -1px 0 rgba(200,217,252,.12);
+    backdrop-filter:blur(36px) saturate(1.35);-webkit-backdrop-filter:blur(36px) saturate(1.35);
+    overflow-x:hidden;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(217,231,255,.25) transparent;
+  }
+  .preview-workspace .app-shell > .sidebar::before{
+    content:"";position:absolute;z-index:-1;pointer-events:none;top:-95px;right:-125px;width:320px;height:290px;border-radius:50%;
+    border:1px solid rgba(245,252,255,.29);
+    background:radial-gradient(circle at 26% 75%,rgba(213,223,255,.25),transparent 60%);
+    box-shadow:0 0 0 38px rgba(204,231,255,.035),0 0 0 88px rgba(204,231,255,.02),0 0 54px rgba(150,170,255,.13);
+  }
+  .preview-workspace .app-shell > .sidebar::after{
+    content:"";position:absolute;z-index:-1;pointer-events:none;bottom:-180px;left:-125px;width:335px;height:350px;border-radius:50%;
+    background:radial-gradient(circle at 60% 38%,rgba(106,192,204,.18),transparent 65%);
+    border:1px solid rgba(209,245,245,.13);
+  }
+  .preview-workspace .sidebar > .brand{margin:4px 9px 19px;padding-bottom:15px;border-bottom:1px solid rgba(239,248,255,.15);color:#f5fbff}
+  .preview-workspace .sidebar .workspace-label{
+    background:linear-gradient(105deg,rgba(222,234,255,.19),rgba(222,234,255,.055));
+    padding:14px 11px;min-height:73px;margin-bottom:25px;
+    border:1px solid rgba(224,239,255,.26);border-radius:18px 25px 17px 16px;
+    box-shadow:inset 0 1px rgba(255,255,255,.2),0 10px 28px rgba(6,11,28,.14);
+    backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+    color:#f9fbff;
+  }
+  .preview-workspace .sidebar .company-avatar{border-radius:15px;background:linear-gradient(138deg,#96d6da,#526ca2);color:#071e31;box-shadow:0 0 24px rgba(142,211,220,.23)}
+  .preview-workspace .sidebar .workspace-label small,.preview-workspace .sidebar .profile small{color:#d0dfed}
+  .preview-workspace .sidebar .nav-caption{color:#d0d8ed;font-size:9px;letter-spacing:.22em;margin-bottom:13px}
+  .preview-workspace .sidebar nav{gap:5px}
+  .preview-workspace .sidebar nav .nav-item{
+    position:relative;min-height:46px;padding:11px 13px;border:1px solid transparent;border-radius:15px 22px 15px 13px;
+    background:transparent;color:#dce6f3;font-size:13px;font-weight:550;
+    transition:background .18s ease,border-color .18s ease,transform .18s ease,box-shadow .18s ease;
+  }
+  .preview-workspace .sidebar nav .nav-item svg{color:#b9d9ea}
+  .preview-workspace .sidebar nav .nav-item:hover{
+    background:rgba(235,239,255,.15);border-color:rgba(243,248,255,.16);transform:translateX(2px);
+  }
+  .preview-workspace .sidebar nav .nav-item.active,.preview-workspace .sidebar nav .nav-item[aria-current="page"]{
+    color:#fff;background:linear-gradient(105deg,rgba(242,244,255,.27),rgba(236,239,255,.11));
+    border-color:rgba(251,252,255,.4);box-shadow:0 10px 27px rgba(5,12,32,.16),inset 0 1px rgba(255,255,255,.31),0 0 20px rgba(158,180,255,.14);
+    font-weight:720;
+  }
+  .preview-workspace .sidebar nav .nav-item.active svg,.preview-workspace .sidebar nav .nav-item[aria-current="page"] svg{color:#d7fbff}
+  .preview-workspace .sidebar .guide-card{border-radius:21px 32px 20px 16px;background:linear-gradient(135deg,rgba(215,225,255,.14),rgba(20,65,83,.31));border-color:rgba(199,237,246,.27);box-shadow:inset 0 1px rgba(255,255,255,.17)}
+  .preview-workspace .sidebar .sidebar-bottom{padding-top:26px}
+  .preview-workspace .sidebar .profile{border-top-color:rgba(222,243,253,.2)}
+  .preview-workspace .workspace-main{border-radius:28px;overflow:clip;min-width:0}
+}
+@media(max-width:720px){
+  .preview-workspace .mobile-command-drawer{
+    border-radius:34px 51px 38px 27px;
+    border:1px solid rgba(231,251,253,.43);
+    background:linear-gradient(152deg,rgba(105,133,157,.92),rgba(30,58,80,.95) 35%,rgba(8,24,47,.98) 83%);
+    box-shadow:-20px 30px 78px rgba(0,7,29,.54),inset 1px 1px rgba(255,255,255,.35),0 0 35px rgba(114,177,204,.14);
+    backdrop-filter:blur(35px) saturate(1.4);-webkit-backdrop-filter:blur(35px) saturate(1.4);
+  }
+  .preview-workspace .mobile-drawer-profile{margin:10px 12px;padding:14px;border:1px solid rgba(241,254,255,.26);border-radius:18px 28px 18px 16px;background:rgba(236,248,255,.13);box-shadow:inset 0 1px rgba(255,255,255,.17)}
+  .preview-workspace .mobile-drawer-nav{gap:4px;padding:5px 12px}
+  .preview-workspace .mobile-drawer-nav button,.preview-workspace .mobile-drawer-nav a{border:1px solid transparent;border-radius:13px 20px 14px 12px;min-height:49px;padding:0 13px;font-size:13px}
+  .preview-workspace .mobile-drawer-nav button:hover,.preview-workspace .mobile-drawer-nav a:hover{background:rgba(231,245,255,.15);border-color:rgba(236,249,255,.26)}
+  .preview-workspace .mobile-drawer-nav p{padding:16px 9px 6px;color:#bbdfe9}
+}
+@media(prefers-reduced-motion:reduce){.preview-workspace .sidebar .nav-item{transition:none!important}}
+@media(forced-colors:active){.preview-workspace .sidebar,.preview-workspace .mobile-command-drawer{border:2px solid CanvasText}}
