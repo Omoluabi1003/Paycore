@@ -64,3 +64,66 @@
   .pc-folio-fold{transition:none!important}
   .pc-unfurl-root[data-open=true] :is(.pc-unfurl-head,.pc-unfurl-profile,.pc-unfurl-links,.pc-unfurl-footer){animation:none!important}
 }
+
+
+/* Final placement: handle belongs on the viewport edge, never beside or above an open panel.
+   Use viewport units rather than percentages resolved against a fixed zero-height parent. */
+.pc-unfurl-root {--pc-panel-width:clamp(214px,19vw,254px);perspective:1200px}
+.pc-unfurl-handle{
+  position:fixed!important;top:50dvh!important;left:0!important;
+  transform:translateY(-50%)!important;
+  width:28px!important;min-height:80px!important;padding:7px 3px!important;
+  border-radius:0 13px 16px 0!important;
+  opacity:.83;
+  transition:opacity .2s ease,visibility .2s ease!important;
+}
+.pc-unfurl-handle:hover,.pc-unfurl-handle:focus-visible{opacity:1}
+.pc-unfurl-root[data-open=true] .pc-unfurl-handle{
+  opacity:0!important;visibility:hidden!important;pointer-events:none!important;
+  left:0!important;
+}
+/* Floating, slender, softly translucent glass. No permanent vertical fold bars. */
+.pc-unfurl-panel{
+  left:12px!important;top:50dvh!important;
+  width:var(--pc-panel-width)!important;height:auto!important;
+  max-height:min(82dvh,675px)!important;
+  transform-origin:left center!important;
+  border:1px solid rgba(245,248,255,.58)!important;
+  border-radius:22px 29px 26px 19px!important;
+  padding:10px 9px 12px!important;
+  background:linear-gradient(140deg,rgba(218,221,235,.26),rgba(112,124,153,.29) 45%,rgba(41,49,80,.48)),rgba(48,54,83,.48)!important;
+  box-shadow:12px 23px 58px rgba(9,14,37,.32),inset 1px 1px rgba(255,255,255,.43),0 0 25px rgba(188,191,235,.12)!important;
+  backdrop-filter:blur(32px) saturate(1.15)!important;
+  -webkit-backdrop-filter:blur(32px) saturate(1.15)!important;
+  transform:translate3d(-16px,-50%,0) rotateY(-78deg) scaleX(.15)!important;
+  clip-path:inset(0 94% 0 0 round 22px 29px 26px 19px)!important;
+  transition:transform .65s cubic-bezier(.17,.88,.26,1),clip-path .65s cubic-bezier(.17,.88,.26,1),opacity .28s,visibility .65s!important;
+}
+.pc-unfurl-root[data-open=true] .pc-unfurl-panel{
+  transform:translate3d(0,-50%,0) rotateY(0deg) scaleX(1)!important;
+  clip-path:inset(0 0 0 0 round 22px 29px 26px 19px)!important;
+}
+.pc-folio-folds{display:none!important}
+.pc-unfurl-head{gap:8px!important;padding:6px 5px 11px!important}
+.pc-unfurl-crest{width:29px!important;height:29px!important;font-size:19px!important}
+.pc-unfurl-head strong{font-size:10px!important}
+.pc-unfurl-head small{font-size:7px!important}
+.pc-unfurl-head button{width:31px!important;min-height:31px!important;font-size:20px!important}
+.pc-unfurl-profile{margin-top:11px!important;padding:9px 8px!important;min-height:48px!important;border-radius:14px 21px 16px 13px!important;background:rgba(248,246,255,.13)!important}
+.pc-unfurl-avatar{width:30px!important;height:30px!important}
+.pc-unfurl-profile strong{font-size:11px!important}
+.pc-unfurl-profile small{font-size:9px!important}
+.pc-unfurl-label{margin:16px 8px 8px!important;font-size:8px!important}
+.pc-unfurl-links{gap:2px!important}
+.pc-unfurl-links :is(button,a){min-height:37px!important;padding:7px 8px!important;gap:9px!important;font-size:11px!important;border-radius:10px 15px 11px 9px!important}
+.pc-unfurl-nav-icon{width:23px!important;height:23px!important;font-size:14px!important}
+.pc-unfurl-arrow{font-size:16px!important}
+.pc-unfurl-footer{margin-top:10px!important;padding:9px 5px 3px!important}
+.pc-unfurl-footer button{font-size:9px!important;padding:7px!important}
+@media(max-width:720px){
+ .pc-unfurl-root{--pc-panel-width:min(244px,calc(100vw - 54px))}
+ .pc-unfurl-panel{left:9px!important;max-height:86dvh!important}
+}
+@media(prefers-reduced-motion:reduce){
+ .pc-unfurl-panel{transition:none!important}
+}
