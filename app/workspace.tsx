@@ -196,8 +196,27 @@ function PeriodWorkspace({ companyHeader,onSaveCompanyHeader,onInvoiceMode, disp
     const nextStep = firstIncomplete < 0 ? 2 : firstIncomplete;
     const total = (key: keyof Contractor["settlement"]) => contractors.reduce((sum, p) => sum + Math.round(p.settlement[key] * 100), 0) / 100;
     const gross = contractors.reduce((sum, p) => sum + Math.round(p.gross * 100), 0) / 100;
-    function focusHeading() { requestAnimationFrame(() => heading.current?.focus()); }
-    function navigate(next: View) { setView(next); onInvoiceMode(next==="invoices"||next==="reports"); focusHeading(); }
+    function focusHeading() {
+        requestAnimationFrame(() => {
+            // Avoid Safari scrolling a newly focused title under its browser chrome.
+            heading.current?.focus({ preventScroll: true });
+        });
+    }
+    function resetWorkspaceScroll() {
+        // Workspace tabs are in-page views; retain no old scroll offset between them.
+        // The global stylesheet uses smooth scrolling, so temporarily bypass it here.
+        const root = document.documentElement;
+        const previous = root.style.scrollBehavior;
+        root.style.scrollBehavior = "auto";
+        window.scrollTo(0, 0);
+        requestAnimationFrame(() => { root.style.scrollBehavior = previous; });
+    }
+    function navigate(next: View) {
+        setView(next);
+        onInvoiceMode(next==="invoices"||next==="reports");
+        resetWorkspaceScroll();
+        requestAnimationFrame(() => { resetWorkspaceScroll(); focusHeading(); });
+    }
     function begin(at = nextStep) { setStep(at); navigate("prepare"); }
     function editContractor(id: string) {
         setStep(1); navigate("prepare");
