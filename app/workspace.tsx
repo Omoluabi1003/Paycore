@@ -68,13 +68,6 @@ export default function Workspace({ displayName, companyName }: { displayName: s
     const companyScope=JSON.stringify([displayName,companyName]);
     const [companyHeader,setCompanyHeader]=useState<StatementHeader>(emptyStatementHeader());
     function saveCompanyHeader(header:StatementHeader){const reusable=reusableCompanyHeader(header);localStorage.setItem(companySettingsKey(companyScope),encodeCompanySettings(companyScope,reusable));setCompanyHeader(reusable);}
-    const [edgePanelOpen,setEdgePanelOpen] = useState(false);
-    useEffect(() => {
-      if (!edgePanelOpen) return;
-      const onEscape = (event: KeyboardEvent) => { if (event.key === "Escape") setEdgePanelOpen(false); };
-      window.addEventListener("keydown",onEscape);
-      return () => window.removeEventListener("keydown",onEscape);
-    },[edgePanelOpen]);
     const [invoiceMode,setInvoiceMode] = useState(false);
     const [invoiceOnlyReports,setInvoiceOnlyReports] = useState(false);
     const [presenting, setPresenting] = useState(false), [tourStage, setTourStage] = useState(0), [resetEpoch, setResetEpoch] = useState(0);
@@ -163,6 +156,13 @@ export default function Workspace({ displayName, companyName }: { displayName: s
     </section>{journeyNotice && <p className="exhibit-continuity" role="status">{journeyNotice}</p>}<PeriodWorkspace companyHeader={companyHeader} onSaveCompanyHeader={saveCompanyHeader} onInvoiceMode={setInvoiceMode} key={`${run.payPeriodId}:${resetEpoch}`} presenting={presenting} tourStage={tourStage} onPresent={setPresenting} onTourStage={setTourStage} onNextExhibit={() => { selectPeriod(next); setTourStage(1); }} displayName={displayName} companyName={companyName} run={run} initial={initial} onSnapshot={draft => drafts.current.set(run.payPeriodId, { run, draft })} /></>;
 }
 function PeriodWorkspace({ companyHeader,onSaveCompanyHeader,onInvoiceMode, displayName, companyName, run, initial, onSnapshot, presenting, tourStage, onPresent, onTourStage, onNextExhibit }: { companyHeader:StatementHeader;onSaveCompanyHeader:(header:StatementHeader)=>void;onInvoiceMode:(value:boolean)=>void; presenting: boolean; tourStage: number; onPresent: (value: boolean) => void; onTourStage: (value: number) => void; onNextExhibit: () => void; displayName: string; companyName: string; run: PayrollRun; initial: PeriodDraft; onSnapshot: (draft: PeriodDraft) => void }) {
+    const [edgePanelOpen,setEdgePanelOpen] = useState(false);
+    useEffect(() => {
+      if (!edgePanelOpen) return;
+      const onEscape = (event: KeyboardEvent) => { if (event.key === "Escape") setEdgePanelOpen(false); };
+      window.addEventListener("keydown",onEscape);
+      return () => window.removeEventListener("keydown",onEscape);
+    },[edgePanelOpen]);
     useEffect(()=>{onInvoiceMode(false);},[onInvoiceMode]);
     const period = formatPeriod(run);
     const [statementDirty,setStatementDirty] = useState(false);
