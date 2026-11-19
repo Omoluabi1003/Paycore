@@ -1,9 +1,11 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { BrandMark } from "./brand";
 
 type Position = { x: number; y: number; width: number; height: number; animate: boolean };
 /** Decorative only: aria-current and the original controls remain authoritative. */
-export default function AnimatedNavIndicator() {
+export default function AnimatedNavIndicator({ hanging = false }: { hanging?: boolean }) {
+  const charm = useRef<HTMLSpanElement>(null);
   const marker = useRef<HTMLSpanElement>(null);
   const [position, setPosition] = useState<Position | null>(null);
   useEffect(() => {
@@ -26,5 +28,14 @@ export default function AnimatedNavIndicator() {
     schedule();
     return () => { cancelAnimationFrame(frame); mutations.disconnect(); resize.disconnect(); window.removeEventListener("resize", schedule); };
   }, []);
-  return <span ref={marker} className="pc-selection-light" aria-hidden="true" data-ready={Boolean(position)} data-motion={position?.animate ?? false} style={position ? { transform: `translate3d(${position.x}px, ${position.y}px, 0)`, width: position.width, height: position.height } : undefined} />;
+  useEffect(() => {
+    if (!hanging || !position?.animate || !charm.current || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const swing = charm.current.animate([
+      { transform: "rotate(-22deg)" }, { transform: "rotate(15deg)", offset: .3 },
+      { transform: "rotate(-8deg)", offset: .55 }, { transform: "rotate(4deg)", offset: .78 },
+      { transform: "rotate(0deg)" }
+    ], { duration: 680, easing: "ease-out" });
+    return () => swing.cancel();
+  }, [hanging, position]);
+  return <span ref={marker} className={`pc-selection-light${hanging ? " pc-hanging-light" : ""}`} aria-hidden="true" data-ready={Boolean(position)} data-motion={position?.animate ?? false} style={position ? { transform: `translate3d(${position.x}px, ${position.y}px, 0)`, width: position.width, height: position.height } : undefined}><span ref={charm} className="pc-hanging-charm">{hanging ? <BrandMark /> : null}</span></span>;
 }
