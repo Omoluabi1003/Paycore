@@ -1,0 +1,25 @@
+/* One selection-linked light. No continuous animation, pointer interception or new theme. */
+.pc-selection-track { position: relative; isolation: isolate; }
+.pc-selection-track > .pc-selection-light {
+  position: absolute; inset: 0 auto auto 0; z-index: 0; pointer-events: none;
+  border-radius: 11px; opacity: 0;
+  background: linear-gradient(100deg, rgba(255,205,126,.17), rgba(255,205,126,.025));
+  border: 1px solid rgba(255,214,151,.35);
+  box-shadow: 0 0 22px rgba(255,196,100,.13), inset 0 0 16px rgba(255,211,133,.05);
+}
+.pc-selection-track > .pc-selection-light[data-ready="true"] { opacity: 1; }
+.pc-selection-track > .pc-selection-light[data-motion="true"] { transition: transform 320ms cubic-bezier(.22,1,.36,1); }
+.pc-selection-track > .pc-selection-light::before {
+  content: ""; position: absolute; top: 50%; left: 3px; transform: translateY(-50%);
+  width: 3px; height: 20px; border-radius: 4px; background: #ffdb9a;
+  box-shadow: 0 0 10px rgba(255,196,100,.65);
+}
+.pc-selection-track > :is(button,a) { position: relative; z-index: 1; }
+.pc-selection-track > [aria-current="page"] { text-shadow: 0 0 14px rgba(255,205,126,.28); }
+@media(prefers-reduced-motion:reduce) {
+  .pc-selection-track > .pc-selection-light[data-motion="true"] { transition: none; }
+}
+@media(forced-colors:active) {
+  .pc-selection-track > .pc-selection-light { display: none; }
+  .pc-selection-track > [aria-current="page"] { outline: 2px solid Highlight; text-shadow: none; }
+}
