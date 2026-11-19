@@ -83,9 +83,10 @@ export default function UniversalEdgePanel({companyName,displayName,onEditProfil
     panel.current?.querySelector<HTMLButtonElement>("button")?.focus();
     return ()=>{window.removeEventListener("keydown",escape);handle.current?.focus({preventScroll:true});};
   },[open]);
-  const change=(next:boolean)=>{
+  const change=(next:boolean,withSound=true)=>{
+    const pendingClose=closeTimer.current!==null;
     if(closeTimer.current){clearTimeout(closeTimer.current);closeTimer.current=null;}
-    if(!muted)playWhoosh(next);
+    if(!muted&&withSound&&(next||!pendingClose))playWhoosh(next);
     setOpen(next);
   };
   const go=(label:string,keyboard=false)=>{
@@ -95,7 +96,11 @@ export default function UniversalEdgePanel({companyName,displayName,onEditProfil
       target.click();
       if(closeTimer.current)clearTimeout(closeTimer.current);
       if(keyboard||window.matchMedia("(prefers-reduced-motion: reduce)").matches) change(false);
-      else closeTimer.current=setTimeout(()=>change(false),380);
+      else {
+        // Keep audio activation inside the original gesture, including on iOS.
+        if(!muted&&closeTimer.current===null)playWhoosh(false);
+        closeTimer.current=setTimeout(()=>change(false,false),380);
+      }
     }
   };
   const begin=(event:React.TouchEvent)=>{touch.current=event.touches[0]?.clientX??null};
