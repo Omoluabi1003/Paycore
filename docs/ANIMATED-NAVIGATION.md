@@ -1,7 +1,7 @@
 # Selection-linked navigation light
 
-A suspended PayCore emblem and broad warm light follow the real selected item in PayCore's existing
-edge panel and setup tabs. It does not reproduce the reel's lantern artwork or
+A suspended PayCore emblem and broad warm light follow the real selected item in
+PayCore's existing edge panel. Setup tabs retain a compact selection light. It does not reproduce the reel's lantern artwork or
 claim to use the creator's implementation. Existing themes and navigation targets
 remain unchanged.
 
@@ -10,7 +10,7 @@ indicator uses local layout coordinates, ResizeObserver and scoped mutation
 observation; it does not poll or perform network requests. The edge panel reserves a rail beside the labels and displays the existing brand
 emblem in a lit pendant. CSS moves it for 460ms; a cancellable 680ms swing settles
 the pendant. Setup tabs retain the compact 320ms light. Motion
-and automatically retargets from the current position during rapid changes. The
+automatically retargets from the current position during rapid changes. The
 first measured position is placed immediately, avoiding an initial sweep.
 
 Pointer selection in the edge panel leaves 740ms for the light to settle before
