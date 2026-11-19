@@ -21,7 +21,8 @@ current control. Existing selected-state styling remains a static fallback.
 
 The light is aria-hidden, cannot receive focus and cannot intercept input. No new
 sound, dependency, financial action, server permission, storage key or backend
-configuration is introduced. Existing panel sound controls are retained.
+configuration is introduced. Existing panel sound controls are retained. The closing sound is requested from
+the original pointer gesture; the delayed visual close does not request audio.
 
 Validate real setup/full-workspace transitions, repeated selections, keyboard
 activation, reduced motion, resizing and the mobile edge panel with synthetic data.
