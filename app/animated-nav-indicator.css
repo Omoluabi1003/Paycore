@@ -23,3 +23,38 @@
   .pc-selection-track > .pc-selection-light { display: none; }
   .pc-selection-track > [aria-current="page"] { outline: 2px solid Highlight; text-shadow: none; }
 }
+
+/* A suspended PayCore emblem carries the light down the workspace rail. */
+.pc-unfurl-links.pc-selection-track { padding-left: 34px; }
+.pc-unfurl-links.pc-selection-track::before {
+  content: ""; position: absolute; left: 16px; top: 0; bottom: 18px; width: 1px;
+  background: linear-gradient(#b8c8d4, rgba(184,200,212,.25));
+  box-shadow: 1px 0 0 rgba(0,0,0,.35); pointer-events: none;
+}
+.pc-selection-track > .pc-hanging-light {
+  border: 0; background: transparent; box-shadow: none; overflow: visible;
+}
+.pc-selection-track > .pc-hanging-light[data-motion="true"] {
+  transition: transform 460ms cubic-bezier(.22,1,.36,1);
+}
+.pc-selection-track > .pc-hanging-light::before {
+  left: -76px; top: 50%; width: 190px; height: 150px; border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(255,190,86,.38), rgba(255,183,76,.12) 42%, transparent 72%);
+  box-shadow: none;
+}
+.pc-hanging-charm { display: none; }
+.pc-hanging-light .pc-hanging-charm {
+  display: grid; place-items: center; position: absolute; left: -34px; top: 50%;
+  margin-top: -18px; width: 34px; height: 36px; transform-origin: 50% -16px;
+  border: 1px solid rgba(255,223,164,.65); border-radius: 11px 11px 14px 14px;
+  background: linear-gradient(145deg,#253e45,#10252b);
+  box-shadow: 0 4px 10px #07151c88, 0 0 18px #ffbd5866, inset 0 0 7px #ffdc9333;
+}
+.pc-hanging-charm::before {
+  content: ""; position: absolute; bottom: 100%; left: 50%; height: 16px; width: 1px;
+  background: #d7c8a5;
+}
+.pc-hanging-charm .brand-symbol { width: 28px; height: 28px; object-fit: contain; }
+@media(prefers-reduced-motion:reduce) {
+  .pc-selection-track > .pc-hanging-light[data-motion="true"] { transition: none; }
+}

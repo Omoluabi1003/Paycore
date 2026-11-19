@@ -99,7 +99,7 @@ export default function UniversalEdgePanel({companyName,displayName,onEditProfil
       else {
         // Keep audio activation inside the original gesture, including on iOS.
         if(!muted&&closeTimer.current===null)playWhoosh(false);
-        closeTimer.current=setTimeout(()=>change(false,false),380);
+        closeTimer.current=setTimeout(()=>change(false,false),740);
       }
     }
   };
@@ -121,7 +121,7 @@ export default function UniversalEdgePanel({companyName,displayName,onEditProfil
       <div className="pc-unfurl-head"><span className="pc-unfurl-crest" aria-hidden="true">✧</span><div><strong>PAYCORE</strong><small>YOUR INTELLIGENT WORKSPACE</small></div><button type="button" onClick={()=>change(false)} aria-label="Close navigation">×</button></div>
       <div className="pc-unfurl-profile"><span className="pc-unfurl-avatar">{displayName.slice(0,1).toUpperCase()}</span><div><strong>{displayName}</strong><small>{companyName||"Local workspace"}</small></div><span className="pc-unfurl-status" aria-hidden="true"/></div>
       <p className="pc-unfurl-label">WORKSPACE</p>
-      <div className="pc-unfurl-links pc-selection-track"><AnimatedNavIndicator />
+      <div className="pc-unfurl-links pc-selection-track"><AnimatedNavIndicator hanging />
         {(full?sections:setup).map(([title,label])=><button type="button" key={title} aria-current={activeLabel===label?"page":undefined} onClick={event=>go(label,event.detail===0)}><span aria-hidden="true" className="pc-unfurl-nav-icon">◇</span><span>{title}</span><span className="pc-unfurl-arrow" aria-hidden="true">›</span></button>)}
         <Link href="/scan" onClick={()=>change(false)}><span aria-hidden="true" className="pc-unfurl-nav-icon">▣</span><span>Scan documents</span><span className="pc-unfurl-arrow" aria-hidden="true">›</span></Link>
         <button type="button" onClick={()=>{change(false);onEditProfile()}}><span aria-hidden="true" className="pc-unfurl-nav-icon">◉</span><span>Profile</span><span className="pc-unfurl-arrow" aria-hidden="true">›</span></button>
