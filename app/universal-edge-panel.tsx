@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import AnimatedNavIndicator from "./animated-nav-indicator";
 import { useEffect, useRef, useState } from "react";
 import "./universal-edge-panel.css";
 
@@ -57,14 +58,22 @@ export default function UniversalEdgePanel({companyName,displayName,onEditProfil
   const [open,setOpen]=useState(false);
   const [muted,setMuted]=useState(false);
   const [full,setFull]=useState(false);
+  const [activeLabel,setActiveLabel]=useState("");
+  const closeTimer=useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(()=>()=>{if(closeTimer.current)clearTimeout(closeTimer.current)},[]);
   const panel=useRef<HTMLElement>(null);
   const handle=useRef<HTMLButtonElement>(null);
   const touch=useRef<number|null>(null);
   useEffect(()=>{
-    const inspect=()=>setFull(Boolean(document.querySelector(".paycore-edge-shell .sidebar")));
+    const inspect=()=>{
+      const sidebar=document.querySelector(".paycore-edge-shell .sidebar");
+      setFull(Boolean(sidebar));
+      const selected=sidebar?.querySelector(".nav-item[aria-current='page']") ?? document.querySelector(".setup-module-nav [aria-current='page']");
+      setActiveLabel(selected?.textContent?.trim()??"");
+    };
     inspect();
     const observer=new MutationObserver(inspect);
-    observer.observe(document.body,{childList:true,subtree:true});
+    observer.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:["aria-current"]});
     return ()=>observer.disconnect();
   },[]);
   useEffect(()=>{
@@ -75,13 +84,19 @@ export default function UniversalEdgePanel({companyName,displayName,onEditProfil
     return ()=>{window.removeEventListener("keydown",escape);handle.current?.focus({preventScroll:true});};
   },[open]);
   const change=(next:boolean)=>{
+    if(closeTimer.current){clearTimeout(closeTimer.current);closeTimer.current=null;}
     if(!muted)playWhoosh(next);
     setOpen(next);
   };
-  const go=(label:string)=>{
+  const go=(label:string,keyboard=false)=>{
     const scope=full?".paycore-edge-shell .sidebar .nav-item":".setup-module-nav button";
     const target=Array.from(document.querySelectorAll<HTMLButtonElement>(scope)).find(item=>item.textContent?.trim().toLowerCase()===label.toLowerCase());
-    if(target){target.click();change(false);}
+    if(target){
+      target.click();
+      if(closeTimer.current)clearTimeout(closeTimer.current);
+      if(keyboard||window.matchMedia("(prefers-reduced-motion: reduce)").matches) change(false);
+      else closeTimer.current=setTimeout(()=>change(false),380);
+    }
   };
   const begin=(event:React.TouchEvent)=>{touch.current=event.touches[0]?.clientX??null};
   const end=(event:React.TouchEvent)=>{
@@ -101,8 +116,8 @@ export default function UniversalEdgePanel({companyName,displayName,onEditProfil
       <div className="pc-unfurl-head"><span className="pc-unfurl-crest" aria-hidden="true">✧</span><div><strong>PAYCORE</strong><small>YOUR INTELLIGENT WORKSPACE</small></div><button type="button" onClick={()=>change(false)} aria-label="Close navigation">×</button></div>
       <div className="pc-unfurl-profile"><span className="pc-unfurl-avatar">{displayName.slice(0,1).toUpperCase()}</span><div><strong>{displayName}</strong><small>{companyName||"Local workspace"}</small></div><span className="pc-unfurl-status" aria-hidden="true"/></div>
       <p className="pc-unfurl-label">WORKSPACE</p>
-      <div className="pc-unfurl-links">
-        {(full?sections:setup).map(([title,label])=><button type="button" key={title} onClick={()=>go(label)}><span aria-hidden="true" className="pc-unfurl-nav-icon">◇</span><span>{title}</span><span className="pc-unfurl-arrow" aria-hidden="true">›</span></button>)}
+      <div className="pc-unfurl-links pc-selection-track"><AnimatedNavIndicator />
+        {(full?sections:setup).map(([title,label])=><button type="button" key={title} aria-current={activeLabel===label?"page":undefined} onClick={event=>go(label,event.detail===0)}><span aria-hidden="true" className="pc-unfurl-nav-icon">◇</span><span>{title}</span><span className="pc-unfurl-arrow" aria-hidden="true">›</span></button>)}
         <Link href="/scan" onClick={()=>change(false)}><span aria-hidden="true" className="pc-unfurl-nav-icon">▣</span><span>Scan documents</span><span className="pc-unfurl-arrow" aria-hidden="true">›</span></Link>
         <button type="button" onClick={()=>{change(false);onEditProfile()}}><span aria-hidden="true" className="pc-unfurl-nav-icon">◉</span><span>Profile</span><span className="pc-unfurl-arrow" aria-hidden="true">›</span></button>
         <button type="button" onClick={()=>{change(false);onSignOut()}}><span aria-hidden="true" className="pc-unfurl-nav-icon">↪</span><span>Close workspace</span><span className="pc-unfurl-arrow" aria-hidden="true">›</span></button>
