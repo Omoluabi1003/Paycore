@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "@auth0/nextjs-auth0": "4.33.0",
-    "@napi-rs/canvas": "1.1.0",
+    "@napi-rs/canvas": "1.1.1",
     "@tesseract.js-data/eng": "1.0.0",
     "decimal.js": "10.6.0",
     "image-size": "2.0.4",
