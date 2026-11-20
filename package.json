@@ -21,7 +21,7 @@
     "decimal.js": "10.6.0",
     "image-size": "2.0.4",
     "jose": "6.2.15",
-    "next": "15.5.28",
+    "next": "15.5.29",
     "pdfjs-dist": "6.5.438",
     "pg": "8.23.1",
     "react": "19.1.10",
@@ -32,10 +32,15 @@
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.16",
-    "@types/node": "^26.6.6",
+    "@types/node": "^24.0.0",
     "@types/pg": "8.23.1",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "typescript": "^7.0.2"
+    "typescript": "^5.9.3"
+  },
+  "pnpm": {
+    "overrides": {
+      "next>postcss": "8.5.32"
+    }
   }
 }
