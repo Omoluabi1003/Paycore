@@ -19,7 +19,7 @@
     "@napi-rs/canvas": "1.1.0",
     "@tesseract.js-data/eng": "1.0.0",
     "decimal.js": "10.6.0",
-    "image-size": "2.0.4",
+    "image-size": "2.1.0",
     "jose": "6.2.15",
     "next": "15.5.29",
     "pdfjs-dist": "6.5.438",
